@@ -516,9 +516,13 @@ export default function CardNav({
           </button>
 
           {logo && (
-            <LinkComponent href={logoHref} className={LOGO} aria-label={logoAlt}>
-              {typeof logo === 'string' ? <img src={logo} alt="" draggable={false} /> : logo}
-            </LinkComponent>
+            React.isValidElement(logo) && ((logo.props as any)?.href || (logo as any).type === 'a') ? (
+              <div className={LOGO}>{logo}</div>
+            ) : (
+              <LinkComponent href={logoHref} className={LOGO} aria-label={logoAlt}>
+                {typeof logo === 'string' ? <img src={logo} alt="" draggable={false} /> : logo}
+              </LinkComponent>
+            )
           )}
 
           <div className={ACTIONS}>

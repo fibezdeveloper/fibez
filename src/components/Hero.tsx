@@ -2,7 +2,7 @@
 
 import React from 'react';
 import HeroCube from '@/components/HeroCube';
-import ShapeWaves from '@/components/ShapeWaves';
+import GradientASCII from '@/components/GradientASCII';
 import { ArrowRight, ChevronRight, Terminal, ShieldCheck, Zap } from 'lucide-react';
 
 export default function Hero({
@@ -13,21 +13,17 @@ export default function Hero({
   return (
     <section className="relative w-full pt-16 pb-20 md:pt-24 md:pb-32 overflow-hidden bg-black">
       
-      {/* Interactive ShapeWaves Background with Fibez Logo & Atmospheric Violet Tint */}
+      {/* Interactive GradientASCII Background from React Bits */}
       <div className="absolute inset-0 z-0 pointer-events-auto overflow-hidden">
-        <ShapeWaves
-          useFibezLogo={true}
-          withTint={true}
-          text="FIBEZ"
-          color="#6456c2"
-          hoverColor="#baa7ff"
-          backgroundColor="#000000"
-          speed={0.85}
-          scale={1.1}
-          glow={0.45}
-          cellSize={13}
-          fade={0.35}
+        <GradientASCII
+          colors={['#1e3fd8', '#f6f8ff', '#a5d8ff', '#38bdf8']}
+          shape="horizon"
+          characters=" =+xX0S8#@"
+          cellSize={18}
+          density={0.8}
         />
+        {/* Subtle atmospheric vignette so foreground typography stands out */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/50 via-transparent to-black" />
       </div>
 
       {/* Hero Foreground Content */}

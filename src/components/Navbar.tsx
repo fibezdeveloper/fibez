@@ -1,10 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import CardNav, { CardNavItem } from '@/components/CardNav';
-import FibezLogo from '@/components/FibezLogo';
-import { ShoppingCart, User, X, ArrowRight, ShieldCheck, Search } from 'lucide-react';
+import GooeyDropdown, { GooeyDropdownAction } from '@/components/GooeyDropdown';
+import SearchMenu from '@/components/SearchMenu';
+import { authClient } from '@/lib/auth-client';
+import { 
+  ShoppingCart, 
+  User, 
+  X, 
+  ArrowRight, 
+  ShieldCheck, 
+  Search, 
+  Globe, 
+  KeyRound, 
+  LogOut, 
+  LogIn, 
+  UserPlus 
+} from 'lucide-react';
 
 export interface NavbarProps {
   onOpenAuth?: (mode: 'login' | 'register') => void;
@@ -29,6 +43,10 @@ export default function Navbar({
 }: NavbarProps) {
   const [internalCurrency, setInternalCurrency] = useState<'LKR' | 'USD'>(currency);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
+  const [searchMenuOpen, setSearchMenuOpen] = useState(false);
+
+  // Better Auth session hook
+  const { data: session } = authClient.useSession();
 
   const currentCurrency = onCurrencyChange ? currency : internalCurrency;
 
@@ -57,6 +75,85 @@ export default function Navbar({
       setCartDrawerOpen(true);
     }
   };
+
+  // Keyboard shortcut ⌘K / Ctrl+K for search menu
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchMenuOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Account dropdown actions (combines Cart, Currency Settings, Vault, and Auth)
+  const dropdownActions: GooeyDropdownAction[] = [
+    {
+      id: 'cart',
+      label: `Shopping Cart (${cartCount})`,
+      icon: <ShoppingCart className="w-4 h-4 text-[#9281f7]" />,
+      detail: cartCount > 0 ? `${cartCount} item(s) awaiting checkout` : 'Cart is currently empty',
+      shortcut: 'C',
+      onSelect: () => handleCartClick(),
+    },
+    {
+      id: 'currency',
+      label: `Settings: ${currentCurrency}`,
+      icon: <Globe className="w-4 h-4 text-emerald-400" />,
+      detail: `Switch currency to ${currentCurrency === 'LKR' ? 'USD ($)' : 'LKR (Rs.)'}`,
+      shortcut: '$',
+      onSelect: () => handleCurrencyToggle(currentCurrency === 'LKR' ? 'USD' : 'LKR'),
+    },
+    {
+      id: 'vault',
+      label: 'Key Vault & Orders',
+      icon: <KeyRound className="w-4 h-4 text-amber-400" />,
+      detail: 'Access credentials and active tokens',
+      shortcut: 'V',
+      onSelect: () => {
+        document.getElementById('vault')?.scrollIntoView({ behavior: 'smooth' });
+      },
+    },
+    ...(session?.user
+      ? [
+          {
+            id: 'signout',
+            label: 'Sign Out',
+            icon: <LogOut className="w-4 h-4 text-[#ff453a]" />,
+            detail: session.user.email || session.user.name,
+            destructive: true,
+            shortcut: 'X',
+            divider: true,
+            onSelect: async () => {
+              await authClient.signOut();
+            },
+          },
+        ]
+      : [
+          {
+            id: 'signin',
+            label: 'Sign In',
+            icon: <LogIn className="w-4 h-4 text-[#9281f7]" />,
+            detail: 'Access developer console & keys',
+            shortcut: 'S',
+            divider: true,
+            onSelect: () => onOpenAuth?.('login'),
+          },
+          {
+            id: 'register',
+            label: 'Create Account',
+            icon: <UserPlus className="w-4 h-4 text-zinc-300" />,
+            detail: 'Deploy digital infrastructure',
+            onSelect: () => onOpenAuth?.('register'),
+          },
+        ]),
+  ];
+
+  const dropdownLabel = session?.user
+    ? (session.user.name ? session.user.name.split(' ')[0] : session.user.email?.split('@')[0] || 'Account')
+    : (cartCount > 0 ? `Account (${cartCount})` : 'Account');
 
   const navItems: CardNavItem[] = [
     {
@@ -127,9 +224,9 @@ export default function Navbar({
       links: [
         { 
           label: 'Search Products', 
-          href: '#catalog',
+          href: '#catalog', 
           onClick: () => {
-            document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+            setSearchMenuOpen(true);
           }
         },
         { label: 'WhatsApp Instant Support', href: 'https://wa.me/94771234567' },
@@ -150,106 +247,83 @@ export default function Navbar({
       <header className="sticky top-3 z-50 w-full px-4 sm:px-6 pointer-events-none">
         <div className="pointer-events-auto">
           <CardNav
+            defaultOpen={false}
             maxWidth={1120}
             theme="dark"
             surface="glass"
             cardEffect="rise"
             stagger={0.1}
             speed={1}
+            /* Strictly FIBEZ wordmark only — no icon box, no monogram, no VAULT */
             logo={
-              <Link href="/" className="flex items-center gap-2 group transition-opacity hover:opacity-90">
-                <FibezLogo withVersion={true} />
+              <Link
+                href="/"
+                className="font-mono text-[16px] font-semibold tracking-[0.24em] text-white hover:text-[#9281f7] transition-colors select-none"
+              >
+                FIBEZ
               </Link>
             }
+            logoHref="/"
             items={navItems}
             actions={
               <div className="flex items-center gap-2 mr-1">
-                {/* Search Bar Shortcut */}
+                {/* Topbar Search Button — opens Search Menu just like menu opening */}
                 <button
                   type="button"
-                  onClick={() => {
-                    document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
-                    const input = document.querySelector('#catalog input') as HTMLInputElement | null;
-                    if (input) input.focus();
-                  }}
-                  className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0f0c1c]/80 border border-white/10 text-xs text-[#8e87aa] hover:text-white hover:border-[#635BFF]/50 transition-all cursor-pointer"
-                  title="Search products..."
+                  onClick={() => setSearchMenuOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#141026]/90 border border-white/10 text-xs text-[#8e87aa] hover:text-white hover:border-[#9281f7]/50 transition-all cursor-pointer shadow-sm"
+                  title="Search products (⌘K)"
                 >
-                  <Search className="w-3.5 h-3.5 text-[#8e87aa]" />
-                  <span className="hidden lg:inline text-[12px]">Search products...</span>
+                  <Search className="w-3.5 h-3.5 text-[#9281f7]" />
+                  <span className="hidden sm:inline text-[12px]">Search</span>
+                  <kbd className="hidden md:inline-block font-mono text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-zinc-300">
+                    ⌘K
+                  </kbd>
                 </button>
 
-                {/* Currency Switcher: Rs. LKR | $ USD */}
-                <div className="flex items-center bg-[#0f0c1c]/80 border border-white/10 p-0.5 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => handleCurrencyToggle('LKR')}
-                    className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      currentCurrency === 'LKR'
-                        ? 'bg-[#635BFF] text-white shadow-[0_0_10px_rgba(99,91,255,0.45)]'
-                        : 'text-[#8e87aa] hover:text-white'
-                    }`}
-                  >
-                    Rs. LKR
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleCurrencyToggle('USD')}
-                    className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      currentCurrency === 'USD'
-                        ? 'bg-[#635BFF] text-white shadow-[0_0_10px_rgba(99,91,255,0.45)]'
-                        : 'text-[#8e87aa] hover:text-white'
-                    }`}
-                  >
-                    $ USD
-                  </button>
-                </div>
-
-                {/* Shopping Cart Button */}
-                <button
-                  type="button"
-                  onClick={handleCartClick}
-                  className="p-2 rounded-xl bg-[#0f0c1c]/80 border border-white/10 text-[#c9c3e0] hover:text-white hover:border-[#635BFF]/50 transition-colors flex items-center justify-center relative cursor-pointer"
-                  aria-label="Shopping Cart"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#635BFF] text-white text-[10px] font-bold flex items-center justify-center shadow-[0_0_8px_rgba(99,91,255,0.8)]">
-                      {cartCount}
-                    </span>
-                  )}
-                </button>
+                {/* Gooey Liquid Dropdown: Account, Cart, Currency Settings, Vault */}
+                <GooeyDropdown
+                  label={dropdownLabel}
+                  actions={dropdownActions}
+                  anchor="end"
+                  menuWidth={270}
+                  fill="#151224"
+                  ink="#ffffff"
+                  danger="#ff453a"
+                  gap={12}
+                />
               </div>
             }
-            cta={{
-              label: (
-                <span className="flex items-center gap-1.5">
-                  <User className="w-4 h-4" />
-                  <span>Sign In</span>
-                </span>
-              ),
-              onClick: () => {
-                if (onOpenAuth) onOpenAuth('login');
-              }
-            }}
           />
         </div>
       </header>
 
+      {/* Topbar Search Menu (opens just like menu opening) */}
+      <SearchMenu
+        isOpen={searchMenuOpen}
+        onClose={() => setSearchMenuOpen(false)}
+        currency={currentCurrency}
+        onSelectCategory={handleCategoryClick}
+        onSearchSubmit={(q) => {
+          if (onSearchChange) onSearchChange(q);
+        }}
+      />
+
       {/* Slide-over Cart Drawer */}
       {cartDrawerOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm flex justify-end">
+        <div className="fixed inset-0 z-50 overflow-hidden bg-black/70 backdrop-blur-sm flex justify-end">
           <div className="relative w-full max-w-md bg-[#0a0815] border-l border-[#231e38] p-6 shadow-2xl flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-5 border-b border-[#231e38]">
                 <div className="flex items-center gap-2">
-                  <ShoppingCart className="w-5 h-5 text-[#635BFF]" />
+                  <ShoppingCart className="w-5 h-5 text-[#9281f7]" />
                   <h3 className="text-lg font-semibold text-white">Your Shopping Cart</h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setCartDrawerOpen(false)}
                   className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                  aria-label="Close Cart"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -257,13 +331,13 @@ export default function Navbar({
 
               {cartCount === 0 ? (
                 <div className="py-16 text-center space-y-4">
-                  <div className="w-14 h-14 rounded-full bg-[#130f24] border border-[#2a2247] flex items-center justify-center mx-auto text-[#635BFF]">
+                  <div className="w-14 h-14 rounded-full bg-[#130f24] border border-[#2a2247] flex items-center justify-center mx-auto text-[#9281f7]">
                     <ShoppingCart className="w-7 h-7" />
                   </div>
                   <div>
                     <h4 className="text-base font-medium text-white">Your cart is currently empty</h4>
                     <p className="text-sm text-[#877f9f] mt-1 max-w-xs mx-auto">
-                      Browse our high-performance V2Ray nodes, cloud VPS, or software licenses to add items.
+                      Browse high-performance V2Ray nodes, cloud VPS, or software licenses to add items.
                     </p>
                   </div>
                   <button
@@ -272,7 +346,7 @@ export default function Navbar({
                       setCartDrawerOpen(false);
                       document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="inline-flex items-center gap-2 bg-[#635BFF] hover:bg-[#5249e6] text-white text-xs font-semibold px-4 py-2 rounded-full transition-all cursor-pointer shadow-[0_0_15px_rgba(99,91,255,0.4)]"
+                    className="inline-flex items-center gap-2 bg-[#9281f7] hover:bg-[#806ff5] text-black text-xs font-semibold px-4 py-2 rounded-full transition-all cursor-pointer shadow-[0_0_15px_rgba(146,129,247,0.4)]"
                   >
                     <span>Explore Products</span>
                     <ArrowRight className="w-3.5 h-3.5" />

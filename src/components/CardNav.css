@@ -18,7 +18,7 @@
   z-index: 10;
   height: var(--cn-bar);
   border-radius: var(--cn-radius);
-  overflow: hidden;
+  overflow: visible;
   background: var(--cn-panel);
   box-shadow: var(--cn-shadow);
   -webkit-backdrop-filter: var(--cn-blur);
@@ -165,6 +165,7 @@
   align-items: center;
   justify-self: end;
   gap: 8px;
+  height: calc(var(--cn-bar) - var(--cn-inset) * 2);
 }
 
 .card-nav__cta {
