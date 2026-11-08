@@ -142,7 +142,7 @@ export default function PortalHero() {
             Instant Digital Delivery<br />
             for the <span className="italic text-signalLime font-normal">Autonomous Web.</span>
           </h1>
-          <p className="font-sans text-[13px] sm:text-[14px] text-bone/90 leading-[1.6] tracking-[0.02em] max-w-[540px] mx-auto">
+          <p className="font-sans text-[15px] sm:text-[16px] text-zinc-200 leading-[1.7] max-w-[580px] mx-auto">
             Browse, purchase, and instantly receive V2Ray/VPN configurations, NVMe Cloud VPS instances, premium subscriptions (Netflix, ChatGPT, Discord Nitro), and game keys — governed by a role-based command dashboard.
           </p>
           {/* Placeholder anchor where the 72x72px FIBEZ logo tile sits at scroll=0 */}

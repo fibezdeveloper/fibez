@@ -209,20 +209,20 @@ export default function StorefrontGrid() {
                 <div className="font-mono text-[10px] tracking-[0.2em] text-signalLime uppercase mb-1.5">
                   {item.tag}
                 </div>
-                <h3 className="font-editorial text-[26px] text-chalk leading-[1.1] mb-2">
+                <h3 className="font-sans font-semibold text-[19px] sm:text-[20px] text-white leading-tight mb-2 tracking-tight">
                   <Link href={`/product/${item.slug}`} className="hover:text-signalLime transition-colors">
                     {item.title}
                   </Link>
                 </h3>
-                <p className="font-sans text-[12px] text-ash mb-6">
+                <p className="font-sans text-[13px] text-zinc-300 mb-6 leading-relaxed">
                   {item.specs}
                 </p>
               </div>
 
               <div className="pt-4 border-t border-graphite flex items-center justify-between">
                 <div>
-                  <span className="font-editorial text-[28px] text-chalk">{item.price}</span>
-                  <span className="font-mono text-[10px] text-ash"> {item.unit}</span>
+                  <span className="font-sans font-bold text-[24px] sm:text-[26px] text-white tracking-tight">{item.price}</span>
+                  <span className="font-mono text-[11px] text-zinc-400 font-normal"> {item.unit}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Link

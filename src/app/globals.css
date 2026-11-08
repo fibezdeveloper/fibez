@@ -2,18 +2,18 @@
 @import "tailwindcss";
 
 :root {
-  /* Colors — Exact tokens from zkPass / Fibez */
+  /* Colors — Enhanced contrast for crystal-clear readability */
   --color-void-black: #000000;
-  --color-carbon: #060606;
-  --color-graphite: #252525;
-  --color-onyx: #1f1f1f;
-  --color-iron: #313131;
-  --color-slate: #3d3d3d;
-  --color-fog: #525252;
-  --color-ash: #7a7a7a;
-  --color-smoke: #8a8a8a;
-  --color-pearl: #c5c5c5;
-  --color-bone: #e5e5e5;
+  --color-carbon: #080808;
+  --color-graphite: #27272a;
+  --color-onyx: #18181b;
+  --color-iron: #3f3f46;
+  --color-slate: #52525b;
+  --color-fog: #71717a;
+  --color-ash: #a1a1aa;
+  --color-smoke: #d4d4d8;
+  --color-pearl: #e4e4e7;
+  --color-bone: #f4f4f5;
   --color-chalk: #ffffff;
   --color-signal-lime: #c5ff4a;
   --color-olive-depth: #597321;
@@ -23,31 +23,32 @@
   --color-accent-subtle: rgba(197, 255, 74, 0.12);
 
   /* Typography — Font Families */
-  --font-pt-serif: 'PT Serif', 'Cormorant Garamond', ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-inter-tight: 'Inter Tight', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-jetbrains-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-ui-monospace: 'ui-monospace', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-pt-serif: var(--font-pt-serif), 'PT Serif', Georgia, serif;
+  --font-inter: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-inter-tight: var(--font-inter-tight), 'Inter Tight', system-ui, sans-serif;
+  --font-jetbrains-mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+  --font-ui-monospace: 'ui-monospace', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Shadows & Surfaces */
   --shadow-sm: rgba(197, 255, 74, 0.45) 0px 0px 8px 0px;
-  --surface-canvas: #060606;
-  --surface-card: #1f1f1f;
-  --surface-raised: #252525;
-  --surface-hover: #313131;
+  --surface-canvas: #080808;
+  --surface-card: #18181b;
+  --surface-raised: #27272a;
+  --surface-hover: #3f3f46;
 }
 
 @theme {
   --color-void-black: #000000;
-  --color-carbon: #060606;
-  --color-graphite: #252525;
-  --color-onyx: #1f1f1f;
-  --color-iron: #313131;
-  --color-slate: #3d3d3d;
-  --color-fog: #525252;
-  --color-ash: #7a7a7a;
-  --color-smoke: #8a8a8a;
-  --color-pearl: #c5c5c5;
-  --color-bone: #e5e5e5;
+  --color-carbon: #080808;
+  --color-graphite: #27272a;
+  --color-onyx: #18181b;
+  --color-iron: #3f3f46;
+  --color-slate: #52525b;
+  --color-fog: #71717a;
+  --color-ash: #a1a1aa;
+  --color-smoke: #d4d4d8;
+  --color-pearl: #e4e4e7;
+  --color-bone: #f4f4f5;
   --color-chalk: #ffffff;
   --color-signal-lime: #c5ff4a;
   --color-olive-depth: #597321;
@@ -55,7 +56,7 @@
   --color-accent: var(--color-accent);
 
   --font-serif: var(--font-pt-serif), Georgia, serif;
-  --font-sans: var(--font-inter-tight), system-ui, sans-serif;
+  --font-sans: var(--font-inter), var(--font-inter-tight), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), monospace;
 }
 
@@ -71,26 +72,30 @@
 body {
   background-color: var(--color-carbon);
   color: var(--color-bone);
-  font-family: var(--font-inter-tight), sans-serif;
+  font-family: var(--font-sans);
   overflow-x: hidden;
   margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-/* Editorial Serif Utility — Weight 300 Whisper Authority */
+/* Editorial Serif Utility — Weight 400 with Crisp Hairlines */
 .font-editorial {
   font-family: var(--font-pt-serif);
-  font-weight: 300;
+  font-weight: 400;
+  letter-spacing: -0.018em;
   font-feature-settings: "liga" on, "dlig" on;
 }
 
 /* Classified Document Metadata Stamp Utility */
 .metadata-stamp {
-  font-family: var(--font-inter-tight);
+  font-family: var(--font-sans);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.22em;
-  color: var(--color-ash);
+  letter-spacing: 0.18em;
+  color: var(--color-smoke);
 }
 
 /* Structural Dot Matrix Backgrounds */

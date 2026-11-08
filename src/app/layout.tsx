@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PT_Serif, Inter_Tight, JetBrains_Mono } from "next/font/google";
+import { PT_Serif, Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -10,6 +10,12 @@ const ptSerif = PT_Serif({
   variable: "--font-pt-serif",
   weight: ["400", "700"],
   style: ["normal", "italic"],
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
 });
@@ -53,7 +59,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${ptSerif.variable} ${interTight.variable} ${jetbrainsMono.variable} dark antialiased`}
+      className={`${ptSerif.variable} ${inter.variable} ${interTight.variable} ${jetbrainsMono.variable} dark antialiased`}
     >
       <body className="min-h-screen bg-[var(--color-carbon)] text-[var(--color-bone)] flex flex-col font-sans selection:bg-[var(--color-accent)] selection:text-black">
         <Providers>

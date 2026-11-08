@@ -116,25 +116,25 @@ export default function RbacConsole() {
               <div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                   <div className="p-6 bg-onyx border border-graphite">
-                    <div className="font-mono text-[10px] tracking-[0.2em] text-ash uppercase mb-2">ACTIVE V2RAY TUNNELS</div>
-                    <div className="font-editorial text-[42px] text-chalk leading-none mb-2">
-                      03 <span className="text-signalLime text-lg font-mono">ONLINE</span>
+                    <div className="font-mono text-[10px] tracking-[0.2em] text-zinc-400 uppercase mb-2">ACTIVE V2RAY TUNNELS</div>
+                    <div className="font-mono font-bold text-[36px] sm:text-[40px] text-white tracking-tight leading-none mb-2">
+                      03 <span className="text-signalLime text-sm font-semibold tracking-wider font-mono">ONLINE</span>
                     </div>
-                    <div className="font-mono text-[11px] text-ash">Bandwidth used: 418 GB / 2,000 GB</div>
+                    <div className="font-mono text-[12px] text-zinc-300">Bandwidth used: 418 GB / 2,000 GB</div>
                   </div>
                   <div className="p-6 bg-onyx border border-graphite">
-                    <div className="font-mono text-[10px] tracking-[0.2em] text-ash uppercase mb-2">CLOUD VPS INSTANCES</div>
-                    <div className="font-editorial text-[42px] text-chalk leading-none mb-2">
-                      01 <span className="text-signalLime text-lg font-mono">RUNNING</span>
+                    <div className="font-mono text-[10px] tracking-[0.2em] text-zinc-400 uppercase mb-2">CLOUD VPS INSTANCES</div>
+                    <div className="font-mono font-bold text-[36px] sm:text-[40px] text-white tracking-tight leading-none mb-2">
+                      01 <span className="text-signalLime text-sm font-semibold tracking-wider font-mono">RUNNING</span>
                     </div>
-                    <div className="font-mono text-[11px] text-ash">epyc-fra02 · 185.212.44.91 (99.99% SLA)</div>
+                    <div className="font-mono text-[12px] text-zinc-300">epyc-fra02 · 185.212.44.91 (99.99% SLA)</div>
                   </div>
                   <div className="p-6 bg-onyx border border-graphite">
-                    <div className="font-mono text-[10px] tracking-[0.2em] text-ash uppercase mb-2">SUBSCRIPTIONS &amp; KEYS</div>
-                    <div className="font-editorial text-[42px] text-chalk leading-none mb-2">
-                      04 <span className="text-signalLime text-lg font-mono">WARRANTIED</span>
+                    <div className="font-mono text-[10px] tracking-[0.2em] text-zinc-400 uppercase mb-2">SUBSCRIPTIONS &amp; KEYS</div>
+                    <div className="font-mono font-bold text-[36px] sm:text-[40px] text-white tracking-tight leading-none mb-2">
+                      04 <span className="text-signalLime text-sm font-semibold tracking-wider font-mono">WARRANTIED</span>
                     </div>
-                    <div className="font-mono text-[11px] text-ash">Netflix 4K, ChatGPT Plus, Nitro, Steam</div>
+                    <div className="font-mono text-[12px] text-zinc-300">Netflix 4K, ChatGPT Plus, Nitro, Steam</div>
                   </div>
                 </div>
 
@@ -189,25 +189,25 @@ export default function RbacConsole() {
               <div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                   <div className="p-6 bg-onyx border border-graphite">
-                    <div className="font-mono text-[10px] tracking-[0.2em] text-ash uppercase mb-2">WHOLESALE TIER DISCOUNT</div>
-                    <div className="font-editorial text-[42px] text-signalLime leading-none mb-2">
-                      -35% <span className="text-chalk text-lg font-mono">BULK RATE</span>
+                    <div className="font-mono text-[10px] tracking-[0.2em] text-zinc-400 uppercase mb-2">WHOLESALE TIER DISCOUNT</div>
+                    <div className="font-mono font-bold text-[36px] sm:text-[40px] text-signalLime tracking-tight leading-none mb-2">
+                      -35% <span className="text-white text-sm font-semibold font-mono tracking-wider">BULK RATE</span>
                     </div>
-                    <div className="font-mono text-[11px] text-ash">Applies to all V2Ray, VPS &amp; Key SKUs</div>
+                    <div className="font-mono text-[12px] text-zinc-300">Applies to all V2Ray, VPS &amp; Key SKUs</div>
                   </div>
                   <div className="p-6 bg-onyx border border-graphite">
-                    <div className="font-mono text-[10px] tracking-[0.2em] text-ash uppercase mb-2">API SUB-ACCOUNTS</div>
-                    <div className="font-editorial text-[42px] text-chalk leading-none mb-2">
-                      1,284 <span className="text-signalLime text-lg font-mono">ACTIVE</span>
+                    <div className="font-mono text-[10px] tracking-[0.2em] text-zinc-400 uppercase mb-2">API SUB-ACCOUNTS</div>
+                    <div className="font-mono font-bold text-[36px] sm:text-[40px] text-white tracking-tight leading-none mb-2">
+                      1,284 <span className="text-signalLime text-sm font-semibold font-mono tracking-wider">ACTIVE</span>
                     </div>
-                    <div className="font-mono text-[11px] text-ash">Webhook dispatch latency: 190ms avg</div>
+                    <div className="font-mono text-[12px] text-zinc-300">Webhook dispatch latency: 190ms avg</div>
                   </div>
                   <div className="p-6 bg-onyx border border-graphite">
-                    <div className="font-mono text-[10px] tracking-[0.2em] text-ash uppercase mb-2">30D RESELLER MARGIN</div>
-                    <div className="font-editorial text-[42px] text-chalk leading-none mb-2">
-                      $6,490 <span className="text-signalLime text-lg font-mono">+24%</span>
+                    <div className="font-mono text-[10px] tracking-[0.2em] text-zinc-400 uppercase mb-2">30D RESELLER MARGIN</div>
+                    <div className="font-mono font-bold text-[36px] sm:text-[40px] text-white tracking-tight leading-none mb-2">
+                      $6,490 <span className="text-signalLime text-sm font-semibold font-mono tracking-wider">+24%</span>
                     </div>
-                    <div className="font-mono text-[11px] text-ash">Automated Telegram &amp; Discord Bot synced</div>
+                    <div className="font-mono text-[12px] text-zinc-300">Automated Telegram &amp; Discord Bot synced</div>
                   </div>
                 </div>
 
@@ -239,24 +239,24 @@ Authorization: Bearer fbz_live_reseller_99481a7c2e10f88b
               <div>
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-5 mb-8">
                   <div className="p-5 bg-onyx border border-graphite">
-                    <div className="font-mono text-[10px] tracking-[0.18em] text-ash uppercase mb-1.5">XRAY / V2RAY CLUSTER</div>
-                    <div className="font-editorial text-[36px] text-signalLime leading-none mb-1">42 / 42</div>
-                    <div className="font-mono text-[10px] text-bone">Nodes Healthy · 184 Gbps Load</div>
+                    <div className="font-mono text-[10px] tracking-[0.18em] text-zinc-400 uppercase mb-1.5">XRAY / V2RAY CLUSTER</div>
+                    <div className="font-mono font-bold text-[32px] sm:text-[36px] text-signalLime tracking-tight leading-none mb-1">42 / 42</div>
+                    <div className="font-mono text-[11px] text-zinc-300">Nodes Healthy · 184 Gbps Load</div>
                   </div>
                   <div className="p-5 bg-onyx border border-graphite">
-                    <div className="font-mono text-[10px] tracking-[0.18em] text-ash uppercase mb-1.5">KVM HYPERVISORS</div>
-                    <div className="font-editorial text-[36px] text-chalk leading-none mb-1">16 RACKS</div>
-                    <div className="font-mono text-[10px] text-bone">FRA / AMS / SG / TYO / NYC</div>
+                    <div className="font-mono text-[10px] tracking-[0.18em] text-zinc-400 uppercase mb-1.5">KVM HYPERVISORS</div>
+                    <div className="font-mono font-bold text-[32px] sm:text-[36px] text-white tracking-tight leading-none mb-1">16 RACKS</div>
+                    <div className="font-mono text-[11px] text-zinc-300">FRA / AMS / SG / TYO / NYC</div>
                   </div>
                   <div className="p-5 bg-onyx border border-graphite">
-                    <div className="font-mono text-[10px] tracking-[0.18em] text-ash uppercase mb-1.5">ENCRYPTED KEY STOCK</div>
-                    <div className="font-editorial text-[36px] text-chalk leading-none mb-1">14,820</div>
-                    <div className="font-mono text-[10px] text-bone">Auto-replenish threshold: 500</div>
+                    <div className="font-mono text-[10px] tracking-[0.18em] text-zinc-400 uppercase mb-1.5">ENCRYPTED KEY STOCK</div>
+                    <div className="font-mono font-bold text-[32px] sm:text-[36px] text-white tracking-tight leading-none mb-1">14,820</div>
+                    <div className="font-mono text-[11px] text-zinc-300">Auto-replenish threshold: 500</div>
                   </div>
                   <div className="p-5 bg-onyx border border-graphite">
-                    <div className="font-mono text-[10px] tracking-[0.18em] text-ash uppercase mb-1.5">RBAC AUDIT LOG</div>
-                    <div className="font-editorial text-[36px] text-signalLime leading-none mb-1">0 ALERTS</div>
-                    <div className="font-mono text-[10px] text-bone">HSM Key Rotation: Verified</div>
+                    <div className="font-mono text-[10px] tracking-[0.18em] text-zinc-400 uppercase mb-1.5">RBAC AUDIT LOG</div>
+                    <div className="font-mono font-bold text-[32px] sm:text-[36px] text-signalLime tracking-tight leading-none mb-1">0 ALERTS</div>
+                    <div className="font-mono text-[11px] text-zinc-300">HSM Key Rotation: Verified</div>
                   </div>
                 </div>
 

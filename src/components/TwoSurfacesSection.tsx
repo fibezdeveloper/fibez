@@ -43,7 +43,7 @@ export default function TwoSurfacesSection() {
             </h2>
           </div>
           <div className="lg:col-span-5 lg:pb-2">
-            <p className="font-sans text-[14px] text-ash leading-[1.65] max-w-[430px]">
+            <p className="font-sans text-[15px] text-zinc-300 leading-relaxed max-w-[460px]">
               One automated fulfillment core, three permissioned views. Buyers get zero-wait digital vaults; Resellers and Admins get wholesale APIs, automated stock pools, and live node telemetry.
             </p>
           </div>
@@ -59,18 +59,18 @@ export default function TwoSurfacesSection() {
           >
             <div className="flex items-center justify-between">
               <span className="font-mono text-sm text-fog group-hover:text-chalk transition-colors">+</span>
-              <span className="font-sans text-[11px] tracking-[0.08em] text-ash">For buyers · Instant Vault</span>
+              <span className="font-sans text-[12px] font-medium tracking-[0.08em] text-zinc-300">For buyers · Instant Vault</span>
             </div>
 
             <div className="my-12">
               <h3
                 ref={retailTitleRef}
                 data-text="Retail."
-                className="font-editorial italic text-[68px] sm:text-[82px] lg:text-[89px] leading-[0.94] tracking-[-0.025em] text-pearl/60 group-hover:text-chalk transition-colors mb-6"
+                className="font-editorial italic text-[68px] sm:text-[82px] lg:text-[89px] leading-[0.94] tracking-[-0.025em] text-white group-hover:text-signalLime transition-colors mb-6"
               >
                 Retail.
               </h3>
-              <p className="font-sans text-[14px] text-ash leading-[1.6] max-w-[300px]">
+              <p className="font-sans text-[15px] text-zinc-300 leading-relaxed max-w-[340px]">
                 V2Ray Reality configs, Cloud VPS root credentials, Netflix/ChatGPT/Nitro seats, and game keys minted to your vault on payment confirmation.
               </p>
             </div>
@@ -78,7 +78,7 @@ export default function TwoSurfacesSection() {
             <div>
               <a
                 href="#provisioning-bench"
-                className="inline-flex items-center gap-3 font-sans text-[11px] font-medium uppercase tracking-[0.22em] text-bone pb-2 border-b border-fog group-hover:border-chalk group-hover:text-chalk transition-colors"
+                className="inline-flex items-center gap-3 font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-white pb-2 border-b border-zinc-500 group-hover:border-signalLime group-hover:text-signalLime transition-colors"
               >
                 <span>SEE PRODUCTS</span>
                 <span className="font-mono text-xs transform group-hover:translate-x-1 transition-transform">→</span>
@@ -93,7 +93,7 @@ export default function TwoSurfacesSection() {
           >
             <div className="flex items-center justify-between">
               <span className="font-mono text-sm text-fog group-hover:text-signalLime transition-colors">+</span>
-              <span className="flex items-center gap-2 font-sans text-[11px] tracking-[0.08em] text-bone">
+              <span className="flex items-center gap-2 font-sans text-[12px] font-medium tracking-[0.08em] text-white">
                 <span className="w-1.5 h-1.5 rounded-full bg-signalLime glow-lime"></span>
                 <span>For Resellers &amp; Agents</span>
               </span>
@@ -107,7 +107,7 @@ export default function TwoSurfacesSection() {
               >
                 Wholesale.
               </h3>
-              <p className="font-sans text-[14px] text-bone/90 leading-[1.6] max-w-[300px]">
+              <p className="font-sans text-[15px] text-zinc-300 leading-relaxed max-w-[340px]">
                 Granular RBAC dashboard isolating buyer key vaults, reseller bulk-discount APIs, and admin stock-pool &amp; Xray node orchestration.
               </p>
             </div>
@@ -115,7 +115,7 @@ export default function TwoSurfacesSection() {
             <div>
               <a
                 href="#rbac-console"
-                className="inline-flex items-center gap-3 font-sans text-[11px] font-medium uppercase tracking-[0.22em] text-chalk pb-2 border-b border-signalLime hover:text-signalLime transition-colors"
+                className="inline-flex items-center gap-3 font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-white pb-2 border-b border-signalLime hover:text-signalLime transition-colors"
               >
                 <span>BUILD FOR RESELLERS</span>
                 <span className="font-mono text-xs transform group-hover:translate-x-1 transition-transform">↗</span>

@@ -118,13 +118,13 @@ export default function ProvisioningBench() {
                   activeTab === 0 ? 'bg-onyx/60' : 'hover:bg-onyx/30'
                 }`}
               >
-                <div className={`font-mono text-[10px] tracking-[0.22em] uppercase mb-2 ${activeTab === 0 ? 'text-signalLime' : 'text-ash'}`}>
+                <div className={`font-mono text-[10px] tracking-[0.22em] uppercase mb-2 ${activeTab === 0 ? 'text-signalLime font-semibold' : 'text-zinc-400'}`}>
                   VERTICAL · 01
                 </div>
-                <div className="font-sans text-[19px] font-medium text-chalk mb-1.5">
+                <div className="font-sans text-[18px] sm:text-[19px] font-semibold text-white mb-1.5">
                   VPN &amp; V2Ray Configs
                 </div>
-                <p className="font-sans text-[12px] text-ash leading-[1.5]">
+                <p className="font-sans text-[13px] text-zinc-300 leading-relaxed">
                   VLESS-XTLS Reality, Trojan, &amp; dedicated SNI tunnels with instant QR/URI dispatch.
                 </p>
                 <div
@@ -140,13 +140,13 @@ export default function ProvisioningBench() {
                   activeTab === 1 ? 'bg-onyx/60' : 'hover:bg-onyx/30'
                 }`}
               >
-                <div className={`font-mono text-[10px] tracking-[0.22em] uppercase mb-2 ${activeTab === 1 ? 'text-signalLime' : 'text-ash'}`}>
+                <div className={`font-mono text-[10px] tracking-[0.22em] uppercase mb-2 ${activeTab === 1 ? 'text-signalLime font-semibold' : 'text-zinc-400'}`}>
                   VERTICAL · 02
                 </div>
-                <div className="font-sans text-[19px] font-medium text-chalk mb-1.5">
+                <div className="font-sans text-[18px] sm:text-[19px] font-semibold text-white mb-1.5">
                   Cloud VPS Instances
                 </div>
-                <p className="font-sans text-[12px] text-ash leading-[1.5]">
+                <p className="font-sans text-[13px] text-zinc-300 leading-relaxed">
                   Dedicated NVMe KVM root servers on AMD EPYC with 10Gbps port &amp; instant SSH.
                 </p>
                 <div
@@ -162,13 +162,13 @@ export default function ProvisioningBench() {
                   activeTab === 2 ? 'bg-onyx/60' : 'hover:bg-onyx/30'
                 }`}
               >
-                <div className={`font-mono text-[10px] tracking-[0.22em] uppercase mb-2 ${activeTab === 2 ? 'text-signalLime' : 'text-ash'}`}>
+                <div className={`font-mono text-[10px] tracking-[0.22em] uppercase mb-2 ${activeTab === 2 ? 'text-signalLime font-semibold' : 'text-zinc-400'}`}>
                   VERTICAL · 03
                 </div>
-                <div className="font-sans text-[19px] font-medium text-chalk mb-1.5">
+                <div className="font-sans text-[18px] sm:text-[19px] font-semibold text-white mb-1.5">
                   Premium Subscriptions
                 </div>
-                <p className="font-sans text-[12px] text-ash leading-[1.5]">
+                <p className="font-sans text-[13px] text-zinc-300 leading-relaxed">
                   Netflix 4K UHD, ChatGPT Plus, Discord Nitro &amp; Spotify seats with auto-warranty.
                 </p>
                 <div
@@ -184,13 +184,13 @@ export default function ProvisioningBench() {
                   activeTab === 3 ? 'bg-onyx/60' : 'hover:bg-onyx/30'
                 }`}
               >
-                <div className={`font-mono text-[10px] tracking-[0.22em] uppercase mb-2 ${activeTab === 3 ? 'text-signalLime' : 'text-ash'}`}>
+                <div className={`font-mono text-[10px] tracking-[0.22em] uppercase mb-2 ${activeTab === 3 ? 'text-signalLime font-semibold' : 'text-zinc-400'}`}>
                   VERTICAL · 04
                 </div>
-                <div className="font-sans text-[19px] font-medium text-chalk mb-1.5">
+                <div className="font-sans text-[18px] sm:text-[19px] font-semibold text-white mb-1.5">
                   Game Keys &amp; Gift Cards
                 </div>
-                <p className="font-sans text-[12px] text-ash leading-[1.5]">
+                <p className="font-sans text-[13px] text-zinc-300 leading-relaxed">
                   Steam, PlayStation, Xbox &amp; Riot global activation keys from encrypted vaults.
                 </p>
                 <div
