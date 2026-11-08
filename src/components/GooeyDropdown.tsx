@@ -32,6 +32,7 @@ export interface GooeyDropdownAction {
   id: string;
   label: string;
   icon?: ReactNode;
+  shortcut?: string;
   detail?: string;
   divider?: boolean;
   destructive?: boolean;

@@ -56,26 +56,30 @@ export interface CardNavProps {
   ariaLabel?: string;
   className?: string;
   style?: React.CSSProperties;
+  searchOpen?: boolean;
+  onSearchOpenChange?: (open: boolean) => void;
+  searchBar?: React.ReactNode;
+  searchItems?: CardNavItem[];
 }
 
 const THEMES = {
   dark: {
-    '--cn-panel': 'rgba(10, 10, 12, 0.94)',
-    '--cn-solid': '#0a0a0c',
+    '--cn-panel': 'rgba(14, 14, 18, 0.92)',
+    '--cn-solid': '#121215',
     '--cn-edge': 'rgba(255, 255, 255, 0.08)',
     '--cn-highlight': 'rgba(255, 255, 255, 0.06)',
-    '--cn-shadow': '0 24px 48px -20px rgba(0, 0, 0, 0.85), 0 6px 16px -8px rgba(0, 0, 0, 0.6)',
+    '--cn-shadow': '0 24px 48px -20px rgba(0, 0, 0, 0.9), 0 6px 16px -8px rgba(0, 0, 0, 0.6)',
     '--cn-text': '#f4f4f5',
-    '--cn-muted': 'rgba(244, 244, 245, 0.56)',
+    '--cn-muted': 'rgba(244, 244, 245, 0.55)',
     '--cn-hover': 'rgba(255, 255, 255, 0.06)',
-    '--cn-ring': 'rgba(146, 129, 247, 0.65)',
-    '--cn-tile': '#111216',
+    '--cn-ring': 'rgba(255, 255, 255, 0.3)',
+    '--cn-tile': 'linear-gradient(180deg, #1c1c21 0%, #131316 100%)',
     '--cn-tile-rim':
-      'inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 10px -4px rgba(0, 0, 0, 0.6)',
-    '--cn-cta': '#9281f7',
-    '--cn-cta-ink': '#000000',
-    '--cn-cta-shadow': '0 4px 12px rgba(146, 129, 247, 0.35)',
-    '--cn-cta-hover': 'brightness(1.1)'
+      'inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 10px -4px rgba(0, 0, 0, 0.6)',
+    '--cn-cta': '#ffffff',
+    '--cn-cta-ink': '#121214',
+    '--cn-cta-shadow': 'inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 16px -6px rgba(0, 0, 0, 0.6)',
+    '--cn-cta-hover': 'brightness(0.92)'
   },
   light: {
     '--cn-panel': 'rgba(244, 244, 246, 0.84)',
@@ -209,7 +213,11 @@ export default function CardNav({
   onLinkClick,
   ariaLabel = 'Main',
   className = '',
-  style
+  style,
+  searchOpen = false,
+  onSearchOpenChange,
+  searchBar,
+  searchItems
 }: CardNavProps) {
   const contentId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -228,9 +236,10 @@ export default function CardNav({
   const controlled = openProp !== undefined;
   const hasCta = Boolean(cta);
   const open = controlled ? openProp : openState;
+  const isExpanded = open || searchOpen;
 
   const settings = {
-    open,
+    open: isExpanded,
     cardEffect,
     stagger: clamp(stagger, 0, 0.3),
     bounce: clamp(bounce, 0, 1),
@@ -373,10 +382,10 @@ export default function CardNav({
   }, [items.length, hasCta, narrow]);
 
   useIsomorphicLayoutEffect(() => {
-    if (open) setShown(true);
+    if (isExpanded) setShown(true);
     engineRef.current?.refresh();
     engineRef.current?.wake();
-  }, [open]);
+  }, [isExpanded]);
 
   useEffect(() => {
     engineRef.current?.refresh();
@@ -393,15 +402,17 @@ export default function CardNav({
   }, []);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!isExpanded) return undefined;
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target;
       if (target instanceof Node && rootRef.current?.contains(target)) return;
       setOpenRef.current(false);
+      onSearchOpenChange?.(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       setOpenRef.current(false);
+      onSearchOpenChange?.(false);
       menuRef.current?.focus();
     };
     document.addEventListener('pointerdown', onPointerDown);
@@ -410,7 +421,7 @@ export default function CardNav({
       document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [open]);
+  }, [isExpanded]);
 
   useEffect(() => () => window.clearTimeout(leaveRef.current as number), []);
 
@@ -484,72 +495,78 @@ export default function CardNav({
       target.label
     );
 
+  const displayItems = searchOpen && searchItems ? searchItems : items;
+
   return (
     <div
       ref={rootRef}
       className={[ROOT, className].filter(Boolean).join(' ')}
-      data-open={open ? '' : undefined}
-      data-shown={shown || open ? '' : undefined}
+      data-open={isExpanded ? '' : undefined}
+      data-shown={shown || isExpanded ? '' : undefined}
       data-narrow={narrow ? '' : undefined}
       style={{ ...(vars as any), ...style }}
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
     >
       <nav ref={panelRef} className={PANEL} aria-label={ariaLabel}>
-        <div ref={barRef} className={BAR}>
-          <button
-            ref={menuRef}
-            type="button"
-            className={MENU}
-            data-icon-only={menuLabel ? undefined : ''}
-            aria-expanded={open}
-            aria-controls={contentId}
-            aria-label={menuLabel ? undefined : open ? 'Close menu' : 'Open menu'}
-            onClick={() => setOpen(!open)}
-          >
-            <span className={BURGER} aria-hidden="true">
-              <span className={LINE_TOP} />
-              <span className={LINE_BOTTOM} />
-            </span>
-            {menuLabel && (
-              <span className={MENU_LABEL}>
-                <span className={WORD_OPEN} aria-hidden={open}>
-                  Menu
+        <div ref={barRef} className={BAR} data-search={searchOpen ? '' : undefined}>
+          {searchOpen && searchBar ? (
+            searchBar
+          ) : (
+            <>
+              <button
+                ref={menuRef}
+                type="button"
+                className={MENU}
+                data-icon-only={menuLabel ? undefined : ''}
+                aria-expanded={open}
+                aria-controls={contentId}
+                aria-label={menuLabel ? undefined : open ? 'Close menu' : 'Open menu'}
+                onClick={() => setOpen(!open)}
+              >
+                <span className={BURGER} aria-hidden="true">
+                  <span className={LINE_TOP} />
+                  <span className={LINE_BOTTOM} />
                 </span>
-                <span className={WORD_CLOSE} aria-hidden={!open}>
-                  Close
-                </span>
-              </span>
-            )}
-          </button>
+                {menuLabel && (
+                  <span className={MENU_LABEL}>
+                    <span className={WORD_OPEN} aria-hidden={open}>
+                      Menu
+                    </span>
+                    <span className={WORD_CLOSE} aria-hidden={!open}>
+                      Close
+                    </span>
+                  </span>
+                )}
+              </button>
 
-          {logo && (
-            React.isValidElement(logo) && ((logo.props as any)?.href || (logo as any).type === 'a') ? (
-              <div className={LOGO}>{logo}</div>
-            ) : (
-              <LinkComponent href={logoHref} className={LOGO} aria-label={logoAlt}>
-                {typeof logo === 'string' ? <img src={logo} alt="" draggable={false} /> : logo}
-              </LinkComponent>
-            )
+              {logo && (
+                React.isValidElement(logo) && ((logo.props as any)?.href || (logo as any).type === 'a') ? (
+                  <div className={LOGO}>{logo}</div>
+                ) : (
+                  <LinkComponent href={logoHref} className={LOGO} aria-label={logoAlt}>
+                    {typeof logo === 'string' ? <img src={logo} alt="" draggable={false} /> : logo}
+                  </LinkComponent>
+                )
+              )}
+
+              <div className={ACTIONS}>
+                {actions && !narrow && actions}
+                {cta && !narrow && ctaButton(cta, false)}
+              </div>
+            </>
           )}
-
-          <div className={ACTIONS}>
-            {actions && !narrow && actions}
-            {cta && !narrow && ctaButton(cta, false)}
-          </div>
         </div>
 
-        <div ref={contentRef} id={contentId} className={CONTENT} aria-hidden={!open}>
+        <div ref={contentRef} id={contentId} className={CONTENT} aria-hidden={!isExpanded}>
           <div className={CARDS}>
-            {items.map((item, index) => (
+            {displayItems.map((item, index) => (
               <div
                 key={`${item.label}-${index}`}
                 ref={element => {
                   cardRefs.current[index] = element;
                 }}
                 className={CARD}
-                data-tinted={item.bgColor ? '' : undefined}
-                style={item.bgColor ? { background: item.bgColor, color: item.textColor } : undefined}
               >
                 <div className={CARD_HEAD}>
                   <span className={LABEL}>{item.label}</span>
@@ -563,11 +580,12 @@ export default function CardNav({
                         {
                           className: LINK,
                           'aria-label': link.ariaLabel,
-                          tabIndex: open ? undefined : -1,
+                          tabIndex: isExpanded ? undefined : -1,
                           onClick: (event: React.MouseEvent) => {
                             link.onClick?.(event);
                             onLinkClick?.(link, item, event);
-                            setOpen(false);
+                            if (searchOpen) onSearchOpenChange?.(false);
+                            else setOpen(false);
                           }
                         },
                         <>
@@ -576,7 +594,7 @@ export default function CardNav({
                             <HugeiconsIcon className={ARROW_IN} icon={ArrowUpRight01Icon} size={14} strokeWidth={2} />
                           </span>
                           {link.badge && (
-                            <span className="px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#10b981] bg-[#10b981]/15 border border-[#10b981]/40 rounded-[3px] uppercase leading-none mr-1 shadow-[0_0_6px_rgba(16,185,129,0.25)]">
+                            <span className="px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white bg-white/10 border border-white/20 rounded-[3px] uppercase leading-none mr-1">
                               {link.badge}
                             </span>
                           )}

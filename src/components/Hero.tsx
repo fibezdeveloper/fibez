@@ -34,16 +34,6 @@ export default function Hero({
           {/* Left Column: Editorial Display Typography */}
           <div className="lg:col-span-7 flex flex-col items-start text-left space-y-7 pointer-events-auto">
             
-            {/* Announcement Pill */}
-            <a
-              href="#catalog"
-              className="hero-pill group inline-flex items-center gap-2 px-3.5 py-1.5 backdrop-blur-md bg-black/40"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#9281f7]" />
-              <span className="text-[13px] text-[#f0f0f0]">Announcing Fibez Vault 2.0</span>
-              <span className="text-[#a1a4a5] group-hover:text-white transition-colors">→</span>
-            </a>
-
             {/* Editorial Serif Display Headline */}
             <h1 className="font-serif text-[56px] sm:text-[72px] lg:text-[84px] leading-[1.02] tracking-[-0.01em] text-white font-normal drop-shadow-sm">
               Digital delivery <br />

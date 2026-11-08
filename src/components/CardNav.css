@@ -47,6 +47,11 @@
   box-sizing: border-box;
 }
 
+.card-nav__bar[data-search] {
+  display: flex;
+  align-items: center;
+}
+
 .card-nav__menu {
   display: inline-flex;
   align-items: center;

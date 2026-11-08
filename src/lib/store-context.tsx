@@ -9,6 +9,8 @@ export interface CartItem {
   product: ProductItem;
   durationLabel: string;
   durationDays: number;
+  durationIndex: number;
+  selectedISP?: string;
   quantity: number;
   priceLKR: number;
   priceUSD: number;
@@ -18,9 +20,11 @@ interface StoreContextType {
   currency: 'LKR' | 'USD';
   setCurrency: (currency: 'LKR' | 'USD') => void;
   cart: CartItem[];
-  addToCart: (product: ProductItem, durationIndex?: number) => void;
+  addToCart: (product: ProductItem, durationIndex?: number, selectedISP?: string) => void;
   removeFromCart: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
+  updateDuration: (cartItemId: string, durationIndex: number) => void;
+  updateISP: (cartItemId: string, isp: string) => void;
   clearCart: () => void;
   cartCount: number;
   cartTotalLKR: number;
@@ -80,7 +84,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setCurrencyState(curr);
   };
 
-  const addToCart = (product: ProductItem, durationIndex: number = 0) => {
+  const addToCart = (product: ProductItem, durationIndex: number = 0, selectedISP?: string) => {
     const selectedDuration = product.durations[durationIndex] || product.durations[0];
     const multiplier = selectedDuration?.multiplier || 1;
     const priceLKR = Math.round(product.priceLKR * multiplier);
@@ -102,14 +106,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           product,
           durationLabel: selectedDuration?.label || '1 Month',
           durationDays: selectedDuration?.days || 30,
+          durationIndex,
+          selectedISP: selectedISP || (product.category === 'vpn' ? 'SLT Fiber / Mobitel / Dialog' : undefined),
           quantity: 1,
           priceLKR,
           priceUSD,
         },
       ];
     });
-
-    setIsCartOpen(true);
   };
 
   const removeFromCart = (cartItemId: string) => {
@@ -123,6 +127,32 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     setCart((prev) =>
       prev.map((item) => (item.id === cartItemId ? { ...item, quantity } : item))
+    );
+  };
+
+  const updateDuration = (cartItemId: string, durationIndex: number) => {
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.id !== cartItemId) return item;
+        const dur = item.product.durations[durationIndex] || item.product.durations[0];
+        const multiplier = dur?.multiplier || 1;
+        const priceLKR = Math.round(item.product.priceLKR * multiplier);
+        const priceUSD = parseFloat((item.product.priceUSD * multiplier).toFixed(2));
+        return {
+          ...item,
+          durationIndex,
+          durationLabel: dur.label,
+          durationDays: dur.days,
+          priceLKR,
+          priceUSD,
+        };
+      })
+    );
+  };
+
+  const updateISP = (cartItemId: string, isp: string) => {
+    setCart((prev) =>
+      prev.map((item) => (item.id === cartItemId ? { ...item, selectedISP: isp } : item))
     );
   };
 
@@ -159,6 +189,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         addToCart,
         removeFromCart,
         updateQuantity,
+        updateDuration,
+        updateISP,
         clearCart,
         cartCount,
         cartTotalLKR,

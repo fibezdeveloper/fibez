@@ -344,6 +344,16 @@ function ProductDetailContent({
                   </>
                 )}
               </button>
+
+              {isAdded && (
+                <Link
+                  href="/cart"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#17122b] border border-[#2d234d] hover:border-[#9281f7] text-xs font-mono text-[#9281f7] hover:text-white transition-all flex items-center justify-center gap-1.5 animate-in fade-in"
+                >
+                  <span>Go to Dedicated Cart</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              )}
             </div>
 
             {/* Security Guarantee Footnote */}

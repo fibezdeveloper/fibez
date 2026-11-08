@@ -36,14 +36,12 @@ export default function FibezLogo({
 }) {
   return (
     <div className="flex items-center gap-2.5 select-none group">
-      <div className="w-7 h-7 rounded-[6px] bg-black border border-[#292d30] group-hover:border-[#9281f7] flex items-center justify-center transition-colors shrink-0">
-        <FibezMonogram className="w-4 h-4 text-white group-hover:text-[#9281f7] transition-colors" />
+      <div className="w-7 h-7 rounded-[6px] bg-black border border-[#292d30] group-hover:border-white/40 flex items-center justify-center transition-colors shrink-0">
+        <FibezMonogram className="w-4 h-4 text-white transition-colors" />
       </div>
       <div className="flex items-baseline gap-2">
-        <span className="font-mono text-[15px] font-semibold tracking-[0.2em] text-white inline-flex items-baseline">
-          <span>F</span>
-          <span className="text-[1.28em] font-extrabold text-[#9281f7] leading-none mx-[0.5px]">I</span>
-          <span>BEZ</span>
+        <span className="font-mono text-[18px] font-bold tracking-[0.22em] text-white select-none">
+          FIBEZ
         </span>
         {withVersion && (
           <span className="font-mono text-[10px] tracking-[0.16em] text-[#6e727a] uppercase">
