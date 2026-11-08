@@ -60,22 +60,22 @@ export interface CardNavProps {
 
 const THEMES = {
   dark: {
-    '--cn-panel': 'rgba(18, 15, 26, 0.82)',
-    '--cn-solid': '#161320',
+    '--cn-panel': 'rgba(10, 10, 12, 0.94)',
+    '--cn-solid': '#0a0a0c',
     '--cn-edge': 'rgba(255, 255, 255, 0.08)',
-    '--cn-highlight': 'rgba(255, 255, 255, 0.08)',
-    '--cn-shadow': '0 24px 48px -20px rgba(0, 0, 0, 0.8), 0 6px 16px -8px rgba(0, 0, 0, 0.5)',
+    '--cn-highlight': 'rgba(255, 255, 255, 0.06)',
+    '--cn-shadow': '0 24px 48px -20px rgba(0, 0, 0, 0.85), 0 6px 16px -8px rgba(0, 0, 0, 0.6)',
     '--cn-text': '#f4f4f5',
     '--cn-muted': 'rgba(244, 244, 245, 0.56)',
-    '--cn-hover': 'rgba(255, 255, 255, 0.08)',
-    '--cn-ring': 'rgba(99, 91, 255, 0.65)',
-    '--cn-tile': 'linear-gradient(180deg, #231f33 0%, #171424 100%)',
+    '--cn-hover': 'rgba(255, 255, 255, 0.06)',
+    '--cn-ring': 'rgba(146, 129, 247, 0.65)',
+    '--cn-tile': '#111216',
     '--cn-tile-rim':
-      'inset 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 10px -4px rgba(0, 0, 0, 0.6)',
-    '--cn-cta': 'linear-gradient(180deg, #635BFF 0%, #5249e6 100%)',
-    '--cn-cta-ink': '#ffffff',
-    '--cn-cta-shadow': 'inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 6px 16px -6px rgba(99, 91, 255, 0.6)',
-    '--cn-cta-hover': 'brightness(1.12)'
+      'inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 10px -4px rgba(0, 0, 0, 0.6)',
+    '--cn-cta': '#9281f7',
+    '--cn-cta-ink': '#000000',
+    '--cn-cta-shadow': '0 4px 12px rgba(146, 129, 247, 0.35)',
+    '--cn-cta-hover': 'brightness(1.1)'
   },
   light: {
     '--cn-panel': 'rgba(244, 244, 246, 0.84)',
@@ -250,7 +250,7 @@ export default function CardNav({
     '--cn-logo': '26px',
     '--cn-card': `${cardHeight}px`
   };
-  if (surface === 'glass') vars['--cn-blur'] = 'blur(20px) saturate(1.6)';
+  if (surface === 'glass') vars['--cn-blur'] = 'blur(16px)';
   if (surface === 'solid') {
     vars['--cn-panel'] = palette['--cn-solid'];
     vars['--cn-blur'] = 'none';
@@ -283,12 +283,20 @@ export default function CardNav({
       const s = settingsRef.current;
       state.bar = parseFloat(getComputedStyle(panel).getPropertyValue('--cn-bar')) || 62;
       panel.style.height = `${state.bar + Math.max(0, state.p) * state.height}px`;
+
+      // Clip cards container strictly to the expanding panel height so cards never outpace background
+      content.style.clipPath = `inset(0px 0px ${Math.max(0, (1 - state.p) * state.height)}px 0px)`;
+
       const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[];
       const count = cards.length;
-      const lag = count > 1 ? Math.min(s.stagger, 0.7 / (count - 1)) : 0;
+      const lag = count > 1 ? Math.min(s.stagger, 0.45 / (count - 1)) : 0;
       const span = 1 - lag * (count - 1);
+
+      // Delay card animation until background panel has begun expanding
+      const cardProgress = clamp((state.p - 0.18) / 0.82, 0, 1);
+
       cards.forEach((card, index) => {
-        const local = clamp((state.p - index * lag) / Math.max(span, 0.05), 0, 1);
+        const local = clamp((cardProgress - index * lag) / Math.max(span, 0.05), 0, 1);
         const e = easeOut(local);
         if (s.cardEffect === 'unfold') {
           card.style.transform = `translateY(${(1 - e) * -10}px) rotateX(${(1 - e) * -72}deg)`;
@@ -299,7 +307,7 @@ export default function CardNav({
           card.style.opacity = `${e}`;
           card.style.filter = e < 0.999 ? `blur(${(1 - e) * 6}px)` : '';
         } else {
-          card.style.transform = `translateY(${(1 - e) * 26}px) scale(${0.97 + 0.03 * e})`;
+          card.style.transform = `translateY(${(1 - e) * 16}px) scale(${0.98 + 0.02 * e})`;
           card.style.opacity = `${e}`;
           card.style.filter = '';
         }

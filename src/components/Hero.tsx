@@ -22,8 +22,8 @@ export default function Hero({
           cellSize={18}
           density={0.8}
         />
-        {/* Subtle atmospheric vignette so foreground typography stands out */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/50 via-transparent to-black" />
+        {/* Deep vignette at the top so top bar is pure clean dark with no weird gradient bleed */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black via-black/40 to-black" />
       </div>
 
       {/* Hero Foreground Content */}

@@ -231,13 +231,15 @@ export default function Navbar(props: NavbarProps) {
             cardEffect="rise"
             stagger={0.1}
             speed={1}
-            /* Strictly FIBEZ wordmark only — no icon box, no monogram, no VAULT */
+            /* Strictly FIBEZ wordmark only — with larger iconic I */
             logo={
               <Link
                 href="/"
-                className="font-mono text-[16px] font-semibold tracking-[0.24em] text-white hover:text-[#9281f7] transition-colors select-none"
+                className="font-mono text-[16px] font-bold tracking-[0.22em] text-white hover:text-[#9281f7] transition-colors select-none inline-flex items-baseline"
               >
-                FIBEZ
+                <span>F</span>
+                <span className="text-[1.32em] font-extrabold text-[#9281f7] leading-none mx-[0.5px]">I</span>
+                <span>BEZ</span>
               </Link>
             }
             logoHref="/"
@@ -248,7 +250,7 @@ export default function Navbar(props: NavbarProps) {
                 <button
                   type="button"
                   onClick={() => setSearchMenuOpen(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#141026]/90 border border-white/10 text-xs text-[#8e87aa] hover:text-white hover:border-[#9281f7]/50 transition-all cursor-pointer shadow-sm"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111215] border border-[#292d30] text-xs text-[#8e87aa] hover:text-white hover:border-[#9281f7]/50 transition-all cursor-pointer shadow-sm"
                   title="Search products (⌘K)"
                 >
                   <Search className="w-3.5 h-3.5 text-[#9281f7]" />
@@ -264,7 +266,7 @@ export default function Navbar(props: NavbarProps) {
                   actions={dropdownActions}
                   anchor="end"
                   menuWidth={280}
-                  fill="#151224"
+                  fill="#111215"
                   ink="#ffffff"
                   danger="#ff453a"
                   gap={12}

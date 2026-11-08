@@ -32,7 +32,6 @@ export interface GooeyDropdownAction {
   id: string;
   label: string;
   icon?: ReactNode;
-  shortcut?: string;
   detail?: string;
   divider?: boolean;
   destructive?: boolean;
@@ -76,31 +75,26 @@ export const DEFAULT_ACTIONS: GooeyDropdownAction[] = [
     id: "rename",
     label: "Rename",
     icon: <Pencil {...ICON_PROPS} />,
-    shortcut: "R",
   },
   {
     id: "duplicate",
     label: "Duplicate",
     icon: <Copy {...ICON_PROPS} />,
-    shortcut: "D",
   },
   {
     id: "move",
     label: "Move to folder",
     icon: <FolderSymlink {...ICON_PROPS} />,
-    shortcut: "M",
   },
   {
     id: "archive",
     label: "Archive",
     icon: <Archive {...ICON_PROPS} />,
-    shortcut: "A",
   },
   {
     id: "delete",
     label: "Delete",
     icon: <Trash2 {...ICON_PROPS} />,
-    shortcut: "⌫",
     divider: true,
     destructive: true,
   },
@@ -449,23 +443,6 @@ export function GooeyDropdown({
           } else if (e.key === "Tab") {
             closeMenu(false);
             return;
-          } else if (!e.metaKey && !e.ctrlKey && !e.altKey) {
-            // Shortcut execution: single-character or Backspace/Delete
-            const matchedAction = actions.find((item) => {
-              if (!item.shortcut) return false;
-              if (item.shortcut === "⌫") {
-                return e.key === "Backspace" || e.key === "Delete";
-              }
-              return (
-                item.shortcut.length === 1 &&
-                item.shortcut.toLowerCase() === e.key.toLowerCase()
-              );
-            });
-            if (matchedAction) {
-              e.preventDefault();
-              handleActionSelect(matchedAction);
-              return;
-            }
           }
 
           if (nextIndex >= 0 && validItems[nextIndex]) {
@@ -537,18 +514,6 @@ export function GooeyDropdown({
                     </span>
                   )}
                 </span>
-                {action.shortcut && (
-                  <kbd
-                    className={cn(
-                      "flex h-5 min-w-5 shrink-0 items-center justify-center rounded-md px-1.5 font-sans text-[11px] font-medium",
-                      action.destructive
-                        ? "bg-[color-mix(in_oklab,currentColor_12%,transparent)]"
-                        : "bg-[color-mix(in_oklab,var(--gooey-dropdown-ink)_9%,transparent)] text-current/60"
-                    )}
-                  >
-                    {action.shortcut}
-                  </kbd>
-                )}
               </button>
             </div>
           ))}
