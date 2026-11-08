@@ -1,214 +1,352 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { FibezMonogram } from './FibezLogo';
+import { runCipherDecode } from '@/lib/cipher';
+import { Menu, X, ArrowUpRight } from 'lucide-react';
 import { useCurrency } from '@/context/CurrencyContext';
-import { KeyRound, ShieldCheck, MessageCircle, Menu, X, Terminal } from 'lucide-react';
+
+const RBAC_ROLES = ['CUSTOMER', 'RESELLER', 'ADMIN'];
 
 export default function Navbar() {
   const { currency, toggleCurrency } = useCurrency();
+  const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  useEffect(() => {
+    const handleRoleUpdate = (e: any) => {
+      const role = String(e.detail || '').toUpperCase();
+      const idx = RBAC_ROLES.indexOf(role);
+      if (idx !== -1) {
+        setCurrentRoleIndex(idx);
+      }
+    };
+    window.addEventListener('fibez:rbac-role', handleRoleUpdate);
+    return () => window.removeEventListener('fibez:rbac-role', handleRoleUpdate);
+  }, []);
+
+  const cycleRole = () => {
+    const nextIdx = (currentRoleIndex + 1) % RBAC_ROLES.length;
+    setCurrentRoleIndex(nextIdx);
+    const nextRole = RBAC_ROLES[nextIdx].toLowerCase();
+    window.dispatchEvent(new CustomEvent('fibez:set-role', { detail: nextRole }));
+    window.dispatchEvent(new CustomEvent('fibez:rbac-role', { detail: nextRole }));
+  };
+
+  const handleBrandHover = (e: React.MouseEvent<HTMLSpanElement>) => {
+    runCipherDecode(e.currentTarget, 'FIBEZ', 350);
+  };
+
+  const currentRole = RBAC_ROLES[currentRoleIndex];
+
   return (
-    <header className="sticky top-0 z-50 w-full bg-[var(--color-void-black)]/95 backdrop-blur-md border-b border-[var(--color-graphite)] transition-all">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        
-        {/* Brand Wordmark & Emblem */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative w-8 h-8 rounded-[4px] overflow-hidden bg-[var(--color-onyx)] border border-[var(--color-graphite)] flex items-center justify-center group-hover:border-[var(--color-accent)] transition-colors">
-            <Image
-              src="/brand/fibez-logo-dark.png"
-              alt="Fibez Logo"
-              width={32}
-              height={32}
-              className="object-contain"
-              priority
-            />
+    <>
+      <header className="sticky top-0 left-0 right-0 z-[100] h-[56px] bg-voidBlack border-b border-graphite select-none">
+        <div className="w-full h-full grid grid-cols-2 lg:grid-cols-[240px_1fr_190px] xl:grid-cols-[270px_1fr_210px]">
+          
+          {/* Left Brand Cell: Custom FIBEZ Geometric 'FZ' Monogram + Tech Wordmark */}
+          <Link
+            href="/#hero-scroll-track"
+            className="h-full px-5 lg:px-7 border-r border-graphite flex items-center gap-3.5 group focus:outline-none hover:bg-onyx/40 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-[2px] bg-onyx border border-graphite group-hover:border-signalLime flex items-center justify-center transition-colors shrink-0">
+              <FibezMonogram className="w-5 h-5 text-chalk group-hover:text-signalLime transition-colors" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span
+                onMouseEnter={handleBrandHover}
+                data-text="FIBEZ"
+                className="font-mono text-[16px] font-semibold tracking-[0.26em] text-chalk group-hover:text-signalLime transition-colors"
+              >
+                FIBEZ
+              </span>
+              <span className="hidden xl:inline-block font-mono text-[8px] tracking-[0.2em] text-ash uppercase">
+                v4.2
+              </span>
+            </div>
+          </Link>
+
+          {/* Center 5 Equal-Width Grid Cells */}
+          <nav className="hidden lg:grid lg:grid-cols-5 h-full">
+            
+            {/* Cell 1: PRODUCTS */}
+            <div className="relative group h-full border-r border-graphite flex items-center">
+              <a
+                href="/#provisioning-bench"
+                className="w-full h-full px-5 text-left font-sans text-[11px] font-medium tracking-[0.2em] text-chalk group-hover:text-signalLime group-hover:bg-onyx/40 uppercase transition-colors flex items-center justify-between"
+              >
+                <span
+                  onMouseEnter={(e) => runCipherDecode(e.currentTarget, 'PRODUCTS', 350)}
+                  data-text="PRODUCTS"
+                >
+                  PRODUCTS
+                </span>
+              </a>
+              {/* Flush Bordered Dropdown Table */}
+              <div className="absolute left-[-1px] right-[-1px] top-[55px] bg-carbon border border-graphite opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-100 divide-y divide-graphite z-50 shadow-2xl">
+                <a
+                  href="/#provisioning-bench"
+                  className="block px-5 py-3.5 font-sans text-[10px] font-medium tracking-[0.2em] text-bone hover:text-signalLime hover:bg-onyx uppercase transition-colors"
+                >
+                  V2RAY / XRAY NODES
+                </a>
+                <a
+                  href="/#provisioning-bench"
+                  className="block px-5 py-3.5 font-sans text-[10px] font-medium tracking-[0.2em] text-bone hover:text-signalLime hover:bg-onyx uppercase transition-colors"
+                >
+                  CLOUD VPS INSTANCES
+                </a>
+                <a
+                  href="/#provisioning-bench"
+                  className="block px-5 py-3.5 font-sans text-[10px] font-medium tracking-[0.2em] text-bone hover:text-signalLime hover:bg-onyx uppercase transition-colors"
+                >
+                  PREMIUM SUBSCRIPTIONS
+                </a>
+                <a
+                  href="/#provisioning-bench"
+                  className="block px-5 py-3.5 font-sans text-[10px] font-medium tracking-[0.2em] text-bone hover:text-signalLime hover:bg-onyx uppercase transition-colors"
+                >
+                  GAME KEYS &amp; GIFT CARDS
+                </a>
+                <Link
+                  href="/admin"
+                  className="block px-5 py-3.5 font-sans text-[10px] font-medium tracking-[0.2em] text-bone hover:text-signalLime hover:bg-onyx uppercase transition-colors"
+                >
+                  ADMIN COMMAND CENTER
+                </Link>
+                <Link
+                  href="/dashboard/vault"
+                  className="block px-5 py-3.5 font-sans text-[10px] font-medium tracking-[0.2em] text-bone hover:text-signalLime hover:bg-onyx uppercase transition-colors"
+                >
+                  CUSTOMER KEY VAULT
+                </Link>
+              </div>
+            </div>
+
+            {/* Cell 2: TECHNOLOGY */}
+            <div className="relative group h-full border-r border-graphite flex items-center">
+              <a
+                href="/#provisioning-bench"
+                className="w-full h-full px-5 text-left font-sans text-[11px] font-medium tracking-[0.2em] text-chalk group-hover:text-signalLime group-hover:bg-onyx/40 uppercase transition-colors flex items-center justify-between"
+              >
+                <span
+                  onMouseEnter={(e) => runCipherDecode(e.currentTarget, 'TECHNOLOGY', 350)}
+                  data-text="TECHNOLOGY"
+                >
+                  TECHNOLOGY
+                </span>
+              </a>
+              <div className="absolute left-[-1px] right-[-1px] top-[55px] bg-carbon border border-graphite opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-100 divide-y divide-graphite z-50 shadow-2xl">
+                <a
+                  href="/#provisioning-bench"
+                  className="block px-5 py-3.5 font-sans text-[10px] font-medium tracking-[0.2em] text-bone hover:text-signalLime hover:bg-onyx uppercase transition-colors"
+                >
+                  VLESS-XTLS REALITY
+                </a>
+                <a
+                  href="/#provisioning-bench"
+                  className="block px-5 py-3.5 font-sans text-[10px] font-medium tracking-[0.2em] text-bone hover:text-signalLime hover:bg-onyx uppercase transition-colors"
+                >
+                  AMD EPYC KVM ENGINE
+                </a>
+                <a
+                  href="/#rbac-console"
+                  className="block px-5 py-3.5 font-sans text-[10px] font-medium tracking-[0.2em] text-bone hover:text-signalLime hover:bg-onyx uppercase transition-colors"
+                >
+                  ZERO-LOG SECURITY MODEL
+                </a>
+              </div>
+            </div>
+
+            {/* Cell 3: ECOSYSTEM */}
+            <div className="relative group h-full border-r border-graphite flex items-center">
+              <a
+                href="/#storefront-grid"
+                className="w-full h-full px-5 font-sans text-[11px] font-medium tracking-[0.2em] text-chalk group-hover:text-signalLime group-hover:bg-onyx/40 uppercase transition-colors flex items-center"
+              >
+                <span
+                  onMouseEnter={(e) => runCipherDecode(e.currentTarget, 'ECOSYSTEM', 350)}
+                  data-text="ECOSYSTEM"
+                >
+                  ECOSYSTEM
+                </span>
+              </a>
+            </div>
+
+            {/* Cell 4: $FBZ · RBAC */}
+            <div className="relative group h-full border-r border-graphite flex items-center">
+              <div className="w-full h-full px-5 font-sans text-[11px] font-medium tracking-[0.2em] text-chalk group-hover:text-signalLime group-hover:bg-onyx/40 uppercase transition-colors flex items-center justify-between">
+                <a href="/#rbac-console" className="flex-1">
+                  <span
+                    onMouseEnter={(e) => runCipherDecode(e.currentTarget, '$FBZ · RBAC', 350)}
+                    data-text="$FBZ · RBAC"
+                  >
+                    $FBZ · RBAC
+                  </span>
+                </a>
+                <button
+                  type="button"
+                  onClick={cycleRole}
+                  title="Click to cycle RBAC role"
+                  className="hidden xl:inline-block font-mono text-[8px] tracking-[0.14em] px-1.5 py-0.5 border border-signalLime/60 text-signalLime rounded-[2px] hover:bg-signalLime hover:text-voidBlack transition-colors"
+                >
+                  {currentRole}
+                </button>
+              </div>
+            </div>
+
+            {/* Cell 5: RESOURCES */}
+            <div className="relative group h-full border-r border-graphite flex items-center">
+              <a
+                href="/#two-surfaces"
+                className="w-full h-full px-5 text-left font-sans text-[11px] font-medium tracking-[0.2em] text-chalk group-hover:text-signalLime group-hover:bg-onyx/40 uppercase transition-colors flex items-center justify-between"
+              >
+                <span
+                  onMouseEnter={(e) => runCipherDecode(e.currentTarget, 'RESOURCES', 350)}
+                  data-text="RESOURCES"
+                >
+                  RESOURCES
+                </span>
+              </a>
+              <div className="absolute left-[-1px] right-[-1px] top-[55px] bg-carbon border border-graphite opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-100 divide-y divide-graphite z-50 shadow-2xl">
+                <Link
+                  href="/dashboard/vault"
+                  className="block px-5 py-3.5 font-sans text-[10px] font-medium tracking-[0.2em] text-bone hover:text-signalLime hover:bg-onyx uppercase transition-colors"
+                >
+                  KEY VAULT
+                </Link>
+                <Link
+                  href="/admin"
+                  className="block px-5 py-3.5 font-sans text-[10px] font-medium tracking-[0.2em] text-bone hover:text-signalLime hover:bg-onyx uppercase transition-colors"
+                >
+                  ADMIN COMMAND
+                </Link>
+                <Link
+                  href="/auth/login"
+                  className="block px-5 py-3.5 font-sans text-[10px] font-medium tracking-[0.2em] text-bone hover:text-signalLime hover:bg-onyx uppercase transition-colors"
+                >
+                  AUTHENTICATION
+                </Link>
+              </div>
+            </div>
+
+          </nav>
+
+          {/* Right CTA Cell: Inset Signal Lime LAUNCH Button */}
+          <div className="h-full p-2 flex items-center justify-end bg-voidBlack">
+            {/* Currency Pill */}
+            <button
+              onClick={toggleCurrency}
+              className="hidden sm:inline-flex mr-2 px-2.5 py-1 text-[10px] font-mono tracking-wider bg-onyx border border-graphite hover:border-signalLime text-white rounded transition-colors"
+              title="Switch Currency (USD / LKR)"
+            >
+              <span className={currency === 'LKR' ? 'text-signalLime font-semibold' : 'text-ash'}>
+                LKR
+              </span>
+              <span className="text-slate mx-1">/</span>
+              <span className={currency === 'USD' ? 'text-signalLime font-semibold' : 'text-ash'}>
+                USD
+              </span>
+            </button>
+
+            {/* Desktop Launch Button */}
+            <a
+              href="/#rbac-console"
+              className="hidden lg:flex w-full h-full bg-signalLime text-voidBlack font-sans text-[11px] font-semibold tracking-[0.2em] uppercase px-5 rounded-[2px] glow-lime items-center justify-between hover:brightness-105 transition-all"
+            >
+              <span
+                onMouseEnter={(e) => runCipherDecode(e.currentTarget, 'LAUNCH', 350)}
+                data-text="LAUNCH"
+              >
+                LAUNCH
+              </span>
+              <span className="font-mono text-sm leading-none">→</span>
+            </a>
+
+            {/* Mobile Hamburger Toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 text-chalk hover:text-signalLime transition-colors"
+              aria-label="Toggle Navigation Menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
-          <div className="flex flex-col">
-            <span className="font-serif text-xl tracking-[-0.03em] font-normal text-white group-hover:text-[var(--color-accent)] transition-colors">
-              FIBEZ
-            </span>
-            <span className="text-[9px] tracking-[0.24em] uppercase text-[var(--color-ash)] -mt-1 font-mono">
-              AUTOMATED VAULT
-            </span>
-          </div>
-        </Link>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-6 text-[13px] font-medium tracking-[0.14em] uppercase">
-          <Link
-            href="/#catalog"
-            className="text-[var(--color-bone)] hover:text-[var(--color-accent)] transition-colors"
-          >
-            CATALOG
-          </Link>
-          <Link
-            href="/#v2ray"
-            className="text-[var(--color-bone)] hover:text-[var(--color-accent)] transition-colors"
-          >
-            V2RAY / VPN
-          </Link>
-          <Link
-            href="/#vps"
-            className="text-[var(--color-bone)] hover:text-[var(--color-accent)] transition-colors"
-          >
-            CLOUD VPS
-          </Link>
-          <Link
-            href="/#subscriptions"
-            className="text-[var(--color-bone)] hover:text-[var(--color-accent)] transition-colors"
-          >
-            SUBSCRIPTIONS
-          </Link>
-          <Link
-            href="/#gaming"
-            className="text-[var(--color-bone)] hover:text-[var(--color-accent)] transition-colors"
-          >
-            GAME KEYS
-          </Link>
-        </nav>
-
-        {/* Action Controls & Utilities */}
-        <div className="hidden sm:flex items-center gap-3">
-          {/* Currency Toggle */}
-          <button
-            onClick={toggleCurrency}
-            className="px-2.5 py-1 text-[11px] font-mono tracking-wider bg-[var(--color-onyx)] border border-[var(--color-graphite)] hover:border-[var(--color-accent)] text-white rounded transition-colors"
-            title="Switch Currency (USD / LKR)"
-          >
-            <span className={currency === 'LKR' ? 'text-[var(--color-accent)] font-semibold' : 'text-[var(--color-ash)]'}>
-              LKR
-            </span>
-            <span className="text-[var(--color-slate)] mx-1">/</span>
-            <span className={currency === 'USD' ? 'text-[var(--color-accent)] font-semibold' : 'text-[var(--color-ash)]'}>
-              USD
-            </span>
-          </button>
-
-          {/* WhatsApp Direct Assist */}
-          <a
-            href="https://wa.me/?text=Hello%20Fibez%20Support,%20I%20have%20an%20inquiry%20regarding%20orders."
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 text-[var(--color-ash)] hover:text-[var(--color-accent)] hover:bg-[var(--color-onyx)] rounded transition-colors"
-            title="WhatsApp Support & Inquiries"
-          >
-            <MessageCircle className="w-4 h-4 text-[#25D366]" />
-          </a>
-
-          {/* Key Vault CTA */}
-          <Link
-            href="/dashboard/vault"
-            className="btn-outlined text-[12px] py-1.5 px-3 flex items-center gap-2"
-          >
-            <KeyRound className="w-3.5 h-3.5" />
-            <span>[ KEY VAULT ]</span>
-          </Link>
-
-          {/* Admin Command Portal */}
-          <Link
-            href="/admin"
-            className="text-[11px] font-mono tracking-wider text-[var(--color-ash)] hover:text-white px-2 py-1 border border-transparent hover:border-[var(--color-graphite)] rounded flex items-center gap-1.5 transition-colors"
-            title="Admin Command Center"
-          >
-            <Terminal className="w-3.5 h-3.5 text-[var(--color-accent)]" />
-            <span>ADMIN</span>
-          </Link>
         </div>
-
-        {/* Mobile Hamburger Button */}
-        <div className="flex sm:hidden items-center gap-2">
-          <button
-            onClick={toggleCurrency}
-            className="px-2 py-1 text-[10px] font-mono bg-[var(--color-onyx)] border border-[var(--color-graphite)] text-white rounded"
-          >
-            {currency}
-          </button>
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-[var(--color-bone)] hover:text-[var(--color-accent)]"
-            aria-label="Toggle Navigation Menu"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-      </div>
+      </header>
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="sm:hidden bg-[var(--color-void-black)] border-b border-[var(--color-graphite)] px-4 py-6 flex flex-col gap-4 animate-in slide-in-from-top duration-200">
-          <nav className="flex flex-col gap-3 text-sm tracking-wider uppercase">
-            <Link
-              href="/#catalog"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-[var(--color-bone)] hover:text-[var(--color-accent)] py-1"
+        <div className="lg:hidden fixed inset-x-0 top-[56px] bg-voidBlack/95 border-b border-graphite z-50 backdrop-blur-xl p-6 divide-y divide-graphite font-mono text-xs uppercase tracking-widest">
+          <div className="py-3 flex items-center justify-between">
+            <span className="text-ash">ACTIVE ROLE</span>
+            <button
+              onClick={cycleRole}
+              className="border border-signalLime text-signalLime px-3 py-1 rounded-[2px]"
             >
-              All Products
-            </Link>
-            <Link
-              href="/#v2ray"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-[var(--color-bone)] hover:text-[var(--color-accent)] py-1"
+              {currentRole} ↻
+            </button>
+          </div>
+          <div className="py-3 flex items-center justify-between">
+            <span className="text-ash">CURRENCY</span>
+            <button
+              onClick={toggleCurrency}
+              className="border border-graphite px-3 py-1 text-chalk"
             >
-              V2Ray / VPN Tunnels
-            </Link>
-            <Link
-              href="/#vps"
+              {currency}
+            </button>
+          </div>
+          <div className="py-3 flex flex-col gap-3">
+            <a
+              href="/#provisioning-bench"
               onClick={() => setMobileMenuOpen(false)}
-              className="text-[var(--color-bone)] hover:text-[var(--color-accent)] py-1"
+              className="text-chalk hover:text-signalLime py-1"
             >
-              Cloud VPS Compute
-            </Link>
-            <Link
-              href="/#subscriptions"
+              CLI PROVISIONING BENCH
+            </a>
+            <a
+              href="/#storefront-grid"
               onClick={() => setMobileMenuOpen(false)}
-              className="text-[var(--color-bone)] hover:text-[var(--color-accent)] py-1"
+              className="text-chalk hover:text-signalLime py-1"
             >
-              Software Subscriptions
-            </Link>
-            <Link
-              href="/#gaming"
+              DIGITAL SKUS STOREFRONT
+            </a>
+            <a
+              href="/#rbac-console"
               onClick={() => setMobileMenuOpen(false)}
-              className="text-[var(--color-bone)] hover:text-[var(--color-accent)] py-1"
+              className="text-chalk hover:text-signalLime py-1"
             >
-              Game Keys & Wallet
-            </Link>
-          </nav>
-
-          <div className="pt-4 border-t border-[var(--color-graphite)] flex flex-col gap-3">
+              RBAC TELEMETRY CONSOLE
+            </a>
             <Link
               href="/dashboard/vault"
               onClick={() => setMobileMenuOpen(false)}
-              className="btn-signal text-center text-xs py-2.5 w-full flex items-center justify-center gap-2"
+              className="text-chalk hover:text-signalLime py-1 flex items-center justify-between"
             >
-              <KeyRound className="w-4 h-4" />
-              <span>ACCESS KEY VAULT</span>
+              <span>KEY VAULT</span>
+              <ArrowUpRight className="w-4 h-4 text-signalLime" />
             </Link>
-
-            <div className="flex items-center justify-between text-xs pt-2 font-mono text-[var(--color-ash)]">
-              <a
-                href="https://wa.me/?text=Hello%20Fibez%20Support"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-[#25D366]"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>WhatsApp Desk</span>
-              </a>
-              <Link
-                href="/admin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="hover:text-white"
-              >
-                Admin Command
-              </Link>
-            </div>
+            <Link
+              href="/admin"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-chalk hover:text-signalLime py-1 flex items-center justify-between"
+            >
+              <span>ADMIN COMMAND</span>
+              <ArrowUpRight className="w-4 h-4 text-signalLime" />
+            </Link>
+            <Link
+              href="/auth/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-chalk hover:text-signalLime py-1 flex items-center justify-between"
+            >
+              <span>LOGIN / REGISTER</span>
+              <ArrowUpRight className="w-4 h-4 text-signalLime" />
+            </Link>
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 }

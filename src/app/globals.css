@@ -1,11 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=PT+Serif:ital,wght@0,400;1,400&display=swap');
 @import "tailwindcss";
 
 :root {
-  /* Surface Layers */
+  /* Colors — Exact tokens from zkPass / Fibez */
   --color-void-black: #000000;
   --color-carbon: #060606;
-  --color-onyx: #1f1f1f;
   --color-graphite: #252525;
+  --color-onyx: #1f1f1f;
   --color-iron: #313131;
   --color-slate: #3d3d3d;
   --color-fog: #525252;
@@ -14,8 +15,6 @@
   --color-pearl: #c5c5c5;
   --color-bone: #e5e5e5;
   --color-chalk: #ffffff;
-
-  /* Primary Accent: Default Signal Lime (Easily modifiable) */
   --color-signal-lime: #c5ff4a;
   --color-olive-depth: #597321;
   --color-moss-shadow: #314013;
@@ -23,15 +22,25 @@
   --color-accent-glow: rgba(197, 255, 74, 0.45);
   --color-accent-subtle: rgba(197, 255, 74, 0.12);
 
-  --background: var(--color-carbon);
-  --foreground: var(--color-bone);
+  /* Typography — Font Families */
+  --font-pt-serif: 'PT Serif', 'Cormorant Garamond', ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-inter-tight: 'Inter Tight', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-jetbrains-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-ui-monospace: 'ui-monospace', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Shadows & Surfaces */
+  --shadow-sm: rgba(197, 255, 74, 0.45) 0px 0px 8px 0px;
+  --surface-canvas: #060606;
+  --surface-card: #1f1f1f;
+  --surface-raised: #252525;
+  --surface-hover: #313131;
 }
 
 @theme {
   --color-void-black: #000000;
   --color-carbon: #060606;
-  --color-onyx: #1f1f1f;
   --color-graphite: #252525;
+  --color-onyx: #1f1f1f;
   --color-iron: #313131;
   --color-slate: #3d3d3d;
   --color-fog: #525252;
@@ -50,117 +59,91 @@
   --font-mono: var(--font-jetbrains-mono), monospace;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: var(--color-signal-lime);
+  color: var(--color-void-black);
+}
+
 body {
-  background-color: #000000;
-  background-image: radial-gradient(circle, #55555540 1px, transparent 1px);
-  background-position: top center;
-  background-repeat: repeat;
-  background-size: 44px 44px;
+  background-color: var(--color-carbon);
   color: var(--color-bone);
   font-family: var(--font-inter-tight), sans-serif;
   overflow-x: hidden;
+  margin: 0;
 }
 
-/* zkPass Keyframe Animations */
-@keyframes marquee {
-  0% { transform: translateX(0); }
+/* Editorial Serif Utility — Weight 300 Whisper Authority */
+.font-editorial {
+  font-family: var(--font-pt-serif);
+  font-weight: 300;
+  font-feature-settings: "liga" on, "dlig" on;
+}
+
+/* Classified Document Metadata Stamp Utility */
+.metadata-stamp {
+  font-family: var(--font-inter-tight);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--color-ash);
+}
+
+/* Structural Dot Matrix Backgrounds */
+.bg-dot-matrix {
+  background-image: radial-gradient(#252525 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
+}
+.bg-dot-matrix-lime {
+  background-image: radial-gradient(rgba(6, 6, 6, 0.20) 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
+}
+
+/* Signal Lime Glow Token */
+.glow-lime {
+  box-shadow: var(--shadow-sm);
+}
+
+/* Continuous Horizontal Ticker Marquee */
+@keyframes marquee-scroll {
+  0% { transform: translateX(0%); }
   100% { transform: translateX(-50%); }
 }
-
-@keyframes zkBeamRight {
-  0% { left: 0; opacity: 0; }
-  15% { opacity: 1; }
-  85% { opacity: 1; }
-  100% { left: calc(100% - 28px); opacity: 0; }
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 32s linear infinite;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
 }
 
-@keyframes zkBeamLeft {
-  0% { left: calc(100% - 28px); opacity: 0; }
-  15% { opacity: 1; }
-  85% { opacity: 1; }
-  100% { left: 0; opacity: 0; }
+/* Single Clean Solid Portal Tile */
+#portal-rect-tile {
+  will-change: width, height, top, left, border-radius;
+  background-color: var(--color-signal-lime);
+  box-shadow: var(--shadow-sm);
 }
 
-@keyframes zkSecurityRotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes zkSecurityRotateReverse {
-  from { transform: rotate(360deg); }
-  to { transform: rotate(0deg); }
-}
-
-@keyframes caretBlink {
-  0%, 49% { opacity: 1; }
-  50%, 100% { opacity: 0; }
-}
-
-/* Interactive sliding row effect from zkPass component N9 */
-.zk-row-hover {
-  position: relative;
-  transition: background 220ms ease, padding-left 220ms ease, border-color 220ms ease;
-  padding-left: 24px;
-}
-.zk-row-hover:hover {
-  background: rgba(197, 255, 74, 0.06);
-  padding-left: 40px;
-}
-.zk-row-hover::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 0;
-  background: var(--color-accent);
-  transition: width 220ms ease;
-}
-.zk-row-hover:hover::before {
-  width: 3.5px;
-}
-.zk-row-hover:hover .zk-row-title {
-  color: var(--color-accent);
-}
-
-/* Cyber laser beam sweeping across border */
-.zk-beam-container {
-  position: relative;
-  overflow: hidden;
-}
-.zk-beam-bar {
-  position: absolute;
-  top: 0;
-  height: 2px;
-  width: 36px;
-  background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
-  box-shadow: 0 0 8px 1px var(--color-accent-glow);
-  animation: zkBeamRight 3.5s ease-in-out infinite;
-}
-
-/* Custom Selection */
-::selection {
-  background: var(--color-accent);
-  color: #000000;
-}
-
-/* Subtle Scrollbar */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-carbon);
+  background: var(--color-void-black);
 }
 ::-webkit-scrollbar-thumb {
   background: var(--color-graphite);
-  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-iron);
+  background: var(--color-signal-lime);
 }
 
-/* Signal Lime Glowing Button */
+/* Button & Pill Utilities */
 .btn-signal {
   background-color: var(--color-accent);
   color: #000000;
@@ -180,11 +163,7 @@ body {
   box-shadow: 0 0 18px 2px var(--color-accent-glow);
   filter: brightness(1.05);
 }
-.btn-signal:active {
-  transform: translateY(0);
-}
 
-/* Outlined Lime Button */
 .btn-outlined {
   background: transparent;
   color: var(--color-accent);
@@ -205,20 +184,6 @@ body {
   box-shadow: 0 0 14px 1px var(--color-accent-glow);
 }
 
-/* Ghost Button */
-.btn-ghost {
-  background: transparent;
-  color: #ffffff;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  padding: 8px 16px;
-  transition: color 0.15s ease;
-}
-.btn-ghost:hover {
-  color: var(--color-accent);
-}
-
-/* Sharp Card */
 .card-sharp {
   background-color: var(--color-onyx);
   border: 1px solid var(--color-graphite);
@@ -229,17 +194,6 @@ body {
   border-color: var(--color-slate);
 }
 
-/* Metadata Stamp Label */
-.metadata-stamp {
-  font-family: var(--font-inter-tight), sans-serif;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--color-ash);
-}
-
-/* Status Pills */
 .pill-in-stock {
   border: 1px solid var(--color-accent);
   color: var(--color-accent);
@@ -285,7 +239,6 @@ body {
   gap: 4px;
 }
 
-/* Neon Divider Line */
 .neon-divider {
   width: 100%;
   height: 6px;
