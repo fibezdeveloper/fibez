@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Providers } from "@/components/Providers";
+import InteractiveGridCanvas from "@/components/InteractiveGridCanvas";
 
 const ptSerif = PT_Serif({
   variable: "--font-pt-serif",
@@ -56,9 +57,12 @@ export default function RootLayout({
     >
       <body className="min-h-screen bg-[var(--color-carbon)] text-[var(--color-bone)] flex flex-col font-sans selection:bg-[var(--color-accent)] selection:text-black">
         <Providers>
-          <Navbar />
-          <main className="flex-1 w-full">{children}</main>
-          <Footer />
+          <InteractiveGridCanvas />
+          <div className="relative z-10 flex flex-col min-h-screen">
+            <Navbar />
+            <main className="flex-1 w-full">{children}</main>
+            <Footer />
+          </div>
         </Providers>
       </body>
     </html>

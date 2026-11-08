@@ -3,6 +3,9 @@
 import React, { useState } from 'react';
 import Hero from '@/components/Hero';
 import ProductGrid from '@/components/ProductGrid';
+import ProtocolMarquee from '@/components/ProtocolMarquee';
+import VaultArchitectureSection from '@/components/VaultArchitectureSection';
+import ComparisonTable from '@/components/ComparisonTable';
 import { PRODUCTS } from '@/lib/products-data';
 import Link from 'next/link';
 import { ShieldCheck, Cpu, KeyRound, Terminal, Lock, Globe2 } from 'lucide-react';
@@ -22,12 +25,21 @@ export default function HomePage() {
         setSelectedCategory={setSelectedCategory}
       />
 
+      {/* Infinite Protocol & Security Marquee */}
+      <ProtocolMarquee />
+
       {/* Main Product Catalog Grid */}
       <ProductGrid
         products={PRODUCTS}
         selectedCategory={selectedCategory}
         searchQuery={searchQuery}
       />
+
+      {/* Interactive Sliding Rows (zkPass N3 & N9 Architecture) */}
+      <VaultArchitectureSection />
+
+      {/* Side-by-Side Paradigm Comparison Matrix (zkPass Ns) */}
+      <ComparisonTable />
 
       {/* Editorial Feature Section: The Fibez Cryptographic Vault (Inspired by zkPass two-column content cards) */}
       <section className="max-w-[1280px] mx-auto px-4 sm:px-6 py-20 border-t border-[var(--color-graphite)]">

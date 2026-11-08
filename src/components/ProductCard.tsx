@@ -25,7 +25,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const isAvailable = totalStock > 0;
 
   return (
-    <div className="card-sharp flex flex-col justify-between p-6 sm:p-8 relative group hover:border-[var(--color-slate)] transition-all">
+    <div className="card-sharp zk-beam-container flex flex-col justify-between p-6 sm:p-8 relative group hover:border-[var(--color-slate)] transition-all">
+      <div className="zk-beam-bar opacity-0 group-hover:opacity-100 transition-opacity" />
       
       {/* Top Metadata Header */}
       <div>

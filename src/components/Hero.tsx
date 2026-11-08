@@ -2,6 +2,7 @@
 
 import React from 'react';
 import DottedGlobe from './DottedGlobe';
+import SecurityRadar from './SecurityRadar';
 import { Search, Zap, ShieldCheck, Lock, Sparkles } from 'lucide-react';
 import { CATEGORIES } from '@/lib/products-data';
 
@@ -28,9 +29,12 @@ export default function Hero({
 
       <div className="relative max-w-[1280px] mx-auto px-4 sm:px-6 flex flex-col items-center text-center z-10">
         
-        {/* Metadata Eyebrow Stamp */}
-        <div className="metadata-stamp mb-6 inline-flex items-center gap-2 px-3 py-1 bg-[var(--color-onyx)]/60 border border-[var(--color-graphite)] rounded-[2px] backdrop-blur-sm">
-          <span>[ CLASSIFIED VAULT // ZERO-LATENCY CLEARANCE ]</span>
+        {/* Metadata Eyebrow Stamp & Orbit Indicator */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="metadata-stamp inline-flex items-center gap-2 px-3.5 py-1.5 bg-[var(--color-onyx)]/80 border border-[var(--color-graphite)] rounded-[2px] backdrop-blur-sm shadow-[0_0_12px_rgba(0,0,0,0.5)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-pulse" />
+            <span>[ CLASSIFIED VAULT // ZERO-LATENCY CLEARANCE ]</span>
+          </div>
         </div>
 
         {/* Display Headline with Whisper-weight PT Serif & Italic Accent Word */}
