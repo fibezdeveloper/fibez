@@ -25,7 +25,7 @@ const TESTIMONIALS = [
 
 export default function Testimonials() {
   return (
-    <section className="w-full py-24 bg-black border-t border-[#292d30]">
+    <section id="reviews" className="w-full py-24 bg-black border-t border-[#292d30]">
       <div className="max-w-[1200px] mx-auto px-6">
         
         {/* Section Headline */}

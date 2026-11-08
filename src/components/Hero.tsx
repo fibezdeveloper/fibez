@@ -2,6 +2,7 @@
 
 import React from 'react';
 import HeroCube from '@/components/HeroCube';
+import ShapeWaves from '@/components/ShapeWaves';
 import { ArrowRight, ChevronRight, Terminal, ShieldCheck, Zap } from 'lucide-react';
 
 export default function Hero({
@@ -11,17 +12,36 @@ export default function Hero({
 }) {
   return (
     <section className="relative w-full pt-16 pb-20 md:pt-24 md:pb-32 overflow-hidden bg-black">
-      <div className="max-w-[1200px] mx-auto px-6">
+      
+      {/* Interactive ShapeWaves Background with Fibez Logo & Atmospheric Violet Tint */}
+      <div className="absolute inset-0 z-0 pointer-events-auto overflow-hidden">
+        <ShapeWaves
+          useFibezLogo={true}
+          withTint={true}
+          text="FIBEZ"
+          color="#6456c2"
+          hoverColor="#baa7ff"
+          backgroundColor="#000000"
+          speed={0.85}
+          scale={1.1}
+          glow={0.45}
+          cellSize={13}
+          fade={0.35}
+        />
+      </div>
+
+      {/* Hero Foreground Content */}
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 pointer-events-none">
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           
           {/* Left Column: Editorial Display Typography */}
-          <div className="lg:col-span-7 flex flex-col items-start text-left space-y-7">
+          <div className="lg:col-span-7 flex flex-col items-start text-left space-y-7 pointer-events-auto">
             
             {/* Announcement Pill */}
             <a
               href="#catalog"
-              className="hero-pill group inline-flex items-center gap-2 px-3.5 py-1.5"
+              className="hero-pill group inline-flex items-center gap-2 px-3.5 py-1.5 backdrop-blur-md bg-black/40"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-[#9281f7]" />
               <span className="text-[13px] text-[#f0f0f0]">Announcing Fibez Vault 2.0</span>
@@ -29,7 +49,7 @@ export default function Hero({
             </a>
 
             {/* Editorial Serif Display Headline */}
-            <h1 className="font-serif text-[56px] sm:text-[72px] lg:text-[84px] leading-[1.02] tracking-[-0.01em] text-white font-normal">
+            <h1 className="font-serif text-[56px] sm:text-[72px] lg:text-[84px] leading-[1.02] tracking-[-0.01em] text-white font-normal drop-shadow-sm">
               Digital delivery <br />
               <span className="italic font-normal text-[#f0f0f0]">for developers.</span>
             </h1>
@@ -45,7 +65,7 @@ export default function Hero({
                 onClick={onExploreCatalog || (() => {
                   document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
                 })}
-                className="btn-action-resend text-[15px] px-5 py-2.5"
+                className="btn-action-resend text-[15px] px-5 py-2.5 shadow-lg"
               >
                 <span>Explore marketplace</span>
                 <span className="text-sm">›</span>
@@ -53,7 +73,7 @@ export default function Hero({
 
               <a
                 href="#api"
-                className="btn-ghost-resend text-[15px] px-5 py-2.5 text-[#f0f0f0]"
+                className="btn-ghost-resend text-[15px] px-5 py-2.5 text-[#f0f0f0] backdrop-blur-md bg-black/40"
               >
                 <Terminal className="w-4 h-4 text-[#9281f7]" />
                 <span>API Reference</span>
@@ -61,7 +81,7 @@ export default function Hero({
             </div>
 
             {/* Minimal Metrics Row */}
-            <div className="grid grid-cols-3 gap-6 pt-6 border-t border-[#292d30] w-full max-w-lg">
+            <div className="grid grid-cols-3 gap-6 pt-6 border-t border-[#292d30] w-full max-w-lg backdrop-blur-xs">
               <div>
                 <div className="font-mono text-xl text-white font-medium">&lt; 350ms</div>
                 <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">Average dispatch</div>
@@ -79,7 +99,7 @@ export default function Hero({
           </div>
 
           {/* Right Column: WebGL Sculptural 3D Cube */}
-          <div className="lg:col-span-5 flex items-center justify-center">
+          <div className="lg:col-span-5 flex items-center justify-center pointer-events-auto">
             <div className="relative w-full max-w-[440px]">
               <HeroCube />
             </div>

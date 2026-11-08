@@ -173,7 +173,7 @@ export default function VaultDashboard() {
   };
 
   return (
-    <section className="w-full py-24 bg-black border-t border-[#292d30]">
+    <section id="vault" className="w-full py-24 bg-black border-t border-[#292d30]">
       <div className="max-w-[1200px] mx-auto px-6">
         
         {/* Top Header & Mode Toggle */}
