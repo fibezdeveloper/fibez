@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -14,9 +14,17 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const playfairDisplay = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600"],
+});
+
 export const metadata: Metadata = {
-  title: "Fibez — Digital Goods & Subscription Marketplace",
-  description: "Automated digital goods and subscription marketplace powered by Neon.",
+  title: "Fibez — Automated Digital Goods & Subscription Marketplace",
+  description:
+    "The digital delivery engine for developers. Instant automated provisioning for V2Ray VPN configurations, Cloud VPS instances, subscriptions, and game keys.",
   icons: {
     icon: "/brand/fibez-logo-dark.png",
   },
@@ -30,9 +38,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable} dark antialiased`}
+      className={`${inter.variable} ${jetbrainsMono.variable} ${playfairDisplay.variable} dark antialiased`}
     >
-      <body className="min-h-screen bg-black text-white font-sans selection:bg-[#c5ff4a] selection:text-black">
+      <body className="min-h-screen bg-black text-[#f0f0f0] font-sans selection:bg-[#9281f7] selection:text-black">
         {children}
       </body>
     </html>

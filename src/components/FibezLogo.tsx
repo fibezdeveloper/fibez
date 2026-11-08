@@ -6,7 +6,7 @@ export interface FibezLogoProps extends React.SVGProps<SVGSVGElement> {
 }
 
 export const FibezMonogram = forwardRef<SVGSVGElement, FibezLogoProps>(
-  ({ className = 'w-5 h-5', id, ...props }, ref) => {
+  ({ className = 'w-4 h-4', id, ...props }, ref) => {
     return (
       <svg
         ref={ref}
@@ -35,17 +35,17 @@ export default function FibezLogo({
   withVersion?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-3 select-none group">
-      <div className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-800 group-hover:border-[#c5ff4a] flex items-center justify-center transition-colors shrink-0">
-        <FibezMonogram className="w-5 h-5 text-white group-hover:text-[#c5ff4a] transition-colors" />
+    <div className="flex items-center gap-2.5 select-none group">
+      <div className="w-7 h-7 rounded-[6px] bg-black border border-[#292d30] group-hover:border-[#9281f7] flex items-center justify-center transition-colors shrink-0">
+        <FibezMonogram className="w-4 h-4 text-white group-hover:text-[#9281f7] transition-colors" />
       </div>
       <div className="flex items-baseline gap-2">
-        <span className="font-mono text-[16px] font-semibold tracking-[0.24em] text-white group-hover:text-[#c5ff4a] transition-colors">
+        <span className="font-mono text-[15px] font-semibold tracking-[0.2em] text-white">
           FIBEZ
         </span>
         {withVersion && (
-          <span className="font-mono text-[10px] tracking-[0.2em] text-zinc-500 uppercase">
-            v4.2
+          <span className="font-mono text-[10px] tracking-[0.16em] text-[#6e727a] uppercase">
+            VAULT
           </span>
         )}
       </div>

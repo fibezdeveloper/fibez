@@ -1,42 +1,70 @@
-import React from 'react';
-import Image from 'next/image';
-import FibezLogo, { FibezMonogram } from '@/components/FibezLogo';
+'use client';
+
+import React, { useState } from 'react';
+import Navbar from '@/components/Navbar';
+import Hero from '@/components/Hero';
+import TrustBar from '@/components/TrustBar';
+import CatalogSection from '@/components/CatalogSection';
+import CodeWindow from '@/components/CodeWindow';
+import FeaturesGrid from '@/components/FeaturesGrid';
+import VaultDashboard from '@/components/VaultDashboard';
+import Testimonials from '@/components/Testimonials';
+import Footer from '@/components/Footer';
+import AuthModal from '@/components/AuthModal';
 
 export default function HomePage() {
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+
+  const handleOpenAuth = (mode: 'login' | 'register') => {
+    setAuthMode(mode);
+    setAuthModalOpen(true);
+  };
+
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-[#050505]">
-      <div className="flex flex-col items-center max-w-lg space-y-6">
-        
-        {/* Uploaded Brand Logo */}
-        <div className="relative w-24 h-24 mb-2">
-          <Image
-            src="/brand/fibez-logo-dark.png"
-            alt="Fibez Logo"
-            fill
-            className="object-contain"
-            priority
-          />
-        </div>
+    <div className="min-h-screen bg-black text-[#f0f0f0] font-sans selection:bg-[#9281f7] selection:text-black">
+      
+      {/* Top Navigation */}
+      <Navbar onOpenAuth={handleOpenAuth} />
 
-        {/* Brand Vector Monogram & Wordmark */}
-        <FibezLogo />
+      {/* Main Content Sections */}
+      <main className="flex flex-col">
+        {/* Hero with Domaine Editorial Typography & 3D Cube */}
+        <Hero
+          onExploreCatalog={() => {
+            document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
 
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-white">
-            Fibez Marketplace
-          </h1>
-          <p className="text-sm text-zinc-400">
-            Clean slate initialized. Ready to build your digital goods &amp; subscription marketplace.
-          </p>
-        </div>
+        {/* Monochromatic Infrastructure Trust Proof */}
+        <TrustBar />
 
-        {/* Neon Status Badge */}
-        <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-zinc-800 bg-zinc-900/60 font-mono text-xs text-zinc-300">
-          <span className="w-2 h-2 rounded-full bg-[#c5ff4a] shadow-[0_0_8px_#c5ff4a] animate-pulse" />
-          <span>Neon Serverless Postgres &amp; Storage Connected</span>
-        </div>
+        {/* Automated Digital Goods Inventory Vault & Configurator */}
+        <CatalogSection />
 
-      </div>
-    </main>
+        {/* Developer Terminal Code Window & Live Provisioning Simulator */}
+        <CodeWindow />
+
+        {/* Resend 16px Bento Feature Pillars */}
+        <FeaturesGrid />
+
+        {/* Customer Key Vault Portal & Admin Command Center */}
+        <VaultDashboard />
+
+        {/* Developer Experience Testimonial Quotes */}
+        <Testimonials />
+      </main>
+
+      {/* Minimalist Resend Footer with Status Dot */}
+      <Footer />
+
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        initialMode={authMode}
+        onClose={() => setAuthModalOpen(false)}
+      />
+
+    </div>
   );
 }
