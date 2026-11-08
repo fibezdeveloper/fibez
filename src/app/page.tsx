@@ -15,17 +15,31 @@ import AuthModal from '@/components/AuthModal';
 export default function HomePage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [currency, setCurrency] = useState<'LKR' | 'USD'>('LKR');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<'all' | 'vpn' | 'vps' | 'subscription' | 'gaming'>('all');
 
   const handleOpenAuth = (mode: 'login' | 'register') => {
     setAuthMode(mode);
     setAuthModalOpen(true);
   };
 
+  const handleSelectCategory = (category: 'all' | 'vpn' | 'vps' | 'subscription' | 'gaming') => {
+    setActiveCategory(category);
+  };
+
   return (
     <div className="min-h-screen bg-black text-[#f0f0f0] font-sans selection:bg-[#9281f7] selection:text-black">
       
       {/* Top Navigation */}
-      <Navbar onOpenAuth={handleOpenAuth} />
+      <Navbar
+        onOpenAuth={handleOpenAuth}
+        currency={currency}
+        onCurrencyChange={setCurrency}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSelectCategory={handleSelectCategory}
+      />
 
       {/* Main Content Sections */}
       <main className="flex flex-col">
@@ -40,7 +54,13 @@ export default function HomePage() {
         <TrustBar />
 
         {/* Automated Digital Goods Inventory Vault & Configurator */}
-        <CatalogSection />
+        <CatalogSection
+          currency={currency}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+        />
 
         {/* Developer Terminal Code Window & Live Provisioning Simulator */}
         <CodeWindow />

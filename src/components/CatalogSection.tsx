@@ -159,10 +159,28 @@ const PRODUCTS: ProductItem[] = [
   },
 ];
 
-export default function CatalogSection() {
-  const [activeCategory, setActiveCategory] = useState<'all' | 'vpn' | 'vps' | 'subscription' | 'gaming'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+export default function CatalogSection({
+  currency = 'LKR',
+  searchQuery: externalSearchQuery,
+  onSearchQueryChange,
+  activeCategory: externalCategory,
+  onCategoryChange,
+}: {
+  currency?: 'USD' | 'LKR';
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
+  activeCategory?: 'all' | 'vpn' | 'vps' | 'subscription' | 'gaming';
+  onCategoryChange?: (category: 'all' | 'vpn' | 'vps' | 'subscription' | 'gaming') => void;
+} = {}) {
+  const [internalCategory, setInternalCategory] = useState<'all' | 'vpn' | 'vps' | 'subscription' | 'gaming'>('all');
+  const [internalSearchQuery, setInternalSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
+
+  const activeCategory = externalCategory !== undefined ? externalCategory : internalCategory;
+  const setActiveCategory = onCategoryChange || setInternalCategory;
+
+  const searchQuery = externalSearchQuery !== undefined ? externalSearchQuery : internalSearchQuery;
+  const setSearchQuery = onSearchQueryChange || setInternalSearchQuery;
 
   const filteredProducts = useMemo(() => {
     return PRODUCTS.filter((item) => {
@@ -280,10 +298,10 @@ export default function CatalogSection() {
                 <div className="pt-4 border-t border-[#292d30] flex items-center justify-between">
                   <div>
                     <div className="font-mono text-xl font-medium text-white">
-                      ${product.priceUSD.toFixed(2)}
+                      {currency === 'LKR' ? `LKR ${product.priceLKR.toLocaleString()}` : `$${product.priceUSD.toFixed(2)}`}
                     </div>
                     <div className="font-mono text-[11px] text-[#6e727a]">
-                      LKR {product.priceLKR.toLocaleString()}
+                      {currency === 'LKR' ? `$${product.priceUSD.toFixed(2)} USD` : `LKR ${product.priceLKR.toLocaleString()}`}
                     </div>
                   </div>
 
