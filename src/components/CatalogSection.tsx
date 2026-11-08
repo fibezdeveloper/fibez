@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import ProductModal from '@/components/ProductModal';
 import { ProductItem, PRODUCTS } from '@/lib/products';
 import { Search, Shield, Zap, Server, QrCode, Key, Lock, ArrowRight, Check } from 'lucide-react';
@@ -119,9 +120,11 @@ export default function CatalogSection({
                   </div>
 
                   {/* Title & Description */}
-                  <h3 className="text-xl font-normal tracking-[-0.03em] text-white group-hover:text-white transition-colors mb-2">
-                    {product.title}
-                  </h3>
+                  <Link href={`/products/${product.id}`} className="hover:text-[#9281f7] transition-colors block">
+                    <h3 className="text-xl font-normal tracking-[-0.03em] text-white transition-colors mb-2">
+                      {product.title}
+                    </h3>
+                  </Link>
                   <p className="text-[14px] leading-relaxed text-[#a1a4a5] mb-6 line-clamp-2">
                     {product.description}
                   </p>
