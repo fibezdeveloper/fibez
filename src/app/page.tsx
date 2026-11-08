@@ -1,45 +1,42 @@
-'use client';
-
 import React from 'react';
-import PortalHero from '@/components/PortalHero';
-import ProtocolMarquee from '@/components/ProtocolMarquee';
-import TwoSurfacesSection from '@/components/TwoSurfacesSection';
-import ProvisioningBench from '@/components/ProvisioningBench';
-import StorefrontGrid from '@/components/StorefrontGrid';
-import RbacConsole from '@/components/RbacConsole';
-import VaultArchitectureSection from '@/components/VaultArchitectureSection';
-import ComparisonTable from '@/components/ComparisonTable';
-import ToastNotification from '@/components/ToastNotification';
+import Image from 'next/image';
+import FibezLogo, { FibezMonogram } from '@/components/FibezLogo';
 
 export default function HomePage() {
   return (
-    <div className="w-full relative">
-      {/* 1. Hero + Clean Rectangular Portal Zoom (Sticky 300vh) */}
-      <PortalHero />
+    <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-[#050505]">
+      <div className="flex flex-col items-center max-w-lg space-y-6">
+        
+        {/* Uploaded Brand Logo */}
+        <div className="relative w-24 h-24 mb-2">
+          <Image
+            src="/brand/fibez-logo-dark.png"
+            alt="Fibez Logo"
+            fill
+            className="object-contain"
+            priority
+          />
+        </div>
 
-      {/* 2. Neon Section Divider & Horizontal Marquee Ticker */}
-      <ProtocolMarquee />
+        {/* Brand Vector Monogram & Wordmark */}
+        <FibezLogo />
 
-      {/* 3. Two Surfaces, One Engine — Cipher Scramble Cards */}
-      <TwoSurfacesSection />
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            Fibez Marketplace
+          </h1>
+          <p className="text-sm text-zinc-400">
+            Clean slate initialized. Ready to build your digital goods &amp; subscription marketplace.
+          </p>
+        </div>
 
-      {/* 4. Interactive CLI Provisioning Bench (4 FIBEZ Verticals) */}
-      <ProvisioningBench />
+        {/* Neon Status Badge */}
+        <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-zinc-800 bg-zinc-900/60 font-mono text-xs text-zinc-300">
+          <span className="w-2 h-2 rounded-full bg-[#c5ff4a] shadow-[0_0_8px_#c5ff4a] animate-pulse" />
+          <span>Neon Serverless Postgres &amp; Storage Connected</span>
+        </div>
 
-      {/* 5. Live Marketplace Catalog Grid (Instant Checkout & Mint) */}
-      <StorefrontGrid />
-
-      {/* 6. Interactive Sliding Rows Architecture */}
-      <VaultArchitectureSection />
-
-      {/* 7. Side-by-Side Paradigm Comparison Matrix */}
-      <ComparisonTable />
-
-      {/* 8. Role-Based Access Control (RBAC) Live Command Console */}
-      <RbacConsole />
-
-      {/* 9. Instant Delivery Floating Toast Notification */}
-      <ToastNotification />
-    </div>
+      </div>
+    </main>
   );
 }
