@@ -11,6 +11,7 @@ import VaultDashboard from '@/components/VaultDashboard';
 import Testimonials from '@/components/Testimonials';
 import Footer from '@/components/Footer';
 import AuthModal from '@/components/AuthModal';
+import BackToTop from '@/components/BackToTop';
 
 export default function HomePage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -84,6 +85,9 @@ export default function HomePage() {
         initialMode={authMode}
         onClose={() => setAuthModalOpen(false)}
       />
+
+      {/* Floating React Bits SlingButton (Back to Top) */}
+      <BackToTop />
 
     </div>
   );
