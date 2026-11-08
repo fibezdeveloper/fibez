@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import AsciiHandsCanvas from './AsciiHandsCanvas';
+import SpinningGlobeCanvas from './SpinningGlobeCanvas';
 import { FibezMonogram } from './FibezLogo';
 import Link from 'next/link';
 
@@ -42,7 +42,6 @@ export default function PortalHero() {
       if (rawProgress > 1.02) {
         portalTile.style.display = 'none';
         limePortalContent.style.display = 'none';
-        window.dispatchEvent(new CustomEvent('fibez:portal-stage', { detail: 'SCROLL: MARKETPLACE' }));
         return;
       } else {
         portalTile.style.display = 'flex';
@@ -75,11 +74,6 @@ export default function PortalHero() {
         cx = lerp(baseCx, vw * 0.5, ease);
         cy = lerp(baseCy, vh * 0.54, ease);
         radius = lerp(4, 2, ease);
-        window.dispatchEvent(
-          new CustomEvent('fibez:portal-stage', {
-            detail: p < 0.05 ? '00:00 — FIBEZ LOGO TILE (72×72)' : `00:10 — RECTANGLE (${Math.round(w)}×${Math.round(h)})`
-          })
-        );
       } else if (p <= 0.58) {
         // PHASE 2: Cleanly expands from 240x300px to 100vw x 100vh full screen
         const t = (p - 0.25) / 0.33;
@@ -89,7 +83,6 @@ export default function PortalHero() {
         cx = vw * 0.5;
         cy = lerp(vh * 0.54, vh * 0.5, ease);
         radius = lerp(2, 0, ease);
-        window.dispatchEvent(new CustomEvent('fibez:portal-stage', { detail: '00:11 — FULL VIEWPORT EXPANSION' }));
       } else {
         // PHASE 3: Locked at 100vw x 100vh while statement copy fades in
         w = vw;
@@ -97,7 +90,6 @@ export default function PortalHero() {
         cx = vw * 0.5;
         cy = vh * 0.5;
         radius = 0;
-        window.dispatchEvent(new CustomEvent('fibez:portal-stage', { detail: '00:14 — SIGNAL LIME FLOOD (100VW×100VH)' }));
       }
 
       portalTile.style.width = `${w.toFixed(1)}px`;
@@ -134,8 +126,8 @@ export default function PortalHero() {
       {/* Sticky 100vh Viewport */}
       <div id="hero-sticky-viewport" className="sticky top-0 left-0 w-full h-screen overflow-hidden flex flex-col items-center justify-center bg-carbon">
         
-        {/* Layer 1: Real-Time Dithered ASCII Halftone Canvas */}
-        <AsciiHandsCanvas />
+        {/* Layer 1: Real-Time Spinning 3D Cyber Dotted Globe Canvas */}
+        <SpinningGlobeCanvas />
 
         {/* Layer 2: Hero Headline & Subtext */}
         <div

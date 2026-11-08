@@ -2,10 +2,11 @@ import { defineConfig } from "@neon/config/v1";
 
 export default defineConfig({
   // Declare your Neon services here
-  auth: false,
+  auth: true,
   buckets: {
     // "private" is the default; use "public_read" for anonymous reads
     assets: { access: "private" },
+    uploads: { access: "private" },
   },
   // Branch policy: per-branch tuning
   branch: (branch) => {

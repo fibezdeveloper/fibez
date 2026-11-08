@@ -10,7 +10,6 @@ import RbacConsole from '@/components/RbacConsole';
 import VaultArchitectureSection from '@/components/VaultArchitectureSection';
 import ComparisonTable from '@/components/ComparisonTable';
 import ToastNotification from '@/components/ToastNotification';
-import InspectorPill from '@/components/InspectorPill';
 
 export default function HomePage() {
   return (
@@ -41,9 +40,6 @@ export default function HomePage() {
 
       {/* 9. Instant Delivery Floating Toast Notification */}
       <ToastNotification />
-
-      {/* 10. Interactive Inspector Pill (Bottom-Left) */}
-      <InspectorPill />
     </div>
   );
 }
