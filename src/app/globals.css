@@ -1,0 +1,213 @@
+@import "tailwindcss";
+
+:root {
+  /* Surface Layers */
+  --color-void-black: #000000;
+  --color-carbon: #060606;
+  --color-onyx: #1f1f1f;
+  --color-graphite: #252525;
+  --color-iron: #313131;
+  --color-slate: #3d3d3d;
+  --color-fog: #525252;
+  --color-ash: #7a7a7a;
+  --color-smoke: #8a8a8a;
+  --color-pearl: #c5c5c5;
+  --color-bone: #e5e5e5;
+  --color-chalk: #ffffff;
+
+  /* Primary Accent: Default Signal Lime (Easily modifiable) */
+  --color-signal-lime: #c5ff4a;
+  --color-olive-depth: #597321;
+  --color-moss-shadow: #314013;
+  --color-accent: #c5ff4a;
+  --color-accent-glow: rgba(197, 255, 74, 0.45);
+  --color-accent-subtle: rgba(197, 255, 74, 0.12);
+
+  --background: var(--color-carbon);
+  --foreground: var(--color-bone);
+}
+
+@theme {
+  --color-void-black: #000000;
+  --color-carbon: #060606;
+  --color-onyx: #1f1f1f;
+  --color-graphite: #252525;
+  --color-iron: #313131;
+  --color-slate: #3d3d3d;
+  --color-fog: #525252;
+  --color-ash: #7a7a7a;
+  --color-smoke: #8a8a8a;
+  --color-pearl: #c5c5c5;
+  --color-bone: #e5e5e5;
+  --color-chalk: #ffffff;
+  --color-signal-lime: #c5ff4a;
+  --color-olive-depth: #597321;
+  --color-moss-shadow: #314013;
+  --color-accent: var(--color-accent);
+
+  --font-serif: var(--font-pt-serif), Georgia, serif;
+  --font-sans: var(--font-inter-tight), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+}
+
+body {
+  background-color: var(--color-carbon);
+  color: var(--color-bone);
+  font-family: var(--font-inter-tight), sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Selection */
+::selection {
+  background: var(--color-accent);
+  color: #000000;
+}
+
+/* Subtle Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-carbon);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-graphite);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-iron);
+}
+
+/* Signal Lime Glowing Button */
+.btn-signal {
+  background-color: var(--color-accent);
+  color: #000000;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 12px 24px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 0 10px 0 var(--color-accent-glow);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-signal:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 18px 2px var(--color-accent-glow);
+  filter: brightness(1.05);
+}
+.btn-signal:active {
+  transform: translateY(0);
+}
+
+/* Outlined Lime Button */
+.btn-outlined {
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  padding: 10px 20px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 0 8px 0 var(--color-accent-glow);
+  transition: all 0.2s ease;
+}
+.btn-outlined:hover {
+  background: var(--color-accent-subtle);
+  box-shadow: 0 0 14px 1px var(--color-accent-glow);
+}
+
+/* Ghost Button */
+.btn-ghost {
+  background: transparent;
+  color: #ffffff;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  padding: 8px 16px;
+  transition: color 0.15s ease;
+}
+.btn-ghost:hover {
+  color: var(--color-accent);
+}
+
+/* Sharp Card */
+.card-sharp {
+  background-color: var(--color-onyx);
+  border: 1px solid var(--color-graphite);
+  border-radius: 0px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.card-sharp:hover {
+  border-color: var(--color-slate);
+}
+
+/* Metadata Stamp Label */
+.metadata-stamp {
+  font-family: var(--font-inter-tight), sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-ash);
+}
+
+/* Status Pills */
+.pill-in-stock {
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pill-out-stock {
+  border: 1px solid var(--color-slate);
+  color: var(--color-ash);
+  background: transparent;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pill-instant {
+  border: 1px solid #3d3d3d;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Neon Divider Line */
+.neon-divider {
+  width: 100%;
+  height: 6px;
+  background: var(--color-accent);
+  box-shadow: 0 0 12px 0 var(--color-accent-glow);
+}
