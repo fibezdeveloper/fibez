@@ -256,7 +256,7 @@ export default function CardNav({
     '--cn-inset': '8px',
     '--cn-gap': '8px',
     '--cn-radius': '20px',
-    '--cn-logo': '26px',
+    '--cn-logo': '32px',
     '--cn-card': `${cardHeight}px`
   };
   if (surface === 'glass') vars['--cn-blur'] = 'blur(16px)';

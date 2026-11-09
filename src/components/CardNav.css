@@ -152,7 +152,7 @@
   display: inline-flex;
   align-items: center;
   justify-self: center;
-  height: var(--cn-logo);
+  min-height: var(--cn-logo);
   color: var(--cn-text);
   text-decoration: none;
   outline: none;
