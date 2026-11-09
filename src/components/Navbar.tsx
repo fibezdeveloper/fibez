@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import FibezLogo from '@/components/FibezLogo';
 import CardNav, { CardNavItem } from '@/components/CardNav';
 import GooeyDropdown, { GooeyDropdownAction } from '@/components/GooeyDropdown';
 import { authClient } from '@/lib/auth-client';
@@ -176,12 +177,13 @@ export default function Navbar(props: NavbarProps) {
       label: 'Store & Catalog',
       description: 'Zero-trust automated fulfillment under 400ms.',
       links: [
-        { label: 'All Products & Nodes', href: '/catalog' },
+        { label: 'All Products & Items', href: '/catalog' },
         { label: 'Dedicated Shopping Cart', href: '/cart' },
         { label: 'V2Ray Reality (10Gbps)', href: '/catalog?category=vpn' },
-        { label: 'Cloud NVMe VPS', href: '/catalog?category=vps' },
-        { label: 'Software & AI Subscriptions', href: '/catalog?category=subscription' },
-        { label: 'Steam & Global Game Keys', href: '/catalog?category=gaming' },
+        { label: 'Gift Cards (Steam, PSN)', href: '/catalog?category=giftcard' },
+        { label: 'Subscriptions (AI & Streaming)', href: '/catalog?category=subscription' },
+        { label: 'Game Top-ups (Free Fire, UC)', href: '/catalog?category=gaming' },
+        { label: 'Software Licenses (Win 11, IDM)', href: '/catalog?category=software' },
       ]
     },
     {
@@ -208,46 +210,56 @@ export default function Navbar(props: NavbarProps) {
     }
   ];
 
-  // Default Search Category Cards
+  // Default Search Category Cards: V2Ray, Gift Cards, Subscriptions, Game Top-ups, Software
   const defaultSearchCards: CardNavItem[] = [
     {
-      label: 'V2Ray & Reality VPN',
+      label: 'V2Ray Reality VPN',
       description: 'Anti-DPI BGP bypass nodes for SLT, Dialog, Mobitel.',
       links: [
         { label: 'V2Ray Singapore Reality 10Gbps', href: '/products/v2ray-singapore-reality' },
         { label: 'V2Ray Tokyo Low-Latency', href: '/products/v2ray-tokyo-ultra' },
         { label: 'V2Ray US Anycast Gaming', href: '/products/v2ray-us-gaming' },
-        { label: 'Browse All VPN Products ›', href: '/catalog?category=vpn' },
+        { label: 'Browse All V2Ray Nodes ›', href: '/catalog?category=vpn' },
       ]
     },
     {
-      label: 'Cloud NVMe VPS',
-      description: 'Tier-1 10Gbps high-velocity Linux & Windows instances.',
+      label: 'Gift Cards',
+      description: 'Instant official digital store codes & wallet top-ups.',
       links: [
-        { label: 'VPS Singapore 10Gbps NVMe', href: '/products/vps-singapore-10g' },
-        { label: 'VPS Frankfurt Tier-3 NVMe', href: '/products/vps-frankfurt-nvme' },
-        { label: 'VPS Finland High-Storage', href: '/products/vps-finland-storage' },
-        { label: 'Browse All Cloud VPS ›', href: '/catalog?category=vps' },
+        { label: 'Steam Wallet $10 Digital Code', href: '/products/steam-wallet-code-global' },
+        { label: 'PlayStation Store $25 Card', href: '/products/psn-wallet-card-us' },
+        { label: 'Nintendo eShop $20 Card', href: '/products/nintendo-eshop-gift-card' },
+        { label: 'Browse All Gift Cards ›', href: '/catalog?category=giftcard' },
       ]
     },
     {
-      label: 'Developer Subscriptions',
+      label: 'Subscriptions',
       description: 'Verified AI models, developer tooling & streaming.',
       links: [
-        { label: 'ChatGPT Plus 1 Month', href: '/products/chatgpt-plus-1m' },
-        { label: 'Cursor Pro 1 Month', href: '/products/cursor-pro-1m' },
+        { label: 'ChatGPT Plus 1 Month', href: '/products/chatgpt-plus-shared' },
+        { label: 'Claude Pro 1 Month', href: '/products/claude-pro-shared' },
         { label: 'Spotify Premium 1 Year', href: '/products/spotify-premium-1y' },
         { label: 'Browse All Subscriptions ›', href: '/catalog?category=subscription' },
       ]
     },
     {
-      label: 'Global Gaming Keys',
-      description: 'Instant game platform top-ups and gift cards.',
+      label: 'Game Top-ups',
+      description: 'Direct in-game diamond, UC, and coin top-ups.',
       links: [
-        { label: 'Steam Wallet Global Key', href: '/products/steam-wallet-global' },
-        { label: 'PlayStation Network Card', href: '/products/playstation-network-card' },
-        { label: 'Discord Nitro 1 Year', href: '/products/discord-nitro-1y' },
-        { label: 'Browse Gaming Catalog ›', href: '/catalog?category=gaming' },
+        { label: 'Free Fire 1080+108 Diamonds', href: '/products/freefire-diamonds-topup' },
+        { label: 'PUBG Mobile 660 UC', href: '/products/pubg-mobile-uc-topup' },
+        { label: 'Valorant 2050 VP Points', href: '/products/valorant-points-topup' },
+        { label: 'Browse All Game Top-ups ›', href: '/catalog?category=gaming' },
+      ]
+    },
+    {
+      label: 'Software',
+      description: 'Genuine digital licenses and productivity tools.',
+      links: [
+        { label: 'Windows 11 Pro Retail License', href: '/products/windows-11-pro-retail' },
+        { label: 'Internet Download Manager (IDM)', href: '/products/idm-internet-download-manager' },
+        { label: 'Microsoft Office 365 ProPlus', href: '/products/office-365-proplus' },
+        { label: 'Browse All Software ›', href: '/catalog?category=software' },
       ]
     }
   ];
@@ -275,40 +287,48 @@ export default function Navbar(props: NavbarProps) {
       ];
     }
 
-    // Split matches into up to 4 cards if plenty, or a consolidated results card
-    const vpnMatches = matches.filter(m => m.category === 'vpn');
-    const vpsMatches = matches.filter(m => m.category === 'vps');
+    // Split matches into categorized result cards
+    const vpnMatches = matches.filter(m => m.category === 'vpn' || m.category === 'vps');
+    const giftMatches = matches.filter(m => m.category === 'giftcard');
     const subMatches = matches.filter(m => m.category === 'subscription');
     const gameMatches = matches.filter(m => m.category === 'gaming');
+    const softwareMatches = matches.filter(m => m.category === 'software');
 
     const resultCards: CardNavItem[] = [];
 
     if (vpnMatches.length > 0) {
       resultCards.push({
-        label: `VPN Results (${vpnMatches.length})`,
+        label: `V2Ray Results (${vpnMatches.length})`,
         description: 'Matching V2Ray tunnel nodes',
         links: vpnMatches.map(m => ({ label: m.title, href: `/products/${m.id}` }))
       });
     }
-    if (vpsMatches.length > 0) {
+    if (giftMatches.length > 0) {
       resultCards.push({
-        label: `VPS Results (${vpsMatches.length})`,
-        description: 'Matching Cloud NVMe instances',
-        links: vpsMatches.map(m => ({ label: m.title, href: `/products/${m.id}` }))
+        label: `Gift Cards (${giftMatches.length})`,
+        description: 'Matching digital wallet codes',
+        links: giftMatches.map(m => ({ label: m.title, href: `/products/${m.id}` }))
       });
     }
     if (subMatches.length > 0) {
       resultCards.push({
-        label: `Subscription Results (${subMatches.length})`,
+        label: `Subscriptions (${subMatches.length})`,
         description: 'Matching accounts & licenses',
         links: subMatches.map(m => ({ label: m.title, href: `/products/${m.id}` }))
       });
     }
     if (gameMatches.length > 0) {
       resultCards.push({
-        label: `Gaming Results (${gameMatches.length})`,
-        description: 'Matching game keys & credits',
+        label: `Game Top-ups (${gameMatches.length})`,
+        description: 'Matching game currencies & gems',
         links: gameMatches.map(m => ({ label: m.title, href: `/products/${m.id}` }))
+      });
+    }
+    if (softwareMatches.length > 0) {
+      resultCards.push({
+        label: `Software (${softwareMatches.length})`,
+        description: 'Matching licenses & tools',
+        links: softwareMatches.map(m => ({ label: m.title, href: `/products/${m.id}` }))
       });
     }
 

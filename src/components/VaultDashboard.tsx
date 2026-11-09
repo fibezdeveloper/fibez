@@ -118,6 +118,41 @@ export default function VaultDashboard() {
     const timer = setInterval(() => {
       setSecondsElapsed((prev) => prev + 1);
     }, 1000);
+
+    // Fetch real assets from database
+    fetch('/api/vault')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.assets && data.assets.length > 0) {
+          setAssets(data.assets);
+        }
+      })
+      .catch((err) => console.error('Failed to load vault assets:', err));
+
+    // Fetch real pending receipts from database
+    fetch('/api/orders?role=admin')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.orders && data.orders.length > 0) {
+          const formatted: PendingReceipt[] = data.orders
+            .filter((o: any) => o.payment_status === 'PENDING_REVIEW' || o.payment_status === 'PENDING_PAYMENT')
+            .map((o: any) => ({
+              id: o.id,
+              orderNumber: o.order_number,
+              customerEmail: o.customer_email,
+              amount: o.currency === 'USD' ? `$${o.total_amount_usd}` : `LKR ${Number(o.total_amount_lkr).toLocaleString()}`,
+              bankName: o.payment_method === 'crypto' ? 'Crypto (TRC20)' : 'Bank Transfer / CDM',
+              productTitle: o.items?.[0]?.product_title || 'Digital Product',
+              receiptName: o.receipt_image_url ? 'Transfer Slip Attached' : 'Awaiting Slip Upload',
+              timestamp: new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            }));
+          if (formatted.length > 0) {
+            setPendingReceipts(formatted);
+          }
+        }
+      })
+      .catch((err) => console.error('Failed to load pending receipts:', err));
+
     return () => clearInterval(timer);
   }, []);
 
@@ -155,8 +190,17 @@ export default function VaultDashboard() {
     }
   };
 
-  const handleApproveReceipt = (id: string) => {
+  const handleApproveReceipt = async (id: string) => {
     setPendingReceipts((prev) => prev.filter((r) => r.id !== id));
+    try {
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: id, paymentStatus: 'VERIFIED', fulfillmentStatus: 'DELIVERED' }),
+      });
+    } catch (e) {
+      console.error('Failed to update order status:', e);
+    }
     // Trigger notification
     setDiscordWebhookSent(true);
     setTimeout(() => setDiscordWebhookSent(false), 3000);

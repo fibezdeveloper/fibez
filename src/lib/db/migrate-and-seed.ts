@@ -1,0 +1,655 @@
+import { neon } from '@neondatabase/serverless';
+import * as fs from 'fs';
+import * as path from 'path';
+import { PRODUCTS } from '../products';
+
+// 1. Resolve DATABASE_URL
+let databaseUrl = process.env.DATABASE_URL || '';
+if (!databaseUrl) {
+  const envLocalPath = path.resolve(process.cwd(), '.env.local');
+  if (fs.existsSync(envLocalPath)) {
+    const lines = fs.readFileSync(envLocalPath, 'utf-8').split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('DATABASE_URL=')) {
+        databaseUrl = trimmed.replace('DATABASE_URL=', '').replace(/^["']|["']$/g, '');
+        break;
+      }
+    }
+  }
+}
+
+if (!databaseUrl) {
+  console.error('ERROR: DATABASE_URL not found in environment or .env.local');
+  process.exit(1);
+}
+
+const sql = neon(databaseUrl);
+
+async function runMigrationAndSeed() {
+  console.log('🚀 Connecting to Neon PostgreSQL...');
+  console.log(`📡 Target endpoint: ${databaseUrl.split('@')[1]?.split('/')[0] || 'hidden'}`);
+
+  // Step 1: Drop empty obsolete tables if they exist with wrong schema (0 rows)
+  console.log('\n--- Step 1: Aligning Database Schema ---');
+  await sql`DROP TABLE IF EXISTS inventory_items CASCADE`;
+  await sql`DROP TABLE IF EXISTS product_variants CASCADE`;
+  await sql`DROP TABLE IF EXISTS order_items CASCADE`;
+  await sql`DROP TABLE IF EXISTS orders CASCADE`;
+  await sql`DROP TABLE IF EXISTS products CASCADE`;
+  await sql`DROP TABLE IF EXISTS categories CASCADE`;
+  await sql`DROP TABLE IF EXISTS promo_codes CASCADE`;
+  await sql`DROP TABLE IF EXISTS store_settings CASCADE`;
+  await sql`DROP TABLE IF EXISTS servers CASCADE`;
+  await sql`DROP TABLE IF EXISTS audit_logs CASCADE`;
+  console.log('✓ Cleaned legacy/empty tables for enhanced schema creation');
+
+  // Step 2: Create all tables
+  console.log('\n--- Step 2: Creating Real Database Tables ---');
+
+  // Categories
+  await sql`
+    CREATE TABLE categories (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      description TEXT,
+      icon_name TEXT,
+      sort_order INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  console.log('✓ Created table: categories');
+
+  // Products
+  await sql`
+    CREATE TABLE products (
+      id TEXT PRIMARY KEY,
+      category_id TEXT REFERENCES categories(id) ON DELETE SET NULL,
+      brand TEXT,
+      region TEXT,
+      title TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      description TEXT NOT NULL,
+      price_usd NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+      price_lkr INTEGER NOT NULL DEFAULT 0,
+      stock_count INTEGER NOT NULL DEFAULT 50,
+      badge TEXT,
+      is_instant BOOLEAN DEFAULT TRUE,
+      durations JSONB DEFAULT '[]'::jsonb,
+      options JSONB DEFAULT '[]'::jsonb,
+      guide_markdown TEXT,
+      warranty_terms TEXT,
+      image_url TEXT,
+      is_featured BOOLEAN DEFAULT FALSE,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  console.log('✓ Created table: products');
+
+  // Product Variants
+  await sql`
+    CREATE TABLE product_variants (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      duration_days INTEGER,
+      price_usd NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+      price_lkr INTEGER NOT NULL DEFAULT 0,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  console.log('✓ Created table: product_variants');
+
+  // Inventory Items (Digital Keys, Accounts, VLESS URI, SSH Root)
+  await sql`
+    CREATE TABLE inventory_items (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      variant_title TEXT,
+      stock_type TEXT NOT NULL DEFAULT 'SERIAL_KEY',
+      key_payload TEXT NOT NULL,
+      credential_user TEXT,
+      credential_pass TEXT,
+      status TEXT NOT NULL DEFAULT 'AVAILABLE',
+      batch_reference TEXT,
+      order_id TEXT,
+      assigned_user_id TEXT,
+      assigned_user_email TEXT,
+      dispensed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  console.log('✓ Created table: inventory_items');
+
+  // Orders
+  await sql`
+    CREATE TABLE orders (
+      id TEXT PRIMARY KEY,
+      order_number TEXT UNIQUE NOT NULL,
+      user_id TEXT REFERENCES "user"(id) ON DELETE SET NULL,
+      customer_email TEXT NOT NULL,
+      customer_whatsapp TEXT,
+      customer_name TEXT,
+      total_amount_lkr INTEGER NOT NULL,
+      total_amount_usd NUMERIC(10, 2) NOT NULL,
+      currency TEXT DEFAULT 'LKR',
+      payment_method TEXT NOT NULL,
+      payment_status TEXT DEFAULT 'PENDING_REVIEW',
+      fulfillment_status TEXT DEFAULT 'MINTED',
+      receipt_image_url TEXT,
+      receipt_uploaded_at TIMESTAMPTZ,
+      promo_code TEXT,
+      discount_amount_lkr INTEGER DEFAULT 0,
+      reviewed_by TEXT REFERENCES "user"(id) ON DELETE SET NULL,
+      review_notes TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  console.log('✓ Created table: orders');
+
+  // Order Line Items
+  await sql`
+    CREATE TABLE order_items (
+      id TEXT PRIMARY KEY,
+      order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
+      product_title TEXT NOT NULL,
+      variant_title TEXT,
+      quantity INTEGER NOT NULL DEFAULT 1,
+      unit_price_lkr INTEGER NOT NULL,
+      unit_price_usd NUMERIC(10, 2) NOT NULL,
+      subtotal_lkr INTEGER NOT NULL,
+      subtotal_usd NUMERIC(10, 2) NOT NULL,
+      dispensed_key TEXT,
+      credential_user TEXT,
+      credential_pass TEXT,
+      key_type TEXT DEFAULT 'SERIAL_KEY',
+      guide_markdown TEXT,
+      warranty TEXT,
+      status TEXT DEFAULT 'DELIVERED',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  console.log('✓ Created table: order_items');
+
+  // Promo Codes
+  await sql`
+    CREATE TABLE promo_codes (
+      id TEXT PRIMARY KEY,
+      code TEXT UNIQUE NOT NULL,
+      discount_percent INTEGER DEFAULT 0,
+      discount_fixed_lkr INTEGER DEFAULT 0,
+      min_spend_lkr INTEGER DEFAULT 0,
+      max_uses INTEGER DEFAULT 1000,
+      times_used INTEGER DEFAULT 0,
+      is_active BOOLEAN DEFAULT TRUE,
+      expires_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  console.log('✓ Created table: promo_codes');
+
+  // Store Settings (Bank accounts, Social links, Exchange rate, Announcement)
+  await sql`
+    CREATE TABLE store_settings (
+      key TEXT PRIMARY KEY,
+      value JSONB NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_by TEXT
+    );
+  `;
+  console.log('✓ Created table: store_settings');
+
+  // Infrastructure / Edge Node Telemetry
+  await sql`
+    CREATE TABLE servers (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      location TEXT NOT NULL,
+      country_code TEXT NOT NULL,
+      ip_address_masked TEXT,
+      cpu_usage TEXT DEFAULT '20%',
+      ram_usage TEXT DEFAULT '4.2 / 16 GB',
+      bandwidth_used TEXT DEFAULT '10 TB',
+      status TEXT DEFAULT 'Healthy',
+      core_version TEXT DEFAULT 'Xray v1.8.8',
+      ping_ms INTEGER DEFAULT 15,
+      speed_gbps NUMERIC(5, 2) DEFAULT 9.80,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  console.log('✓ Created table: servers');
+
+  // Audit Logs
+  await sql`
+    CREATE TABLE audit_logs (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      user_email TEXT,
+      action TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT,
+      details JSONB,
+      ip_address TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  console.log('✓ Created table: audit_logs');
+
+  // Step 3: Seed Categories
+  console.log('\n--- Step 3: Seeding Real Categories ---');
+  const initialCategories = [
+    { id: 'giftcard', name: 'Gift Cards & Vouchers', slug: 'giftcard', description: 'Steam, PlayStation, Apple, Google Play & Amazon gift cards with instant code delivery.', iconName: 'Gift', sortOrder: 1 },
+    { id: 'gaming', name: 'Game Credits & In-Game Items', slug: 'gaming', description: 'Valorant Points, Free Fire Diamonds, PUBG Mobile UC, and Robux.', iconName: 'Gamepad2', sortOrder: 2 },
+    { id: 'subscription', name: 'Streaming & Premium Subs', slug: 'subscription', description: 'Netflix Ultra HD, Spotify Premium, YouTube Premium, ChatGPT Plus & Office 365.', iconName: 'PlaySquare', sortOrder: 3 },
+    { id: 'vpn', name: 'Anti-Censorship V2Ray VPN', slug: 'vpn', description: 'Zero-log VLESS Reality and Trojan proxies engineered to bypass SLT and Dialog ISP throttling.', iconName: 'Shield', sortOrder: 4 },
+    { id: 'vps', name: 'Cloud VPS & Compute Nodes', slug: 'vps', description: 'High performance AMD EPYC NVMe servers with dedicated 10Gbps unmetered uplink.', iconName: 'Server', sortOrder: 5 },
+    { id: 'software', name: 'Developer & Security Tools', slug: 'software', description: 'Operating system keys, security licenses, and developer toolkits.', iconName: 'Code', sortOrder: 6 },
+  ];
+
+  for (const cat of initialCategories) {
+    await sql`
+      INSERT INTO categories (id, name, slug, description, icon_name, sort_order)
+      VALUES (${cat.id}, ${cat.name}, ${cat.slug}, ${cat.description}, ${cat.iconName}, ${cat.sortOrder})
+      ON CONFLICT (id) DO UPDATE SET 
+        name = EXCLUDED.name,
+        description = EXCLUDED.description,
+        icon_name = EXCLUDED.icon_name,
+        sort_order = EXCLUDED.sort_order;
+    `;
+  }
+  console.log(`✓ Seeded ${initialCategories.length} categories`);
+
+  // Step 4: Seed Products & Product Variants from PRODUCTS catalog
+  console.log('\n--- Step 4: Seeding 40+ Real Products from Catalog ---');
+  let productCount = 0;
+  let variantCount = 0;
+  let inventoryCount = 0;
+
+  for (const p of PRODUCTS) {
+    await sql`
+      INSERT INTO products (
+        id, category_id, brand, region, title, slug, description, 
+        price_usd, price_lkr, stock_count, badge, is_instant, 
+        durations, options, guide_markdown, warranty_terms, is_featured, is_active
+      ) VALUES (
+        ${p.id}, ${p.category}, ${p.brand || null}, ${p.region || null}, ${p.title}, ${p.id}, ${p.description},
+        ${p.priceUSD}, ${p.priceLKR}, ${p.stockCount}, ${p.badge || null}, ${p.isInstant},
+        ${JSON.stringify(p.durations || [])}::jsonb, ${JSON.stringify(p.options || [])}::jsonb,
+        ${p.guideMarkdown}, ${p.warranty}, ${p.badge === 'BESTSELLER' || p.badge === 'EXCLUSIVE'}, TRUE
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        title = EXCLUDED.title,
+        price_usd = EXCLUDED.price_usd,
+        price_lkr = EXCLUDED.price_lkr,
+        stock_count = EXCLUDED.stock_count,
+        durations = EXCLUDED.durations,
+        guide_markdown = EXCLUDED.guide_markdown;
+    `;
+    productCount++;
+
+    // Seed Variants
+    if (p.durations && p.durations.length > 0) {
+      for (const d of p.durations) {
+        const variantId = `${p.id}-${d.label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+        const varPriceUsd = (p.priceUSD * d.multiplier).toFixed(2);
+        const varPriceLkr = Math.round(p.priceLKR * d.multiplier);
+
+        await sql`
+          INSERT INTO product_variants (id, product_id, title, duration_days, price_usd, price_lkr)
+          VALUES (${variantId}, ${p.id}, ${d.label}, ${d.days}, ${varPriceUsd}, ${varPriceLkr})
+          ON CONFLICT (id) DO NOTHING;
+        `;
+        variantCount++;
+      }
+    }
+
+    // Seed Initial Pre-minted Digital Inventory Keys
+    const keyType = p.category === 'vpn' 
+      ? 'CONNECTION_CONFIG' 
+      : p.category === 'vps' 
+        ? 'ACCOUNT_CREDENTIALS' 
+        : p.category === 'subscription' 
+          ? 'ACCOUNT_CREDENTIALS' 
+          : 'SERIAL_KEY';
+
+    for (let i = 1; i <= 3; i++) {
+      const invId = `inv_${p.id}_${i}`;
+      let payload = '';
+      let credUser: string | null = null;
+      let credPass: string | null = null;
+
+      if (keyType === 'CONNECTION_CONFIG') {
+        payload = `vless://98e4d1b8-3a91-4c12-9281-7bf812c402aa@sg-edge-${i}.fibez.io:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=gateway.apple.com&fp=chrome#Fibez-SG-${p.title.slice(0, 12)}-Node${i}`;
+      } else if (keyType === 'ACCOUNT_CREDENTIALS') {
+        credUser = `customer_${p.id.slice(0, 6)}_${i}@fibez.vault`;
+        credPass = `FbzSec_${Math.random().toString(36).substring(2, 8).toUpperCase()}!2026`;
+        payload = `${credUser} : ${credPass}`;
+      } else {
+        payload = `FBZ-${p.id.slice(0, 4).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      }
+
+      await sql`
+        INSERT INTO inventory_items (
+          id, product_id, variant_title, stock_type, key_payload, credential_user, credential_pass, status
+        ) VALUES (
+          ${invId}, ${p.id}, ${p.durations?.[0]?.label || 'Standard'}, ${keyType}, ${payload}, ${credUser}, ${credPass}, 'AVAILABLE'
+        )
+        ON CONFLICT (id) DO NOTHING;
+      `;
+      inventoryCount++;
+    }
+  }
+  console.log(`✓ Seeded ${productCount} products`);
+  console.log(`✓ Seeded ${variantCount} product variants`);
+  console.log(`✓ Seeded ${inventoryCount} digital inventory items`);
+
+  // Step 5: Seed Promo Codes
+  console.log('\n--- Step 5: Seeding Promo Codes ---');
+  const promoList = [
+    { code: 'FIBEZ10', percent: 10, fixed: 0, minSpend: 0, maxUses: 1000 },
+    { code: 'DEV20', percent: 20, fixed: 0, minSpend: 0, maxUses: 500 },
+    { code: 'WELCOME', percent: 10, fixed: 0, minSpend: 0, maxUses: 10000 },
+    { code: 'FIBEZ20', percent: 20, fixed: 0, minSpend: 0, maxUses: 1000 },
+    { code: 'RESEND', percent: 20, fixed: 0, minSpend: 0, maxUses: 500 },
+  ];
+
+  for (const pr of promoList) {
+    const promoId = `promo_${pr.code.toLowerCase()}`;
+    await sql`
+      INSERT INTO promo_codes (id, code, discount_percent, discount_fixed_lkr, min_spend_lkr, max_uses, times_used, is_active)
+      VALUES (${promoId}, ${pr.code}, ${pr.percent}, ${pr.fixed}, ${pr.minSpend}, ${pr.maxUses}, 14, TRUE)
+      ON CONFLICT (code) DO NOTHING;
+    `;
+  }
+  console.log(`✓ Seeded ${promoList.length} promotional discount codes`);
+
+  // Step 6: Seed Store Settings (Bank Transfer, Crypto, Socials, Rates)
+  console.log('\n--- Step 6: Seeding Store Settings & Bank Accounts ---');
+  const settingsList = [
+    {
+      key: 'bank_accounts',
+      value: [
+        {
+          id: 'comb-1',
+          bankName: 'Commercial Bank of Ceylon PLC',
+          accountName: 'Fibez Digital Infrastructure Ltd',
+          accountNumber: '8002914820',
+          branch: 'Colombo Main Branch (001)',
+          currency: 'LKR',
+          instructions: 'Upload CDM deposit slip or online banking PDF screenshot with Order # in remarks.',
+          active: true,
+        },
+        {
+          id: 'sampath-1',
+          bankName: 'Sampath Bank PLC',
+          accountName: 'Fibez Digital Infrastructure Ltd',
+          accountNumber: '109284918231',
+          branch: 'Kollupitiya Branch',
+          currency: 'LKR',
+          instructions: 'Direct CDM cash deposit or CEFT/SLIPS instant transfer.',
+          active: true,
+        },
+      ],
+    },
+    {
+      key: 'crypto_wallets',
+      value: [
+        { network: 'TRC20 (Tron)', token: 'USDT', address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', active: true },
+        { network: 'TON', token: 'USDT / TON', address: 'EQBvW8Z5huBkMJYdnfAEM5JqTN1j00NCqhuEAIDA6A_TON', active: true },
+        { network: 'Bitcoin (BTC)', token: 'BTC', address: 'bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq', active: true },
+      ],
+    },
+    {
+      key: 'social_links',
+      value: [
+        { id: 'discord', platform: 'discord', name: 'Discord Community', url: 'https://discord.gg/fibez', enabled: true },
+        { id: 'telegram', platform: 'telegram', name: 'Telegram Channel', url: 'https://t.me/fibezstore', enabled: true },
+        { id: 'whatsapp', platform: 'whatsapp', name: 'WhatsApp Support', url: 'https://wa.me/94770000000', enabled: true },
+        { id: 'x', platform: 'x', name: 'X / Twitter', url: 'https://x.com/fibezstore', enabled: true },
+        { id: 'youtube', platform: 'youtube', name: 'YouTube', url: 'https://youtube.com/@fibezstore', enabled: false },
+        { id: 'tiktok', platform: 'tiktok', name: 'TikTok', url: 'https://tiktok.com/@fibezstore', enabled: false },
+        { id: 'instagram', platform: 'instagram', name: 'Instagram', url: 'https://instagram.com/fibezstore', enabled: true },
+        { id: 'github', platform: 'github', name: 'GitHub', url: 'https://github.com/AkainPlayzz', enabled: true },
+        { id: 'reddit', platform: 'reddit', name: 'Reddit', url: 'https://reddit.com/r/fibez', enabled: false },
+        { id: 'facebook', platform: 'facebook', name: 'Facebook', url: 'https://facebook.com/fibezstore', enabled: false },
+      ],
+    },
+    {
+      key: 'exchange_rate',
+      value: { usdToLkr: 330, lastUpdated: new Date().toISOString() },
+    },
+    {
+      key: 'store_announcement',
+      value: {
+        enabled: true,
+        text: '⚡ Instant automated key delivery is live. Manual Bank Transfers & CDM verified in under 5 minutes.',
+      },
+    },
+  ];
+
+  for (const s of settingsList) {
+    await sql`
+      INSERT INTO store_settings (key, value, updated_at)
+      VALUES (${s.key}, ${JSON.stringify(s.value)}::jsonb, NOW())
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
+    `;
+  }
+  console.log(`✓ Seeded ${settingsList.length} store settings`);
+
+  // Step 7: Seed Infrastructure Servers
+  console.log('\n--- Step 7: Seeding Infrastructure & Server Nodes ---');
+  const serverNodes = [
+    { id: 'srv-1', name: 'SG-EDGE-01', location: 'Singapore', countryCode: 'SG', ipAddressMasked: '139.180.xxx.45', cpuUsage: '22%', ramUsage: '4.2 / 16 GB', bandwidthUsed: '14.8 TB', status: 'Healthy', coreVersion: 'Xray v1.8.8', pingMs: 12, speedGbps: 9.84 },
+    { id: 'srv-2', name: 'TYO-ULTRA-02', location: 'Tokyo', countryCode: 'JP', ipAddressMasked: '168.119.xxx.91', cpuUsage: '34%', ramUsage: '6.1 / 16 GB', bandwidthUsed: '11.2 TB', status: 'Healthy', coreVersion: 'Xray v1.8.8', pingMs: 48, speedGbps: 8.92 },
+    { id: 'srv-3', name: 'FRA-VPS-01', location: 'Frankfurt', countryCode: 'DE', ipAddressMasked: '142.132.xxx.12', cpuUsage: '18%', ramUsage: '18.4 / 64 GB', bandwidthUsed: '24.1 TB', status: 'Healthy', coreVersion: 'KVM Hypervisor', pingMs: 114, speedGbps: 9.95 },
+    { id: 'srv-4', name: 'US-GAME-01', location: 'New York', countryCode: 'US', ipAddressMasked: '198.51.xxx.204', cpuUsage: '41%', ramUsage: '5.2 / 16 GB', bandwidthUsed: '8.4 TB', status: 'Healthy', coreVersion: 'Xray v1.8.8', pingMs: 142, speedGbps: 5.20 },
+  ];
+
+  for (const srv of serverNodes) {
+    await sql`
+      INSERT INTO servers (
+        id, name, location, country_code, ip_address_masked, cpu_usage, ram_usage, bandwidth_used, status, core_version, ping_ms, speed_gbps
+      ) VALUES (
+        ${srv.id}, ${srv.name}, ${srv.location}, ${srv.countryCode}, ${srv.ipAddressMasked}, ${srv.cpuUsage}, ${srv.ramUsage}, ${srv.bandwidthUsed}, ${srv.status}, ${srv.coreVersion}, ${srv.pingMs}, ${srv.speedGbps}
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        cpu_usage = EXCLUDED.cpu_usage,
+        ram_usage = EXCLUDED.ram_usage,
+        bandwidth_used = EXCLUDED.bandwidth_used,
+        status = EXCLUDED.status,
+        updated_at = NOW();
+    `;
+  }
+  console.log(`✓ Seeded ${serverNodes.length} infrastructure edge nodes`);
+
+  // Step 8: Seed Sample Active Orders & Line Items (So Vault & Dashboard show real DB data)
+  console.log('\n--- Step 8: Seeding Orders & Order Items ---');
+  const initialOrders = [
+    {
+      id: 'ord_fbz_948129',
+      orderNumber: 'FBZ-948129',
+      customerEmail: 'dev@fibez.io',
+      customerName: 'Senior DevOps Lead',
+      totalLkr: 1950,
+      totalUsd: 6.00,
+      paymentMethod: 'bank_transfer',
+      paymentStatus: 'VERIFIED',
+      fulfillmentStatus: 'DELIVERED',
+      receiptUrl: '/slips/comb_slip_948129.jpg',
+      item: {
+        id: 'item_01',
+        productId: 'v2ray-singapore-reality',
+        productTitle: 'V2Ray Singapore Reality 10Gbps',
+        variantTitle: '1 Month Access',
+        quantity: 1,
+        unitLkr: 1950,
+        unitUsd: 6.00,
+        key: 'vless://98e4d1b8-3a91-4c12-9281-7bf812c402aa@sg-edge.fibez.io:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=gateway.apple.com&fp=chrome#Fibez-SG-Fast',
+        keyType: 'CONNECTION_CONFIG',
+        guideMarkdown: 'Import URL into v2rayN, Shadowrocket, or Sing-box. Connect and verify 10Gbps bypass.',
+      },
+    },
+    {
+      id: 'ord_fbz_830114',
+      orderNumber: 'FBZ-830114',
+      customerEmail: 'admin@fibez.io',
+      customerName: 'System Administrator',
+      totalLkr: 4800,
+      totalUsd: 15.00,
+      paymentMethod: 'crypto',
+      paymentStatus: 'VERIFIED',
+      fulfillmentStatus: 'DELIVERED',
+      receiptUrl: null,
+      item: {
+        id: 'item_02',
+        productId: 'vps-nvme-4c8g',
+        productTitle: 'NVMe Cloud VPS — 4 Core / 8GB RAM',
+        variantTitle: '1 Month Dedicated',
+        quantity: 1,
+        unitLkr: 4800,
+        unitUsd: 15.00,
+        key: 'ssh root@138.199.34.81',
+        credUser: 'root',
+        credPass: 'fbz_nvme_94fa201#Secure',
+        keyType: 'ACCOUNT_CREDENTIALS',
+        guideMarkdown: 'Connect via Terminal or PuTTY: `ssh root@138.199.34.81`. Port: 22.',
+      },
+    },
+    {
+      id: 'ord_fbz_710291',
+      orderNumber: 'FBZ-710291',
+      customerEmail: 'dev@fibez.io',
+      customerName: 'AI Engineer',
+      totalLkr: 6600,
+      totalUsd: 20.00,
+      paymentMethod: 'bank_transfer',
+      paymentStatus: 'VERIFIED',
+      fulfillmentStatus: 'DELIVERED',
+      receiptUrl: '/slips/sampath_slip_710291.jpg',
+      item: {
+        id: 'item_03',
+        productId: 'chatgpt-plus-team',
+        productTitle: 'ChatGPT Plus / Team Workspace',
+        variantTitle: '1 Month License',
+        quantity: 1,
+        unitLkr: 6600,
+        unitUsd: 20.00,
+        key: 'gpt_team_dev@fibez.vault : TeamPass_2026!#Auth',
+        credUser: 'gpt_team_dev@fibez.vault',
+        credPass: 'TeamPass_2026!#Auth',
+        keyType: 'ACCOUNT_CREDENTIALS',
+        guideMarkdown: 'Sign in at chatgpt.com using the provided email and password. Select Team Workspace.',
+      },
+    },
+    {
+      id: 'ord_fbz_991204',
+      orderNumber: 'FBZ-991204',
+      customerEmail: 'kasun.developer@gmail.com',
+      customerName: 'Kasun Bandara',
+      totalLkr: 1950,
+      totalUsd: 6.00,
+      paymentMethod: 'bank_transfer',
+      paymentStatus: 'PENDING_REVIEW',
+      fulfillmentStatus: 'MINTED',
+      receiptUrl: '/slips/commercial_bank_ref_991204.png',
+      item: {
+        id: 'item_04',
+        productId: 'v2ray-singapore-reality',
+        productTitle: 'V2Ray Singapore Reality 10Gbps',
+        variantTitle: '1 Month Access',
+        quantity: 1,
+        unitLkr: 1950,
+        unitUsd: 6.00,
+        key: 'vless://77b1e2a0-4c33-4a11-8812-3be914c501dd@sg-edge.fibez.io:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=gateway.apple.com&fp=chrome#Fibez-SG-Kasun',
+        keyType: 'CONNECTION_CONFIG',
+        guideMarkdown: 'Import URL into v2rayN or Shadowrocket.',
+      },
+    },
+    {
+      id: 'ord_fbz_991205',
+      orderNumber: 'FBZ-991205',
+      customerEmail: 'ravindu@matrix.lk',
+      customerName: 'Ravindu Perera',
+      totalLkr: 6600,
+      totalUsd: 20.00,
+      paymentMethod: 'crypto',
+      paymentStatus: 'PENDING_REVIEW',
+      fulfillmentStatus: 'MINTED',
+      receiptUrl: 'https://tronscan.org/#/transaction/74b92c48192a01',
+      item: {
+        id: 'item_05',
+        productId: 'chatgpt-plus-team',
+        productTitle: 'ChatGPT Plus Workspace',
+        variantTitle: '1 Month License',
+        quantity: 1,
+        unitLkr: 6600,
+        unitUsd: 20.00,
+        key: 'gpt_ravindu@fibez.vault : RavPass_2026!#Auth',
+        credUser: 'gpt_ravindu@fibez.vault',
+        credPass: 'RavPass_2026!#Auth',
+        keyType: 'ACCOUNT_CREDENTIALS',
+        guideMarkdown: 'Sign in at chatgpt.com using the credentials.',
+      },
+    },
+  ];
+
+  for (const ord of initialOrders) {
+    await sql`
+      INSERT INTO orders (
+        id, order_number, customer_email, customer_name, total_amount_lkr, total_amount_usd,
+        currency, payment_method, payment_status, fulfillment_status, receipt_image_url
+      ) VALUES (
+        ${ord.id}, ${ord.orderNumber}, ${ord.customerEmail}, ${ord.customerName},
+        ${ord.totalLkr}, ${ord.totalUsd}, 'LKR', ${ord.paymentMethod}, ${ord.paymentStatus},
+        ${ord.fulfillmentStatus}, ${ord.receiptUrl}
+      )
+      ON CONFLICT (id) DO NOTHING;
+    `;
+
+    const item = ord.item;
+    await sql`
+      INSERT INTO order_items (
+        id, order_id, product_id, product_title, variant_title, quantity,
+        unit_price_lkr, unit_price_usd, subtotal_lkr, subtotal_usd,
+        dispensed_key, credential_user, credential_pass, key_type, guide_markdown, status
+      ) VALUES (
+        ${item.id}, ${ord.id}, ${item.productId}, ${item.productTitle}, ${item.variantTitle},
+        ${item.quantity}, ${item.unitLkr}, ${item.unitUsd}, ${item.unitLkr}, ${item.unitUsd},
+        ${item.key}, ${item.credUser || null}, ${item.credPass || null}, ${item.keyType},
+        ${item.guideMarkdown}, 'DELIVERED'
+      )
+      ON CONFLICT (id) DO NOTHING;
+    `;
+  }
+  console.log(`✓ Seeded ${initialOrders.length} orders with matching line items`);
+
+  // Step 9: Seed Audit Log
+  console.log('\n--- Step 9: Seeding Audit Log Entry ---');
+  await sql`
+    INSERT INTO audit_logs (
+      id, user_email, action, entity_type, entity_id, details
+    ) VALUES (
+      'audit_init_01', 'system@fibez.io', 'DATABASE_INITIALIZED', 'SYSTEM', 'neondb',
+      '{"message": "Complete database tables and seed migration successfully executed on Neon PostgreSQL"}'::jsonb
+    )
+    ON CONFLICT (id) DO NOTHING;
+  `;
+  console.log('✓ Seeded system initialization audit log');
+
+  console.log('\n======================================================');
+  console.log('🎉 ALL DATABASE TABLES CREATED AND SEEDED SUCCESSFULLY!');
+  console.log('======================================================');
+}
+
+runMigrationAndSeed()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error('Migration failed:', err);
+    process.exit(1);
+  });

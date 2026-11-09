@@ -16,11 +16,11 @@ export interface SearchMenuProps {
 
 const CATEGORIES = [
   { id: 'all', label: 'All Items' },
+  { id: 'vpn', label: 'V2Ray' },
   { id: 'giftcard', label: 'Gift Cards' },
   { id: 'subscription', label: 'Subscriptions' },
-  { id: 'gaming', label: 'Gaming & Top-Ups' },
-  { id: 'software', label: 'Software & AI' },
-  { id: 'vpn', label: 'VPN & Cloud' },
+  { id: 'gaming', label: 'Game Top-ups' },
+  { id: 'software', label: 'Software' },
 ] as const;
 
 export default function SearchMenu({
@@ -52,7 +52,10 @@ export default function SearchMenu({
   const filteredProducts = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     return PRODUCTS.filter((item) => {
-      const matchesCat = selectedCategory === 'all' || item.category === selectedCategory;
+      const matchesCat =
+        selectedCategory === 'all' ||
+        item.category === selectedCategory ||
+        (selectedCategory === 'vpn' && item.category === 'vps');
       if (!matchesCat) return false;
       if (!q) return true;
       return (
@@ -165,10 +168,10 @@ export default function SearchMenu({
                     key={cat.id}
                     type="button"
                     onClick={() => handleCategoryClick(cat.id as any)}
-                    className={`px-3 py-1 rounded-full text-xs font-mono tracking-wider transition-colors whitespace-nowrap cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-sans font-medium tracking-wide transition-colors whitespace-nowrap cursor-pointer ${
                       selectedCategory === cat.id
                         ? 'bg-white text-black font-semibold'
-                        : 'bg-[#16161a] text-[#a1a4a5] hover:text-white hover:bg-[#202026]'
+                        : 'bg-[#0c0d16] border border-[#212338] text-[#d6d6de] hover:border-zinc-500 hover:text-white hover:bg-[#141522]'
                     }`}
                   >
                     {cat.label}

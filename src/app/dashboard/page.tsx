@@ -263,6 +263,68 @@ export default function DashboardPage() {
           }
         })
         .catch((err) => console.error('Failed to load tickets count:', err));
+
+      // Fetch real orders from PostgreSQL
+      fetch('/api/orders?role=admin')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.orders && data.orders.length > 0) {
+            const mappedOrders: PendingOrder[] = data.orders.map((o: any) => ({
+              id: o.id,
+              orderNumber: o.order_number,
+              customerEmail: o.customer_email,
+              productTitle: o.items?.[0]?.product_title || 'Digital Product',
+              amount: o.currency === 'USD' ? `$${o.total_amount_usd} USD` : `Rs. ${Number(o.total_amount_lkr).toLocaleString()}`,
+              slipName: o.receipt_image_url ? 'bank_transfer_slip.png' : 'Pending Slip',
+              paymentMethod: o.payment_method === 'crypto' ? 'Crypto (USDT TRC20)' : 'Bank Transfer / CDM',
+              status: o.payment_status === 'VERIFIED' ? 'Verified' : o.payment_status === 'FAILED' ? 'Rejected' : 'Pending',
+              date: new Date(o.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            }));
+            setPendingOrders(mappedOrders);
+          }
+        })
+        .catch((err) => console.error('Failed to load orders:', err));
+
+      // Fetch real products from PostgreSQL
+      fetch('/api/products')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.products && data.products.length > 0) {
+            setCatalogItems(
+              data.products.map((p: any) => ({
+                id: p.id,
+                title: p.title,
+                priceLKR: p.price_lkr,
+                priceUSD: Number(p.price_usd),
+                stockCount: p.stock_count,
+                category: p.category_id,
+                active: p.is_active,
+              }))
+            );
+          }
+        })
+        .catch((err) => console.error('Failed to load products:', err));
+
+      // Fetch real servers from PostgreSQL
+      fetch('/api/servers')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.servers && data.servers.length > 0) {
+            setServers(
+              data.servers.map((s: any) => ({
+                id: s.id,
+                name: s.name,
+                location: s.location,
+                cpu: s.cpu_usage,
+                ram: s.ram_usage,
+                bandwidth: s.bandwidth_used,
+                status: s.status,
+                core: s.core_version,
+              }))
+            );
+          }
+        })
+        .catch((err) => console.error('Failed to load servers:', err));
     }
   }, [activeRole]);
 
@@ -315,16 +377,34 @@ export default function DashboardPage() {
     }
   };
 
-  const handleApproveOrder = (id: string) => {
+  const handleApproveOrder = async (id: string) => {
     setPendingOrders((prev) =>
       prev.map((o) => (o.id === id ? { ...o, status: 'Verified' } : o))
     );
+    try {
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: id, paymentStatus: 'VERIFIED', fulfillmentStatus: 'DELIVERED' }),
+      });
+    } catch (e) {
+      console.error('Failed to update order status:', e);
+    }
   };
 
-  const handleRejectOrder = (id: string) => {
+  const handleRejectOrder = async (id: string) => {
     setPendingOrders((prev) =>
       prev.map((o) => (o.id === id ? { ...o, status: 'Rejected' } : o))
     );
+    try {
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: id, paymentStatus: 'FAILED', fulfillmentStatus: 'REVOKED' }),
+      });
+    } catch (e) {
+      console.error('Failed to update order status:', e);
+    }
   };
 
   const handleSendTicketReply = (ticketId: string) => {

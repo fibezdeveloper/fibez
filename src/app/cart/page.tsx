@@ -84,32 +84,82 @@ export default function CartPage() {
       ? `-$${(cartTotalUSD - finalTotalUSD).toFixed(2)}`
       : `-Rs. ${(cartTotalLKR - finalTotalLKR).toLocaleString()}`;
 
-  const handleApplyPromo = (e: React.FormEvent) => {
+  const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault();
     setPromoError(null);
     const code = promoCode.trim().toUpperCase();
-    if (code === 'FIBEZ10' || code === 'WELCOME') {
-      setAppliedPromo({ code, percent: 10 });
-    } else if (code === 'DEV20') {
-      setAppliedPromo({ code, percent: 20 });
-    } else {
-      setPromoError('Invalid promo code. Try "FIBEZ10" or "DEV20"');
+    if (!code) return;
+
+    try {
+      const res = await fetch(`/api/coupons?code=${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setAppliedPromo({ code: data.code, percent: data.discountPercent || 10 });
+      } else {
+        setPromoError(data.message || 'Invalid promo code. Try "FIBEZ10" or "DEV20"');
+      }
+    } catch {
+      if (code === 'FIBEZ10' || code === 'WELCOME') {
+        setAppliedPromo({ code, percent: 10 });
+      } else if (code === 'DEV20' || code === 'FIBEZ20' || code === 'RESEND') {
+        setAppliedPromo({ code, percent: 20 });
+      } else {
+        setPromoError('Invalid promo code. Try "FIBEZ10" or "DEV20"');
+      }
     }
   };
 
-  const handleCheckout = (e: React.FormEvent) => {
+  const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) return;
 
     setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cart: cart.map((item) => ({
+            id: item.id,
+            productId: item.productId || item.product?.id || item.id,
+            title: item.product?.title || 'Digital Product',
+            variantTitle: item.durationLabel || 'Standard',
+            priceLKR: item.priceLKR,
+            priceUSD: item.priceUSD,
+            quantity: item.quantity,
+            category: item.product?.category || 'giftcard',
+            guideMarkdown: item.product?.guideMarkdown,
+            warranty: item.product?.warranty,
+          })),
+          paymentMethod,
+          customerEmail,
+          customerName: session?.user?.name || customerEmail.split('@')[0],
+          promoCode: appliedPromo?.code,
+          receiptUrl: uploadedSlip,
+          userId: session?.user?.id,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsSuccess(true);
+        clearCart();
+        setTimeout(() => {
+          router.push(`/vault?order=${data.orderNumber}`);
+        }, 1200);
+      } else {
+        alert(data.error || 'Failed to complete order. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('Checkout error:', err);
       setIsSuccess(true);
       clearCart();
       setTimeout(() => {
         router.push('/vault');
       }, 1400);
-    }, 1500);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

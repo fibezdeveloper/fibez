@@ -23,11 +23,11 @@ import {
 
 const CATEGORIES = [
   { id: 'all', label: 'All Items', icon: null },
+  { id: 'vpn', label: 'V2Ray', icon: Shield },
   { id: 'giftcard', label: 'Gift Cards', icon: Gift },
   { id: 'subscription', label: 'Subscriptions', icon: Sparkles },
-  { id: 'gaming', label: 'Game Top-Ups & Keys', icon: Zap },
-  { id: 'software', label: 'Software & AI', icon: Cpu },
-  { id: 'vpn', label: 'VPN & Cloud VPS', icon: Shield },
+  { id: 'gaming', label: 'Game Top-ups', icon: Zap },
+  { id: 'software', label: 'Software', icon: Cpu },
 ] as const;
 
 function CatalogContent() {
@@ -37,11 +37,40 @@ function CatalogContent() {
   const initialCat = (searchParams.get('category') as any) || 'all';
   const initialQuery = searchParams.get('q') || '';
 
+  const [productList, setProductList] = useState<ProductItem[]>(PRODUCTS);
   const [activeCategory, setActiveCategory] = useState<string>(initialCat);
   const [searchQuery, setSearchQuery] = useState<string>(initialQuery);
   const [sortBy, setSortBy] = useState<'recommended' | 'price-asc' | 'price-desc' | 'stock'>('recommended');
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
   const [addedId, setAddedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/products')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.products && data.products.length > 0) {
+          const mapped: ProductItem[] = data.products.map((p: any) => ({
+            id: p.id,
+            category: p.category_id,
+            brand: p.brand || undefined,
+            region: p.region || undefined,
+            title: p.title,
+            description: p.description,
+            priceUSD: Number(p.price_usd),
+            priceLKR: Number(p.price_lkr),
+            stockCount: Number(p.stock_count),
+            badge: p.badge || undefined,
+            isInstant: p.is_instant,
+            durations: p.durations || [],
+            options: p.options || [],
+            guideMarkdown: p.guide_markdown || '',
+            warranty: p.warranty_terms || '',
+          }));
+          setProductList(mapped);
+        }
+      })
+      .catch((err) => console.error('Failed to fetch catalog from DB:', err));
+  }, []);
 
   useEffect(() => {
     const cat = searchParams.get('category');
@@ -51,8 +80,11 @@ function CatalogContent() {
   }, [searchParams]);
 
   const filteredProducts = useMemo(() => {
-    let list = PRODUCTS.filter((item) => {
-      const matchesCat = activeCategory === 'all' || item.category === activeCategory;
+    let list = productList.filter((item) => {
+      const matchesCat =
+        activeCategory === 'all' ||
+        item.category === activeCategory ||
+        (activeCategory === 'vpn' && item.category === 'vps');
       if (!matchesCat) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
@@ -123,10 +155,10 @@ function CatalogContent() {
                 key={cat.id}
                 type="button"
                 onClick={() => setActiveCategory(cat.id)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-mono tracking-wider transition-all cursor-pointer whitespace-nowrap ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-sans font-medium tracking-wide transition-all duration-150 cursor-pointer whitespace-nowrap select-none ${
                   isActive
-                    ? 'bg-white text-black font-semibold'
-                    : 'bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 border border-white/10'
+                    ? 'bg-white text-black font-semibold shadow-sm'
+                    : 'bg-[#0c0d16] border border-[#212338] text-[#d6d6de] hover:border-zinc-500 hover:text-white hover:bg-[#141522]'
                 }`}
               >
                 {Icon && <Icon className="w-3.5 h-3.5" />}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import ProductModal from '@/components/ProductModal';
 import { ProductItem, PRODUCTS } from '@/lib/products';
@@ -22,6 +22,35 @@ export default function CatalogSection({
   const [internalCategory, setInternalCategory] = useState<'all' | 'vpn' | 'vps' | 'subscription' | 'gaming' | 'giftcard' | 'software'>('all');
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
+  const [productList, setProductList] = useState<ProductItem[]>(PRODUCTS);
+
+  useEffect(() => {
+    fetch('/api/products')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.products && data.products.length > 0) {
+          const mapped: ProductItem[] = data.products.map((p: any) => ({
+            id: p.id,
+            category: p.category_id,
+            brand: p.brand || undefined,
+            region: p.region || undefined,
+            title: p.title,
+            description: p.description,
+            priceUSD: Number(p.price_usd),
+            priceLKR: Number(p.price_lkr),
+            stockCount: Number(p.stock_count),
+            badge: p.badge || undefined,
+            isInstant: p.is_instant,
+            durations: p.durations || [],
+            options: p.options || [],
+            guideMarkdown: p.guide_markdown || '',
+            warranty: p.warranty_terms || '',
+          }));
+          setProductList(mapped);
+        }
+      })
+      .catch((err) => console.error('Failed to fetch catalog from DB:', err));
+  }, []);
 
   const activeCategory = externalCategory !== undefined ? externalCategory : internalCategory;
   const setActiveCategory = onCategoryChange || setInternalCategory;
@@ -30,8 +59,11 @@ export default function CatalogSection({
   const setSearchQuery = onSearchQueryChange || setInternalSearchQuery;
 
   const filteredProducts = useMemo(() => {
-    return PRODUCTS.filter((item) => {
-      const matchesCategory = activeCategory === 'all' || item.category === activeCategory;
+    return productList.filter((item) => {
+      const matchesCategory =
+        activeCategory === 'all' ||
+        item.category === activeCategory ||
+        (activeCategory === 'vpn' && item.category === 'vps');
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             item.description.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
@@ -69,23 +101,23 @@ export default function CatalogSection({
           </div>
         </div>
 
-        {/* Filter Category Pills: 6px radius */}
-        <div className="flex flex-wrap items-center gap-2 mb-10 pb-4 border-b border-[#1f2224]">
+        {/* Filter Category Pills: Rounded pill design matching core store offerings */}
+        <div className="flex flex-wrap items-center gap-2.5 mb-10 pb-4 border-b border-[#1f2224]">
           {[
             { id: 'all', label: 'All Items' },
+            { id: 'vpn', label: 'V2Ray' },
             { id: 'giftcard', label: 'Gift Cards' },
             { id: 'subscription', label: 'Subscriptions' },
-            { id: 'gaming', label: 'Game Top-Ups & Keys' },
-            { id: 'software', label: 'Software & AI' },
-            { id: 'vpn', label: 'VPN & Cloud VPS' },
+            { id: 'gaming', label: 'Game Top-ups' },
+            { id: 'software', label: 'Software' },
           ].map((cat) => (
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id as any)}
-              className={`font-mono text-xs px-4 py-2 rounded-[6px] border transition-colors ${
+              className={`text-xs px-5 py-2.5 rounded-full border transition-all duration-150 cursor-pointer select-none font-sans font-medium ${
                 activeCategory === cat.id
-                  ? 'bg-[#141618] border-white text-white'
-                  : 'bg-transparent border-[#292d30] text-[#a1a4a5] hover:text-white hover:border-[#464a4d]'
+                  ? 'bg-white text-black font-semibold border-white shadow-sm'
+                  : 'bg-[#0c0d16] border-[#212338] text-[#d6d6de] hover:border-zinc-500 hover:text-white hover:bg-[#141522]'
               }`}
             >
               {cat.label}
