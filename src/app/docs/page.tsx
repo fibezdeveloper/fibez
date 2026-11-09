@@ -107,7 +107,7 @@ export default function DocsPage() {
               <h2 className="text-lg font-medium text-white">1. Android: v2rayNG Setup</h2>
             </div>
             <p className="text-xs text-[#a1a4a5] leading-relaxed">
-              v2rayNG is the recommended open-source Android client with native Reality protocol support and automatic latency testing.
+              v2rayNG is the recommended open-source Android client with native VLESS protocol support and automatic latency testing.
             </p>
             <ol className="list-decimal list-inside text-xs text-zinc-300 space-y-2 font-mono">
               <li>Download <strong>v2rayNG</strong> from Google Play Store or GitHub releases.</li>
@@ -130,7 +130,7 @@ export default function DocsPage() {
             </p>
             <ol className="list-decimal list-inside text-xs text-zinc-300 space-y-2 font-mono">
               <li>Install <strong>Shadowrocket</strong> or <strong>Streisand</strong> from the App Store.</li>
-              <li>Copy your VLESS Reality key from the <Link href="/vault" className="text-white hover:underline">Key Vault</Link>.</li>
+              <li>Copy your VLESS configuration key from the <Link href="/vault" className="text-white hover:underline">Key Vault</Link>.</li>
               <li>When opening Shadowrocket, it will automatically detect the clipboard string and prompt to add it. Tap <strong>Save</strong>.</li>
               <li>Toggle the connection switch to <strong>ON</strong>. Allow iOS VPN permissions if prompted.</li>
             </ol>

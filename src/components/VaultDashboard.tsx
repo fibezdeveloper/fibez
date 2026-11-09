@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
+import { authClient } from '@/lib/auth-client';
 import { 
   Key, Shield, QrCode as QrIcon, Copy, Check, Clock, X,
   Terminal, Server, RefreshCw, Upload, Eye, EyeOff, CheckCircle2, AlertTriangle, Send 
@@ -73,6 +74,7 @@ interface PendingReceipt {
 }
 
 export default function VaultDashboard() {
+  const { data: session } = authClient.useSession();
   const [activeTab, setActiveTab] = useState<'vault' | 'admin'>('vault');
   const [assets, setAssets] = useState<ActiveAsset[]>(INITIAL_ASSETS);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -120,7 +122,11 @@ export default function VaultDashboard() {
     }, 1000);
 
     // Fetch real assets from database
-    fetch('/api/vault')
+    const vaultUrl = session?.user?.email 
+      ? `/api/vault?email=${encodeURIComponent(session.user.email)}`
+      : '/api/vault';
+
+    fetch(vaultUrl)
       .then((res) => res.json())
       .then((data) => {
         if (data.assets && data.assets.length > 0) {
@@ -154,7 +160,7 @@ export default function VaultDashboard() {
       .catch((err) => console.error('Failed to load pending receipts:', err));
 
     return () => clearInterval(timer);
-  }, []);
+  }, [session?.user?.email]);
 
   const formatCountdown = (days: number, hours: number) => {
     const totalSeconds = Math.max(0, (days * 86400 + hours * 3600) - secondsElapsed);
@@ -507,7 +513,7 @@ export default function VaultDashboard() {
             <div className="font-mono text-xs uppercase tracking-wider text-zinc-400">
               Mobile Quick Connect
             </div>
-            <h4 className="text-lg font-normal text-white">Scan V2Ray Reality Config</h4>
+            <h4 className="text-lg font-normal text-white">Scan VLESS VPN Config</h4>
 
             <div className="p-3 bg-white rounded-[10px] inline-block shadow-lg">
               <img

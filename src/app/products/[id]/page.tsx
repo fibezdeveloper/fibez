@@ -208,8 +208,8 @@ function ProductDetailContent({
                     <span className="text-white font-medium">ChaCha20 / TLS 1.3</span>
                   </div>
                   <div className="p-3.5 rounded-[12px] bg-[#0c0c0e] border border-[#1f1f23] flex items-center justify-between">
-                    <span className="text-[#a1a4a5]">Transit Carrier</span>
-                    <span className="text-white font-medium">Tier-1 BGP Peered</span>
+                    <span className="text-[#a1a4a5]">VPN Protocol</span>
+                    <span className="text-white font-medium">{product.protocol || 'High-Speed VLESS'}</span>
                   </div>
                   <div className="p-3.5 rounded-[12px] bg-[#0c0c0e] border border-[#1f1f23] flex items-center justify-between">
                     <span className="text-[#a1a4a5]">Device Concurrency</span>
@@ -234,12 +234,12 @@ function ProductDetailContent({
                   <p className="leading-relaxed text-[#a1a4a5]">{product.guideMarkdown}</p>
                   <div className="p-3 rounded-[8px] bg-black/60 border border-white/5 flex items-center justify-between mt-3">
                     <code className="text-zinc-400 select-all">
-                      vless://fibez-gateway@{product.id}.fibez.net:443?encryption=none&security=reality
+                      vless://fibez-vpn@{product.id}.fibez.net:443?encryption=none&security=tls
                     </code>
                     <button
                       type="button"
                       onClick={() => {
-                        navigator.clipboard.writeText(`vless://fibez-gateway@${product.id}.fibez.net:443?encryption=none&security=reality`);
+                        navigator.clipboard.writeText(`vless://fibez-vpn@${product.id}.fibez.net:443?encryption=none&security=tls`);
                         setCopied(true);
                         setTimeout(() => setCopied(false), 1500);
                       }}

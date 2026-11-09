@@ -34,15 +34,15 @@ export default function FeaturesGrid() {
                 </div>
                 <span className="font-mono text-xs text-zinc-300 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-                  REALITY PROTOCOL
+                  HIGH-SPEED VLESS
                 </span>
               </div>
 
               <h3 className="text-2xl font-normal tracking-[-0.03em] text-white mb-2">
-                V2Ray &amp; Xray Reality Nodes
+                High-Speed VLESS VPN
               </h3>
               <p className="text-[15px] leading-relaxed text-[#a1a4a5] mb-6">
-                Ultra-low latency tunnel endpoints designed to bypass ISP throttling with SNI masking. Instant dynamic QR code generation for mobile clients (v2rayNG, Shadowrocket, Sing-box).
+                Optimised for SLT, Dialog, Hutch &amp; Airtel. Instant delivery. Config sent to your email in seconds with NetMod Syna and v2rayNG support.
               </p>
 
               {/* Terminal Code Mockup */}

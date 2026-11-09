@@ -138,7 +138,7 @@ export default function Footer() {
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-zinc-400 hover:text-white hover:border-white/20 transition-all"
               >
                 <span className="w-2 h-2 rounded-full bg-[#3ad389] animate-pulse" />
-                <span>All systems operational · 10Gbps edge transit</span>
+                <span>All systems operational · High-speed VLESS VPN</span>
               </Link>
             </div>
           </div>
@@ -146,12 +146,28 @@ export default function Footer() {
           {/* Navigation Columns (7 Columns on Desktop, split into 3 groups) */}
           <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
             
-            {/* Column 1: Platform */}
+            {/* Column 1: V2Ray & Platform */}
             <div className="space-y-4">
               <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-300 font-semibold">
-                Platform
+                V2Ray & Nodes
               </div>
               <ul className="space-y-2.5 text-sm">
+                <li>
+                  <Link href="/v2ray" className="text-white font-medium hover:text-zinc-200 transition-colors flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#3ad389]" />
+                    <span>High-Speed VLESS Hub</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/v2ray#line-check" className="text-zinc-400 hover:text-white transition-colors">
+                    Line Check Diagnostic
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/v2ray/guide" className="text-zinc-400 hover:text-white transition-colors">
+                    NetMod Setup Guide
+                  </Link>
+                </li>
                 <li>
                   <Link href="/catalog" className="text-zinc-400 hover:text-white transition-colors">
                     Products Catalog
@@ -159,17 +175,7 @@ export default function Footer() {
                 </li>
                 <li>
                   <Link href="/vault" className="text-zinc-400 hover:text-white transition-colors">
-                    Key Vault & Orders
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/infrastructure" className="text-zinc-400 hover:text-white transition-colors">
-                    PoP Infrastructure
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/docs" className="text-zinc-400 hover:text-white transition-colors">
-                    Client Setup Docs
+                    Key Vault &amp; Orders
                   </Link>
                 </li>
                 <li>

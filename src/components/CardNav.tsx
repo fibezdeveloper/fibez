@@ -135,7 +135,7 @@ const DEFAULT_ITEMS: CardNavItem[] = [
     links: [
       { label: 'Shop All Products', href: '#catalog' },
       { label: 'V2Ray Singapore 10Gbps', href: '#catalog' },
-      { label: 'VPN Reality Nodes', badge: 'FREE', href: '#catalog' },
+      { label: 'High-Speed VLESS VPN', badge: 'FREE TRIAL', href: '/v2ray' },
       { label: 'NVMe Cloud VPS', href: '#catalog' }
     ]
   },

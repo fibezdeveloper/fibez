@@ -38,7 +38,7 @@ export default function PrivacyPage() {
             <span>Strict Zero-Logs Network Policy</span>
           </h2>
           <p>
-            When utilizing Fibez V2Ray Reality transit nodes or private cloud gateways, we enforce an absolute, non-negotiable zero-logging policy. We do not inspect, log, retain, or monitor:
+            When utilizing Fibez VLESS VPN servers or digital delivery gateways, we enforce an absolute, non-negotiable zero-logging policy. We do not inspect, log, retain, or monitor:
           </p>
           <ul className="list-disc list-inside space-y-1.5 text-xs text-[#a1a4a5] font-mono pl-2">
             <li>Browsing history, accessed domains, or destination IP addresses.</li>
@@ -46,7 +46,7 @@ export default function PrivacyPage() {
             <li>Connection timestamps or source IP bandwidth correlation graphs.</li>
           </ul>
           <p>
-            Network transit is routed entirely in-memory (RAM) with no persistent logging daemons enabled on edge transit servers.
+            Network traffic is routed entirely in-memory (RAM) with no persistent logging daemons enabled on server nodes.
           </p>
         </section>
 

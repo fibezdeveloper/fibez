@@ -482,7 +482,7 @@ export default function ProductModal({
                   {/* VLESS URI String */}
                   <div className="p-3.5 rounded-[6px] border border-[#292d30] bg-[#050505]">
                     <div className="flex items-center justify-between mb-1.5 font-mono text-[11px] text-[#a1a4a5]">
-                      <span>VLESS Reality URI</span>
+                      <span>VLESS VPN URI</span>
                       <button
                         onClick={() => handleCopyPayload(dispensedData.vlessUri || '')}
                         className="text-white hover:underline flex items-center gap-1"

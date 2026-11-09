@@ -170,12 +170,24 @@ export default function Navbar(props: NavbarProps) {
   // Standard Menu Navigation Cards
   const navItems: CardNavItem[] = [
     {
+      label: 'High-Speed VLESS VPN',
+      description: 'Optimised for SLT, Dialog, Hutch & Airtel. Instant delivery.',
+      links: [
+        { label: 'VLESS VPN Packages', href: '/v2ray' },
+        { label: 'Line Check Diagnostic Tool', href: '/v2ray#line-check' },
+        { label: 'NetMod & v2rayNG Guide', href: '/v2ray/guide' },
+        { label: 'Dialog Zoom Package Bypass', href: '/products/v2ray-dialog-zoom' },
+        { label: 'SLT Fiber Netflix Bypass', href: '/products/v2ray-slt-netflix' },
+        { label: 'Direct High-Speed Node', href: '/products/v2ray-singapore-direct' },
+      ]
+    },
+    {
       label: 'Store & Catalog',
       description: 'Zero-trust automated fulfillment under 400ms.',
       links: [
         { label: 'All Products & Items', href: '/catalog' },
         { label: 'Dedicated Shopping Cart', href: '/cart' },
-        { label: 'V2Ray Reality (10Gbps)', href: '/catalog?category=vpn' },
+        { label: 'High-Speed VLESS VPN', href: '/v2ray' },
         { label: 'Gift Cards (Steam, PSN)', href: '/catalog?category=giftcard' },
         { label: 'Subscriptions (AI & Streaming)', href: '/catalog?category=subscription' },
         { label: 'Game Top-ups (Free Fire, UC)', href: '/catalog?category=gaming' },
@@ -188,8 +200,8 @@ export default function Navbar(props: NavbarProps) {
       links: [
         { label: 'Personal Key Vault', href: '/vault' },
         { label: 'Track Order Status', href: '/vault?tab=orders' },
-        { label: 'Global Network Telemetry', href: '/infrastructure' },
-        { label: 'Client Setup Guides', href: '/docs' },
+        { label: 'Global Server Telemetry', href: '/infrastructure' },
+        { label: 'Client Setup Guides', href: '/v2ray/guide' },
       ]
     },
     {
@@ -197,9 +209,9 @@ export default function Navbar(props: NavbarProps) {
       description: 'Tutorials and direct engineer assistance.',
       links: [
         { label: 'Support Tickets & Helpdesk', href: '/tickets' },
+        { label: 'NetMod & v2rayNG Guide', href: '/v2ray/guide' },
+        { label: 'Line Check Diagnostics', href: '/v2ray#line-check' },
         { label: 'Knowledge Base', href: '/docs' },
-        { label: 'v2rayNG & Sing-box Guide', href: '/docs#v2ray' },
-        { label: 'Ubuntu VPS Hardening', href: '/docs#vps' },
         { label: 'WhatsApp Instant Support', href: 'https://wa.me/94771234567' },
         { label: 'Discord Community', href: 'https://discord.gg/fibez' },
       ]
@@ -209,13 +221,15 @@ export default function Navbar(props: NavbarProps) {
   // Default Search Category Cards: V2Ray, Gift Cards, Subscriptions, Game Top-ups, Software
   const defaultSearchCards: CardNavItem[] = [
     {
-      label: 'V2Ray Reality VPN',
-      description: 'Anti-DPI BGP bypass nodes for SLT, Dialog, Mobitel.',
+      label: 'High-Speed VLESS VPN',
+      description: 'Optimised for SLT, Dialog, Hutch & Airtel. Config sent in seconds.',
       links: [
-        { label: 'V2Ray Singapore Reality 10Gbps', href: '/products/v2ray-singapore-reality' },
-        { label: 'V2Ray Tokyo Low-Latency', href: '/products/v2ray-tokyo-ultra' },
-        { label: 'V2Ray US Anycast Gaming', href: '/products/v2ray-us-gaming' },
-        { label: 'Browse All V2Ray Nodes ›', href: '/catalog?category=vpn' },
+        { label: 'Explore VLESS VPN Packages ›', href: '/v2ray' },
+        { label: 'Line Check Diagnostic Tool ›', href: '/v2ray#line-check' },
+        { label: 'NetMod & v2rayNG Setup Guide ›', href: '/v2ray/guide' },
+        { label: 'Dialog Zoom Package Bypass', href: '/products/v2ray-dialog-zoom' },
+        { label: 'SLT Fiber Netflix Bypass', href: '/products/v2ray-slt-netflix' },
+        { label: 'Direct High-Speed Node', href: '/products/v2ray-singapore-direct' },
       ]
     },
     {

@@ -630,7 +630,7 @@ export default function TicketCenter({
                     onChange={(e) => setNewCategory(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-[#141417] border border-white/10 text-white focus:outline-none focus:border-white/30 cursor-pointer"
                   >
-                    <option value="VPN Connection">VPN Connection (V2Ray / Reality)</option>
+                    <option value="VPN Connection">VPN Connection (High-Speed VLESS)</option>
                     <option value="Cloud VPS">Cloud VPS (SSH / Hypervisor)</option>
                     <option value="Subscription Credentials">Subscription Credentials (ChatGPT / Netflix)</option>
                     <option value="Billing & Slip">Billing &amp; Bank Slip Verification</option>
@@ -664,7 +664,7 @@ export default function TicketCenter({
                   required
                   value={newSubject}
                   onChange={(e) => setNewSubject(e.target.value)}
-                  placeholder="e.g. Cannot connect to Singapore Reality node via v2rayNG"
+                  placeholder="e.g. Cannot connect to VLESS node via NetMod or v2rayNG"
                   className="w-full px-3 py-2 rounded-xl bg-[#141417] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-white/30"
                 />
               </div>

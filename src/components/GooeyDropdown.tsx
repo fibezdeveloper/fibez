@@ -422,7 +422,7 @@ export function GooeyDropdown({
         id={menuId}
         role="menu"
         aria-labelledby={triggerId}
-        inert={!isOpen ? ("" as unknown as boolean) : undefined}
+        inert={!isOpen}
         onKeyDown={(e) => {
           const validItems = itemRefs.current.filter(Boolean) as HTMLButtonElement[];
           const currentIndex = validItems.indexOf(document.activeElement as HTMLButtonElement);

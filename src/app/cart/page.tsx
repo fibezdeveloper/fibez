@@ -54,6 +54,8 @@ export default function CartPage() {
   const [promoError, setPromoError] = useState<string | null>(null);
   const [copiedCrypto, setCopiedCrypto] = useState(false);
   const [uploadedSlip, setUploadedSlip] = useState<string | null>(null);
+  const [isUploadingSlip, setIsUploadingSlip] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -162,11 +164,34 @@ export default function CartPage() {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setUploadedSlip(url);
+    if (!file) return;
+
+    setIsUploadingSlip(true);
+    setUploadError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'slips');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to upload receipt');
+      }
+
+      setUploadedSlip(data.url);
+    } catch (err: any) {
+      console.error('Slip upload error:', err);
+      setUploadError(err.message || 'Upload failed. Please try again.');
+    } finally {
+      setIsUploadingSlip(false);
     }
   };
 
@@ -514,10 +539,33 @@ export default function CartPage() {
                     Attach Transfer Receipt Slip:
                   </label>
                   <label className="flex items-center justify-center gap-2 p-3 rounded-[12px] bg-[#0c0c0e] border border-dashed border-white/20 hover:border-white/40 cursor-pointer text-zinc-400 hover:text-white transition-colors">
-                    <Upload className="w-4 h-4 text-white" />
-                    <span>{uploadedSlip ? 'Slip Attached ✓' : 'Upload Bank Slip / Screenshot'}</span>
-                    <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                    {isUploadingSlip ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Uploading to Secure Object Storage...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 text-white" />
+                        <span>{uploadedSlip ? 'Slip Uploaded & Verified ✓' : 'Upload Bank Slip / Screenshot'}</span>
+                      </>
+                    )}
+                    <input 
+                      type="file" 
+                      accept="image/*,application/pdf" 
+                      disabled={isUploadingSlip} 
+                      onChange={handleFileUpload} 
+                      className="hidden" 
+                    />
                   </label>
+                  {uploadError && (
+                    <div className="text-[10px] text-red-400 mt-1">{uploadError}</div>
+                  )}
+                  {uploadedSlip && (
+                    <div className="text-[10px] text-[#3ad389] mt-1 flex items-center gap-1 font-mono">
+                      <span>✓ Securely stored in Neon Object Storage bucket</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

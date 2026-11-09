@@ -62,6 +62,7 @@ interface PendingOrder {
   productTitle: string;
   amount: string;
   slipName: string;
+  receiptUrl?: string;
   paymentMethod: string;
   status: 'Pending' | 'Verified' | 'Rejected';
   date: string;
@@ -276,6 +277,7 @@ export default function DashboardPage() {
               productTitle: o.items?.[0]?.product_title || 'Digital Product',
               amount: o.currency === 'USD' ? `$${o.total_amount_usd} USD` : `Rs. ${Number(o.total_amount_lkr).toLocaleString()}`,
               slipName: o.receipt_image_url ? 'bank_transfer_slip.png' : 'Pending Slip',
+              receiptUrl: o.receipt_image_url,
               paymentMethod: o.payment_method === 'crypto' ? 'Crypto (USDT TRC20)' : 'Bank Transfer / CDM',
               status: o.payment_status === 'VERIFIED' ? 'Verified' : o.payment_status === 'FAILED' ? 'Rejected' : 'Pending',
               date: new Date(o.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
@@ -905,16 +907,19 @@ export default function DashboardPage() {
                           <div className="text-[11px] text-zinc-400">{ord.amount} • {ord.paymentMethod}</div>
                         </td>
                         <td className="p-3.5">
-                          <a
-                            href="#view-slip"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              alert(`Viewing receipt image: ${ord.slipName}`);
-                            }}
-                            className="underline text-zinc-400 hover:text-white"
-                          >
-                            {ord.slipName}
-                          </a>
+                          {ord.receiptUrl ? (
+                            <a
+                              href={ord.receiptUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 underline text-zinc-300 hover:text-white font-mono text-xs"
+                            >
+                              <span>{ord.slipName}</span>
+                              <ExternalLink className="w-3 h-3 text-zinc-500" />
+                            </a>
+                          ) : (
+                            <span className="text-zinc-600 font-mono text-xs">No Slip</span>
+                          )}
                         </td>
                         <td className="p-3.5">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] ${

@@ -22,7 +22,7 @@ interface EdgeNode {
   city: string;
   country: string;
   datacenter: string;
-  transit: string;
+  protocol: string;
   bandwidth: string;
   latencyBase: number;
   status: 'OPERATIONAL' | 'DEGRADED' | 'MAINTENANCE';
@@ -35,7 +35,7 @@ const NODES: EdgeNode[] = [
     city: 'Singapore',
     country: 'Singapore',
     datacenter: 'Equinix SG1 / Singtel IX',
-    transit: 'Tier-1 BGP (Telstra / NTT)',
+    protocol: 'VLESS / TLS 1.3',
     bandwidth: '10 Gbps Unmetered',
     latencyBase: 14,
     status: 'OPERATIONAL',
@@ -46,7 +46,7 @@ const NODES: EdgeNode[] = [
     city: 'Tokyo',
     country: 'Japan',
     datacenter: 'Equinix TY2 / JPIX',
-    transit: 'NTT Communications / SoftBank',
+    protocol: 'VLESS / TLS 1.3',
     bandwidth: '10 Gbps Direct',
     latencyBase: 28,
     status: 'OPERATIONAL',
@@ -57,18 +57,18 @@ const NODES: EdgeNode[] = [
     city: 'Frankfurt',
     country: 'Germany',
     datacenter: 'Interxion FRA / DE-CIX',
-    transit: 'Deutsche Telekom / Lumen',
+    protocol: 'VLESS / TLS 1.3',
     bandwidth: '10 Gbps Dedicated',
     latencyBase: 108,
     status: 'OPERATIONAL',
   },
   {
     id: 'lon1',
-    name: 'London LON Financial Transit',
+    name: 'London LON Cloud Node',
     city: 'London',
     country: 'United Kingdom',
     datacenter: 'Telehouse North / LINX',
-    transit: 'Vodafone / GTT Communications',
+    protocol: 'VLESS / TLS 1.3',
     bandwidth: '10 Gbps Peered',
     latencyBase: 114,
     status: 'OPERATIONAL',
@@ -79,7 +79,7 @@ const NODES: EdgeNode[] = [
     city: 'Ashburn, VA',
     country: 'United States',
     datacenter: 'Equinix DC2 / Anycast',
-    transit: 'Arelion / Zayo Tier-1',
+    protocol: 'VLESS / TLS 1.3',
     bandwidth: '20 Gbps Aggregated',
     latencyBase: 162,
     status: 'OPERATIONAL',
@@ -120,10 +120,10 @@ export default function InfrastructurePage() {
             <span>Real-Time Edge Telemetry</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-normal tracking-[-0.03em] text-white">
-            Global Infrastructure & BGP Routing Status
+            Global Infrastructure & Server Status
           </h1>
           <p className="text-sm text-[#a1a4a5] mt-2 max-w-2xl leading-relaxed">
-            Real-time health, packet loss metrics, and latency diagnostics across our 10Gbps edge transit nodes and automated cloud hypervisors.
+            Real-time health, latency diagnostics, and operational metrics across our high-speed VLESS servers and automated cloud hypervisors.
           </p>
         </div>
 
@@ -160,7 +160,7 @@ export default function InfrastructurePage() {
         <div className="p-5 rounded-[18px] bg-[#0c0c0e] border border-[#1f1f23]">
           <div className="text-xs font-mono text-[#a1a4a5] uppercase mb-1">Peak Backbone Capacity</div>
           <div className="text-white font-mono text-lg font-bold">60 Gbps</div>
-          <div className="text-[11px] font-mono text-zinc-500 mt-1">Multi-homed Tier-1 BGP</div>
+          <div className="text-[11px] font-mono text-zinc-500 mt-1">High-capacity cloud relays</div>
         </div>
 
         <div className="p-5 rounded-[18px] bg-[#0c0c0e] border border-[#1f1f23]">
@@ -201,8 +201,8 @@ export default function InfrastructurePage() {
                     <span className="text-zinc-300 truncate max-w-[170px]">{node.datacenter}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#a1a4a5]">Transit Carrier</span>
-                    <span className="text-zinc-300 truncate max-w-[170px]">{node.transit}</span>
+                    <span className="text-[#a1a4a5]">VPN Protocol</span>
+                    <span className="text-zinc-300 truncate max-w-[170px]">{node.protocol}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#a1a4a5]">Backbone Capacity</span>
@@ -239,7 +239,7 @@ export default function InfrastructurePage() {
           Local ISP DPI Bypass & Masquerade Validation
         </h2>
         <p className="text-xs text-[#a1a4a5] mb-6">
-          Automated continuous packet probes verify that Reality TLS sni-spoofing succeeds across local internet service providers.
+          High-speed VLESS VPN configs optimised and verified to work reliably across Sri Lankan internet service providers.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
