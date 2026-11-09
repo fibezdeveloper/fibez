@@ -64,11 +64,7 @@ export default function Navbar(props: NavbarProps) {
   };
 
   const handleOpenAuthModal = (mode: 'login' | 'register' = 'login') => {
-    if (props.onOpenAuth) {
-      props.onOpenAuth(mode);
-    } else if (store) {
-      store.openAuth(mode);
-    }
+    router.push(mode === 'register' ? '/login?mode=register' : '/login');
   };
 
   // Account dropdown actions (Cart, Currency Settings, Vault, Infrastructure, and Auth)
