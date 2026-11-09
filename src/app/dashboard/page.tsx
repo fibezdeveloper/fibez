@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
 import { PRODUCTS } from '@/lib/products';
 import TicketCenter from '@/components/TicketCenter';
+import { useStore } from '@/lib/store-context';
 import {
   Shield,
   Server,
@@ -35,7 +36,12 @@ import {
   X,
   Users,
   LifeBuoy,
-  CornerDownRight
+  CornerDownRight,
+  Share2,
+  Globe,
+  Power,
+  Save,
+  Landmark
 } from 'lucide-react';
 
 type RoleType = 'user' | 'admin' | 'owner';
@@ -78,6 +84,10 @@ export default function DashboardPage() {
   // Role switching state (defaults to user's database role if logged in, else defaults to user view)
   const initialRole: RoleType = (session?.user as any)?.role || 'user';
   const [activeRole, setActiveRole] = useState<RoleType>(initialRole);
+
+  // Global store for footer social links
+  const { socialLinks, updateSocialLink, toggleSocialLink, resetSocialLinks } = useStore();
+  const [socialSavedToast, setSocialSavedToast] = useState(false);
 
   useEffect(() => {
     if ((session?.user as any)?.role) {
@@ -1272,6 +1282,135 @@ export default function DashboardPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+
+          {/* 4. Social Media Channels & Footer Configuration */}
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400">
+                    FOOTER CHANNELS & COMMUNITY LINKS
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold">
+                    LIVE SYNC
+                  </span>
+                </div>
+                <h2 className="text-lg font-medium text-white mt-1">Social Media Management & Link Configuration</h2>
+                <p className="text-xs text-zinc-400">
+                  Toggle social media links on or off for the public footer, update target URLs, and customize platform visibility.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                {socialSavedToast && (
+                  <span className="text-xs font-mono text-emerald-400 animate-in fade-in">
+                    Saved to footer ✓
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetSocialLinks();
+                    setSocialSavedToast(true);
+                    setTimeout(() => setSocialSavedToast(false), 2000);
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                >
+                  Reset Defaults
+                </button>
+              </div>
+            </div>
+
+            <div className="border border-white/10 rounded-2xl overflow-hidden bg-[#111114]">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs font-mono">
+                  <thead className="bg-white/5 border-b border-white/10 text-zinc-400 uppercase tracking-wider">
+                    <tr>
+                      <th className="p-3.5">Platform</th>
+                      <th className="p-3.5">Destination URL / Handle</th>
+                      <th className="p-3.5">Visibility</th>
+                      <th className="p-3.5 text-right">Owner Toggle</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-zinc-300">
+                    {socialLinks.map((social) => (
+                      <tr key={social.id} className="hover:bg-white/5 transition-colors">
+                        <td className="p-3.5">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: social.enabled ? '#3ad389' : '#52525b' }} />
+                            <span className="font-bold text-white capitalize">{social.name}</span>
+                          </div>
+                        </td>
+                        <td className="p-3.5">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={social.url}
+                              onChange={(e) => {
+                                updateSocialLink(social.id, { url: e.target.value });
+                                setSocialSavedToast(true);
+                                setTimeout(() => setSocialSavedToast(false), 2000);
+                              }}
+                              className="w-full max-w-md px-3 py-1.5 rounded-lg bg-black border border-white/10 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-white/30"
+                              placeholder={`https://${social.platform}.com/...`}
+                            />
+                            <a
+                              href={social.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Test link"
+                              className="p-1.5 rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+                        </td>
+                        <td className="p-3.5">
+                          {social.enabled ? (
+                            <span className="inline-flex items-center gap-1.5 text-emerald-400">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                              <span>Active on Footer</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-zinc-500">
+                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
+                              <span>Disabled</span>
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              toggleSocialLink(social.id);
+                              setSocialSavedToast(true);
+                              setTimeout(() => setSocialSavedToast(false), 2000);
+                            }}
+                            className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-medium transition-all cursor-pointer ${
+                              social.enabled
+                                ? 'bg-white text-black border-white hover:bg-zinc-200'
+                                : 'bg-white/5 text-zinc-400 border-white/10 hover:text-white hover:bg-white/10'
+                            }`}
+                          >
+                            {social.enabled ? 'Disable Channel' : 'Enable Channel'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Note on Payment rails */}
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono text-zinc-400">
+              <div className="flex items-center gap-2 text-zinc-300">
+                <Landmark className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Payment Channel in Footer: <strong className="text-white">Manual Bank Transfer / CDM Only</strong></span>
+              </div>
+              <span className="text-[11px] text-zinc-500">Commercial Bank · Sampath Bank Slip Verification Rail</span>
             </div>
           </div>
 

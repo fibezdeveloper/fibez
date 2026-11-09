@@ -16,6 +16,27 @@ export interface CartItem {
   priceUSD: number;
 }
 
+export interface SocialLinkConfig {
+  id: string;
+  name: string;
+  platform: 'discord' | 'telegram' | 'whatsapp' | 'x' | 'youtube' | 'tiktok' | 'instagram' | 'github' | 'reddit' | 'facebook';
+  url: string;
+  enabled: boolean;
+}
+
+export const DEFAULT_SOCIAL_LINKS: SocialLinkConfig[] = [
+  { id: 'discord', name: 'Discord Community', platform: 'discord', url: 'https://discord.gg/fibez', enabled: true },
+  { id: 'telegram', name: 'Telegram Channel', platform: 'telegram', url: 'https://t.me/fibezstore', enabled: true },
+  { id: 'whatsapp', name: 'WhatsApp Desk', platform: 'whatsapp', url: 'https://wa.me/94771234567', enabled: true },
+  { id: 'x', name: 'X / Twitter', platform: 'x', url: 'https://x.com/fibezstore', enabled: true },
+  { id: 'youtube', name: 'YouTube Channel', platform: 'youtube', url: 'https://youtube.com/@fibezstore', enabled: true },
+  { id: 'tiktok', name: 'TikTok', platform: 'tiktok', url: 'https://tiktok.com/@fibezstore', enabled: true },
+  { id: 'instagram', name: 'Instagram', platform: 'instagram', url: 'https://instagram.com/fibezstore', enabled: false },
+  { id: 'github', name: 'GitHub', platform: 'github', url: 'https://github.com/fibez-digital', enabled: false },
+  { id: 'reddit', name: 'Reddit Community', platform: 'reddit', url: 'https://reddit.com/r/fibez', enabled: false },
+  { id: 'facebook', name: 'Facebook Page', platform: 'facebook', url: 'https://facebook.com/fibezstore', enabled: false },
+];
+
 interface StoreContextType {
   currency: 'LKR' | 'USD';
   setCurrency: (currency: 'LKR' | 'USD') => void;
@@ -36,6 +57,11 @@ interface StoreContextType {
   openAuth: (mode?: 'login' | 'register') => void;
   closeAuth: () => void;
   formatPrice: (priceLKR: number, priceUSD: number) => string;
+  socialLinks: SocialLinkConfig[];
+  setSocialLinks: (links: SocialLinkConfig[]) => void;
+  updateSocialLink: (id: string, updates: Partial<SocialLinkConfig>) => void;
+  toggleSocialLink: (id: string) => void;
+  resetSocialLinks: () => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -43,6 +69,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [currency, setCurrencyState] = useState<'LKR' | 'USD'>('LKR');
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [socialLinks, setSocialLinksState] = useState<SocialLinkConfig[]>(DEFAULT_SOCIAL_LINKS);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -58,6 +85,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const savedCart = localStorage.getItem('fibez_cart');
       if (savedCart) {
         setCart(JSON.parse(savedCart));
+      }
+      const savedSocials = localStorage.getItem('fibez_social_links');
+      if (savedSocials) {
+        setSocialLinksState(JSON.parse(savedSocials));
       }
     } catch (e) {
       // LocalStorage access might fail in private windows or restrictions
@@ -79,6 +110,33 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('fibez_cart', JSON.stringify(cart));
     } catch (e) {}
   }, [cart, hasHydrated]);
+
+  useEffect(() => {
+    if (!hasHydrated) return;
+    try {
+      localStorage.setItem('fibez_social_links', JSON.stringify(socialLinks));
+    } catch (e) {}
+  }, [socialLinks, hasHydrated]);
+
+  const setSocialLinks = (links: SocialLinkConfig[]) => {
+    setSocialLinksState(links);
+  };
+
+  const updateSocialLink = (id: string, updates: Partial<SocialLinkConfig>) => {
+    setSocialLinksState((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
+    );
+  };
+
+  const toggleSocialLink = (id: string) => {
+    setSocialLinksState((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, enabled: !item.enabled } : item))
+    );
+  };
+
+  const resetSocialLinks = () => {
+    setSocialLinksState(DEFAULT_SOCIAL_LINKS);
+  };
 
   const setCurrency = (curr: 'LKR' | 'USD') => {
     setCurrencyState(curr);
@@ -202,6 +260,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         openAuth,
         closeAuth,
         formatPrice,
+        socialLinks,
+        setSocialLinks,
+        updateSocialLink,
+        toggleSocialLink,
+        resetSocialLinks,
       }}
     >
       {children}
