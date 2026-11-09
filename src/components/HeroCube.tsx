@@ -210,12 +210,12 @@ export default function HeroCube() {
         ctx.fill();
       });
 
-      // Draw central pulse dot in Iris Violet
+      // Draw central pulse dot in White
       const centerProj = project(0, 0, 0, rotX, rotY, rotZ);
       ctx.beginPath();
       ctx.arc(centerProj.x, centerProj.y, 3, 0, Math.PI * 2);
-      ctx.fillStyle = '#9281f7';
-      ctx.shadowColor = '#9281f7';
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#ffffff';
       ctx.shadowBlur = 8;
       ctx.fill();
       ctx.shadowBlur = 0;
@@ -242,7 +242,7 @@ export default function HeroCube() {
       />
       {/* Micro-label below the cube in Commit Mono */}
       <div className="absolute bottom-1 right-2 flex items-center gap-1.5 font-mono text-[11px] text-[#6e727a] tracking-wider uppercase pointer-events-none">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#9281f7]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-white" />
         <span>VAULT-ENGINE // 3D-STATE</span>
       </div>
     </div>

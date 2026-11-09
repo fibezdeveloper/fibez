@@ -8,33 +8,33 @@ export default function TermsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-24 pb-32">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs font-mono text-[#8e87aa] mb-8">
+      <div className="flex items-center gap-2 text-xs font-mono text-[#a1a4a5] mb-8">
         <Link href="/" className="hover:text-white transition-colors">Home</Link>
         <ChevronRight className="w-3.5 h-3.5 text-[#5c5673]" />
         <span className="text-white">Terms of Service</span>
       </div>
 
       {/* Header */}
-      <div className="mb-12 pb-8 border-b border-[#231e38]">
-        <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-[#9281f7] mb-2">
+      <div className="mb-12 pb-8 border-b border-[#1f1f23]">
+        <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-[#ffffff] mb-2">
           <Scale className="w-3.5 h-3.5" />
           <span>Legal & Compliance</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-normal tracking-[-0.03em] text-white">
           Terms of Service & Developer Agreement
         </h1>
-        <p className="text-sm text-[#8e87aa] mt-2 leading-relaxed">
+        <p className="text-sm text-[#a1a4a5] mt-2 leading-relaxed">
           Last revised: November 2026. Please review these terms carefully prior to provisioning digital infrastructure or redeeming licenses through Fibez.
         </p>
       </div>
 
       {/* Terms Body */}
-      <div className="space-y-10 text-sm leading-relaxed text-[#c9c3e0]">
+      <div className="space-y-10 text-sm leading-relaxed text-[#a1a4a5]">
         
         {/* Section 1 */}
         <section className="space-y-3">
           <h2 className="text-lg font-medium text-white flex items-center gap-2">
-            <span className="font-mono text-xs text-[#9281f7]">01.</span>
+            <span className="font-mono text-xs text-[#ffffff]">01.</span>
             <span>Acceptance of Terms</span>
           </h2>
           <p>
@@ -45,13 +45,13 @@ export default function TermsPage() {
         {/* Section 2 */}
         <section className="space-y-3">
           <h2 className="text-lg font-medium text-white flex items-center gap-2">
-            <span className="font-mono text-xs text-[#9281f7]">02.</span>
+            <span className="font-mono text-xs text-[#ffffff]">02.</span>
             <span>Automated Zero-Trust Delivery & Provisioning</span>
           </h2>
           <p>
-            Fibez operates an automated digital delivery engine engineered to mint credentials, configurations, and license keys under 400 milliseconds upon validated payment confirmation. Digital goods are delivered electronically directly into your personal <Link href="/vault" className="text-[#9281f7] hover:underline">Key Vault</Link> and to your designated email address.
+            Fibez operates an automated digital delivery engine engineered to mint credentials, configurations, and license keys under 400 milliseconds upon validated payment confirmation. Digital goods are delivered electronically directly into your personal <Link href="/vault" className="text-[#ffffff] hover:underline">Key Vault</Link> and to your designated email address.
           </p>
-          <div className="p-4 rounded-[12px] bg-[#0c0919] border border-[#231e38] text-xs font-mono text-[#a1a4a5]">
+          <div className="p-4 rounded-[12px] bg-[#0c0c0e] border border-[#1f1f23] text-xs font-mono text-[#a1a4a5]">
             <span className="text-emerald-400 font-semibold">Delivery SLA:</span> If automated provisioning fails to dispatch keys within 15 minutes of payment receipt, our automated reconciliation pipeline triggers priority queue dispatch or an immediate wallet refund upon request.
           </div>
         </section>
@@ -59,7 +59,7 @@ export default function TermsPage() {
         {/* Section 3 */}
         <section className="space-y-3">
           <h2 className="text-lg font-medium text-white flex items-center gap-2">
-            <span className="font-mono text-xs text-[#9281f7]">03.</span>
+            <span className="font-mono text-xs text-[#ffffff]">03.</span>
             <span>Multi-Currency Billing & Payments</span>
           </h2>
           <p>
@@ -70,23 +70,29 @@ export default function TermsPage() {
         {/* Section 4 */}
         <section className="space-y-3">
           <h2 className="text-lg font-medium text-white flex items-center gap-2">
-            <span className="font-mono text-xs text-[#9281f7]">04.</span>
-            <span>100% Replacement Warranty & Availability SLA</span>
+            <span className="font-mono text-xs text-[#ffffff]">04.</span>
+            <span>Refund & Return Policy (Digital Goods)</span>
           </h2>
           <p>
-            All active digital goods include continuous replacement guarantees during their subscribed term:
+            Due to the instant and digital nature of our products, all sales are final. We do not offer refunds once a digital product has been delivered and revealed.
+          </p>
+          <p>
+            However, we will offer a replacement or refund in the following cases:
           </p>
           <ul className="list-disc list-inside space-y-1.5 text-xs text-[#a1a4a5] font-mono pl-2">
-            <li><strong>V2Ray Nodes:</strong> Instant node rotation or IP migration in the event of upstream carrier blockages.</li>
-            <li><strong>Cloud VPS:</strong> 99.99% hardware and hypervisor SLA backed by redundant NVMe storage mirrors.</li>
-            <li><strong>Software Subscriptions:</strong> Guaranteed session continuity with replacement slot credentials if third-party provider sessions disconnect.</li>
+            <li><strong>Invalid or Used Key:</strong> The product code/key is invalid or already used (must be reported within 24 hours of delivery).</li>
+            <li><strong>Delivery Failure:</strong> We were unable to deliver the product after payment was confirmed.</li>
+            <li><strong>Duplicate Charge:</strong> A duplicate charge occurred on your account.</li>
           </ul>
+          <p className="text-xs font-mono text-zinc-400">
+            To request a refund or replacement, contact us at <a href="mailto:support@fibez.store" className="text-white underline">support@fibez.store</a> with your order number and proof of the issue. Full details are outlined in our dedicated <Link href="/refund" className="text-white underline">Refund Policy</Link>.
+          </p>
         </section>
 
         {/* Section 5 */}
         <section className="space-y-3">
           <h2 className="text-lg font-medium text-white flex items-center gap-2">
-            <span className="font-mono text-xs text-[#9281f7]">05.</span>
+            <span className="font-mono text-xs text-[#ffffff]">05.</span>
             <span>Acceptable Use & Anti-Abuse Standards</span>
           </h2>
           <p>
@@ -105,7 +111,7 @@ export default function TermsPage() {
         {/* Section 6 */}
         <section className="space-y-3">
           <h2 className="text-lg font-medium text-white flex items-center gap-2">
-            <span className="font-mono text-xs text-[#9281f7]">06.</span>
+            <span className="font-mono text-xs text-[#ffffff]">06.</span>
             <span>Limitation of Liability</span>
           </h2>
           <p>
@@ -116,11 +122,11 @@ export default function TermsPage() {
         {/* Section 7 */}
         <section className="space-y-3">
           <h2 className="text-lg font-medium text-white flex items-center gap-2">
-            <span className="font-mono text-xs text-[#9281f7]">07.</span>
+            <span className="font-mono text-xs text-[#ffffff]">07.</span>
             <span>Contact & Inquiries</span>
           </h2>
           <p>
-            If you have any questions regarding these terms, contact our legal desk at <span className="font-mono text-white">legal@fibez.net</span> or via <a href="https://wa.me/94771234567" className="text-[#9281f7] hover:underline">WhatsApp Support</a>.
+            If you have any questions regarding these terms, contact our legal desk at <span className="font-mono text-white">legal@fibez.net</span> or via <a href="https://wa.me/94771234567" className="text-[#ffffff] hover:underline">WhatsApp Support</a>.
           </p>
         </section>
 

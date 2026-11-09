@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, notFound } from 'next/navigation';
 import { PRODUCTS, ProductItem } from '@/lib/products';
 import { useStore } from '@/lib/store-context';
+import ProductReviews from '@/components/ProductReviews';
 import { 
   ChevronRight, 
   ShieldCheck, 
@@ -21,7 +22,8 @@ import {
   Cpu, 
   HardDrive, 
   Wifi, 
-  Key 
+  Key,
+  Star
 } from 'lucide-react';
 
 function ProductDetailContent({
@@ -42,7 +44,7 @@ function ProductDetailContent({
   const [selectedISP, setSelectedISP] = useState('SLT Fiber / Mobitel / Dialog');
   const [copied, setCopied] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
-  const [activeTab, setActiveTab] = useState<'specs' | 'guide' | 'warranty'>('specs');
+  const [activeTab, setActiveTab] = useState<'specs' | 'guide' | 'warranty' | 'reviews'>('specs');
 
   const selectedDuration = product.durations[selectedDurationIndex] || product.durations[0];
   const multiplier = selectedDuration?.multiplier || 1;
@@ -79,11 +81,11 @@ function ProductDetailContent({
         <ChevronRight className="w-3.5 h-3.5 text-[#5c5673]" />
         <Link 
           href={`/catalog?category=${product.category}`} 
-          className="text-[#9281f7] hover:underline capitalize"
+          className="text-white hover:underline capitalize"
         >
           {product.category}
         </Link>
-        <ChevronRight className="w-3.5 h-3.5 text-[#5c5673]" />
+        <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
         <span className="text-white truncate max-w-xs">{product.title}</span>
       </div>
 
@@ -96,15 +98,15 @@ function ProductDetailContent({
           {/* Header */}
           <div>
             <div className="flex items-center gap-2.5 mb-3">
-              <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#9281f7]">
+              <span className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400">
                 {product.category.toUpperCase()} INFRASTRUCTURE
               </span>
               {product.badge && (
-                <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#9281f7]/20 border border-[#9281f7]/40 text-[#9281f7]">
+                <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-white">
                   {product.badge}
                 </span>
               )}
-              <span className="font-mono text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+              <span className="font-mono text-[10px] text-zinc-300 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">
                 {product.stockCount} Available Now
               </span>
             </div>
@@ -118,63 +120,76 @@ function ProductDetailContent({
           </div>
 
           {/* Quick SLA Matrix Bar */}
-          <div className="grid grid-cols-3 gap-3 p-4 rounded-[16px] bg-[#0c0919] border border-[#231e38]">
+          <div className="grid grid-cols-3 gap-3 p-4 rounded-[16px] bg-[#0c0c0e] border border-[#1f1f23]">
             <div className="text-center sm:text-left">
-              <div className="text-[11px] font-mono text-[#8e87aa]">Provisioning SLA</div>
-              <div className="text-sm sm:text-base font-mono font-semibold text-emerald-400 mt-0.5">
+              <div className="text-[11px] font-mono text-[#a1a4a5]">Provisioning SLA</div>
+              <div className="text-sm sm:text-base font-mono font-semibold text-white mt-0.5">
                 &lt; 400ms Auto
               </div>
             </div>
-            <div className="text-center sm:text-left border-x border-[#231e38] px-3">
-              <div className="text-[11px] font-mono text-[#8e87aa]">Uptime Guarantee</div>
+            <div className="text-center sm:text-left border-x border-[#1f1f23] px-3">
+              <div className="text-[11px] font-mono text-[#a1a4a5]">Uptime Guarantee</div>
               <div className="text-sm sm:text-base font-mono font-semibold text-white mt-0.5">
                 99.99% Tier 1
               </div>
             </div>
             <div className="text-center sm:text-left pl-1">
-              <div className="text-[11px] font-mono text-[#8e87aa]">Zero-Trust Key</div>
-              <div className="text-sm sm:text-base font-mono font-semibold text-[#9281f7] mt-0.5">
+              <div className="text-[11px] font-mono text-[#a1a4a5]">Zero-Trust Key</div>
+              <div className="text-sm sm:text-base font-mono font-semibold text-zinc-300 mt-0.5">
                 Encrypted
               </div>
             </div>
           </div>
 
           {/* Tab Navigation */}
-          <div className="border-b border-[#231e38] flex items-center gap-6 text-sm font-mono">
+          <div className="border-b border-[#1f1f23] flex items-center gap-6 text-sm font-mono">
             <button
               type="button"
               onClick={() => setActiveTab('specs')}
               className={`pb-3 transition-colors cursor-pointer relative ${
-                activeTab === 'specs' ? 'text-white' : 'text-[#8e87aa] hover:text-white'
+                activeTab === 'specs' ? 'text-white' : 'text-[#a1a4a5] hover:text-white'
               }`}
             >
               Specifications
               {activeTab === 'specs' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9281f7]" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
               )}
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('guide')}
               className={`pb-3 transition-colors cursor-pointer relative ${
-                activeTab === 'guide' ? 'text-white' : 'text-[#8e87aa] hover:text-white'
+                activeTab === 'guide' ? 'text-white' : 'text-[#a1a4a5] hover:text-white'
               }`}
             >
               Setup Guide
               {activeTab === 'guide' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9281f7]" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
               )}
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('warranty')}
               className={`pb-3 transition-colors cursor-pointer relative ${
-                activeTab === 'warranty' ? 'text-white' : 'text-[#8e87aa] hover:text-white'
+                activeTab === 'warranty' ? 'text-white' : 'text-[#a1a4a5] hover:text-white'
               }`}
             >
               Warranty & SLA
               {activeTab === 'warranty' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9281f7]" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('reviews')}
+              className={`pb-3 transition-colors cursor-pointer relative flex items-center gap-1.5 ${
+                activeTab === 'reviews' ? 'text-white' : 'text-[#a1a4a5] hover:text-white'
+              }`}
+            >
+              <Star className="w-3.5 h-3.5 fill-current" />
+              <span>Reviews</span>
+              {activeTab === 'reviews' && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
               )}
             </button>
           </div>
@@ -184,27 +199,27 @@ function ProductDetailContent({
             {activeTab === 'specs' && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
-                  <div className="p-3.5 rounded-[12px] bg-[#0c0919] border border-[#231e38] flex items-center justify-between">
-                    <span className="text-[#8e87aa]">Fulfillment Method</span>
+                  <div className="p-3.5 rounded-[12px] bg-[#0c0c0e] border border-[#1f1f23] flex items-center justify-between">
+                    <span className="text-[#a1a4a5]">Fulfillment Method</span>
                     <span className="text-white font-medium">Zero-Trust Instant API</span>
                   </div>
-                  <div className="p-3.5 rounded-[12px] bg-[#0c0919] border border-[#231e38] flex items-center justify-between">
-                    <span className="text-[#8e87aa]">Security Standard</span>
-                    <span className="text-emerald-400 font-medium">ChaCha20 / TLS 1.3</span>
+                  <div className="p-3.5 rounded-[12px] bg-[#0c0c0e] border border-[#1f1f23] flex items-center justify-between">
+                    <span className="text-[#a1a4a5]">Security Standard</span>
+                    <span className="text-white font-medium">ChaCha20 / TLS 1.3</span>
                   </div>
-                  <div className="p-3.5 rounded-[12px] bg-[#0c0919] border border-[#231e38] flex items-center justify-between">
-                    <span className="text-[#8e87aa]">Transit Carrier</span>
+                  <div className="p-3.5 rounded-[12px] bg-[#0c0c0e] border border-[#1f1f23] flex items-center justify-between">
+                    <span className="text-[#a1a4a5]">Transit Carrier</span>
                     <span className="text-white font-medium">Tier-1 BGP Peered</span>
                   </div>
-                  <div className="p-3.5 rounded-[12px] bg-[#0c0919] border border-[#231e38] flex items-center justify-between">
-                    <span className="text-[#8e87aa]">Device Concurrency</span>
+                  <div className="p-3.5 rounded-[12px] bg-[#0c0c0e] border border-[#1f1f23] flex items-center justify-between">
+                    <span className="text-[#a1a4a5]">Device Concurrency</span>
                     <span className="text-white font-medium">Unlimited Multi-Device</span>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-[14px] bg-[#100d21] border border-[#261f3d] text-xs leading-relaxed text-[#c9c3e0]">
+                <div className="p-4 rounded-[14px] bg-[#0c0c0e] border border-[#1f1f23] text-xs leading-relaxed text-[#c9c3e0]">
                   <div className="font-semibold text-white mb-1 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-[#9281f7]" />
+                    <ShieldCheck className="w-4 h-4 text-white" />
                     <span>Real-Time ISP Masking & DPI Resistance</span>
                   </div>
                   Designed specifically to bypass deep packet inspection and bandwidth throttling. Automatically rotates SNI masquerades to ensure persistent connectivity.
@@ -214,8 +229,8 @@ function ProductDetailContent({
 
             {activeTab === 'guide' && (
               <div className="space-y-4">
-                <div className="p-4 rounded-[14px] bg-[#0a0815] border border-[#231e38] font-mono text-xs text-zinc-300 space-y-2">
-                  <div className="text-[#9281f7] font-semibold">Immediate Client Activation:</div>
+                <div className="p-4 rounded-[14px] bg-[#0c0c0e] border border-[#1f1f23] font-mono text-xs text-zinc-300 space-y-2">
+                  <div className="text-white font-semibold">Immediate Client Activation:</div>
                   <p className="leading-relaxed text-[#a1a4a5]">{product.guideMarkdown}</p>
                   <div className="p-3 rounded-[8px] bg-black/60 border border-white/5 flex items-center justify-between mt-3">
                     <code className="text-zinc-400 select-all">
@@ -228,10 +243,10 @@ function ProductDetailContent({
                         setCopied(true);
                         setTimeout(() => setCopied(false), 1500);
                       }}
-                      className="ml-2 text-[#8e87aa] hover:text-white"
+                      className="ml-2 text-[#a1a4a5] hover:text-white"
                       title="Copy sample config"
                     >
-                      {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      {copied ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
@@ -239,25 +254,31 @@ function ProductDetailContent({
             )}
 
             {activeTab === 'warranty' && (
-              <div className="p-4 rounded-[14px] bg-[#0a0815] border border-[#231e38] text-xs leading-relaxed text-zinc-300 space-y-2">
-                <div className="text-emerald-400 font-mono font-semibold">Fibez Guaranteed SLA:</div>
-                <p className="text-[#a1a4a5]">{product.warranty}</p>
-                <div className="pt-2 text-[#8e87aa]">
-                  Should any server encounter an outage exceeding 15 consecutive minutes, an automatic failover key is dispatched to your Key Vault instantly.
+              <div className="p-4 rounded-[14px] bg-[#0c0c0e] border border-[#1f1f23] text-xs leading-relaxed text-zinc-300 space-y-2.5">
+                <div className="text-white font-mono font-semibold">Fibez Refund & Replacement Guarantee:</div>
+                <p className="text-zinc-300">{product.warranty}</p>
+                <div className="pt-2 border-t border-white/10 text-xs font-mono text-zinc-400">
+                  Defective or used codes reported within 24 hours of delivery are eligible for replacement or refund via{' '}
+                  <a href="mailto:support@fibez.store" className="text-white underline">support@fibez.store</a>. Read our full{' '}
+                  <Link href="/refund" className="text-white underline">Refund Policy</Link>.
                 </div>
               </div>
+            )}
+
+            {activeTab === 'reviews' && (
+              <ProductReviews productId={product.id} />
             )}
           </div>
         </div>
 
         {/* Right 5 Columns: Sticky Order Configurator Card */}
         <div className="lg:col-span-5">
-          <div className="sticky top-24 rounded-[24px] bg-[#0c0919] border border-[#2a2344] p-6 shadow-2xl space-y-6">
+          <div className="sticky top-24 rounded-[24px] bg-[#0c0c0e] border border-[#1f1f23] p-6 shadow-2xl space-y-6">
             
             {/* Price Display */}
-            <div className="pb-4 border-b border-[#231e38] flex items-baseline justify-between">
+            <div className="pb-4 border-b border-[#1f1f23] flex items-baseline justify-between">
               <div>
-                <span className="text-xs font-mono text-[#8e87aa] uppercase tracking-wider block">
+                <span className="text-xs font-mono text-[#a1a4a5] uppercase tracking-wider block">
                   Total Subscription Price
                 </span>
                 <span className="text-3xl font-mono font-bold text-white tracking-tight">
@@ -265,7 +286,7 @@ function ProductDetailContent({
                 </span>
               </div>
               <div className="text-right">
-                <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                <span className="text-[11px] font-mono text-zinc-300 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">
                   Instant Delivery
                 </span>
               </div>
@@ -273,7 +294,7 @@ function ProductDetailContent({
 
             {/* Duration Selector */}
             <div>
-              <label className="block text-xs font-mono text-[#8e87aa] uppercase tracking-wider mb-2">
+              <label className="block text-xs font-mono text-[#a1a4a5] uppercase tracking-wider mb-2">
                 Select Commitment Duration
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -284,8 +305,8 @@ function ProductDetailContent({
                     onClick={() => setSelectedDurationIndex(idx)}
                     className={`py-2.5 px-3 rounded-[12px] text-xs font-mono tracking-wider transition-all cursor-pointer border text-center ${
                       selectedDurationIndex === idx
-                        ? 'bg-[#9281f7] text-black font-semibold border-[#9281f7] shadow-[0_0_12px_rgba(146,129,247,0.35)]'
-                        : 'bg-[#151126] text-[#8e87aa] hover:text-white hover:bg-[#1e1836] border-white/5'
+                        ? 'bg-white text-black font-semibold border-white'
+                        : 'bg-[#141417] text-[#a1a4a5] hover:text-white hover:bg-[#1a1a1e] border-white/5'
                     }`}
                   >
                     {dur.label}
@@ -297,13 +318,13 @@ function ProductDetailContent({
             {/* ISP Optimization Selector */}
             {product.category === 'vpn' && (
               <div>
-                <label className="block text-xs font-mono text-[#8e87aa] uppercase tracking-wider mb-2">
+                <label className="block text-xs font-mono text-[#a1a4a5] uppercase tracking-wider mb-2">
                   Target ISP Routing Optimization
                 </label>
                 <select
                   value={selectedISP}
                   onChange={(e) => setSelectedISP(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-[12px] bg-[#151126] border border-white/10 text-xs font-mono text-white focus:outline-none focus:border-[#9281f7]"
+                  className="w-full px-3.5 py-2.5 rounded-[12px] bg-[#141417] border border-white/10 text-xs font-mono text-white focus:outline-none focus:border-white/30"
                 >
                   <option value="SLT Fiber / Mobitel / Dialog">Sri Lanka (SLT Fiber / Dialog / Mobitel)</option>
                   <option value="Dialog 4G / Home Broadband">Dialog 4G / Broadband</option>
@@ -318,7 +339,7 @@ function ProductDetailContent({
               <button
                 type="button"
                 onClick={handleInstantCheckout}
-                className="w-full py-3.5 px-6 rounded-xl bg-[#9281f7] hover:bg-[#806ff5] text-black font-semibold text-xs tracking-wider uppercase text-center transition-all shadow-[0_0_20px_rgba(146,129,247,0.4)] flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 px-6 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs tracking-wider uppercase text-center transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Instant Checkout & Claim Key ›</span>
               </button>
@@ -328,18 +349,18 @@ function ProductDetailContent({
                 onClick={handleAddToCart}
                 className={`w-full py-3 px-6 rounded-xl border text-xs font-mono tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   isAdded
-                    ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                    : 'bg-[#151126] border-white/10 hover:border-[#9281f7]/50 text-white'
+                    ? 'bg-white/15 border-white text-white'
+                    : 'bg-[#141417] border-white/10 hover:border-white/30 text-white'
                 }`}
               >
                 {isAdded ? (
                   <>
-                    <Check className="w-4 h-4 text-emerald-400" />
+                    <Check className="w-4 h-4 text-white" />
                     <span>Added to Cart!</span>
                   </>
                 ) : (
                   <>
-                    <ShoppingCart className="w-4 h-4 text-[#9281f7]" />
+                    <ShoppingCart className="w-4 h-4 text-zinc-400" />
                     <span>Add to Shopping Cart</span>
                   </>
                 )}
@@ -348,7 +369,7 @@ function ProductDetailContent({
               {isAdded && (
                 <Link
                   href="/cart"
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#17122b] border border-[#2d234d] hover:border-[#9281f7] text-xs font-mono text-[#9281f7] hover:text-white transition-all flex items-center justify-center gap-1.5 animate-in fade-in"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#16161a] border border-[#26262b] hover:border-white/30 text-xs font-mono text-white transition-all flex items-center justify-center gap-1.5 animate-in fade-in"
                 >
                   <span>Go to Dedicated Cart</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -358,12 +379,12 @@ function ProductDetailContent({
 
             {/* Security Guarantee Footnote */}
             <div className="pt-2 text-center space-y-1">
-              <div className="flex items-center justify-center gap-1.5 text-xs text-[#8e87aa]">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="flex items-center justify-center gap-1.5 text-xs text-[#a1a4a5]">
+                <ShieldCheck className="w-3.5 h-3.5 text-white" />
                 <span>Zero-trust encrypted payload delivery</span>
               </div>
-              <p className="text-[10px] font-mono text-[#5c5673]">
-                Keys immediately appear in your personal <Link href="/vault" className="text-[#9281f7] hover:underline">Key Vault</Link>
+              <p className="text-[10px] font-mono text-[#a1a4a5]">
+                Keys immediately appear in your personal <Link href="/vault" className="text-white hover:underline">Key Vault</Link>
               </p>
             </div>
 
@@ -374,7 +395,7 @@ function ProductDetailContent({
 
       {/* Related Products Section */}
       {relatedProducts.length > 0 && (
-        <div className="pt-12 border-t border-[#231e38]">
+        <div className="pt-12 border-t border-[#1f1f23]">
           <h2 className="text-xl font-medium text-white mb-6">
             Related {product.category.toUpperCase()} Configurations
           </h2>
@@ -389,16 +410,16 @@ function ProductDetailContent({
                 <Link
                   key={rel.id}
                   href={`/products/${rel.id}`}
-                  className="p-5 rounded-[16px] bg-[#0c0919] border border-[#231e38] hover:border-[#9281f7]/60 transition-all block group"
+                  className="p-5 rounded-[16px] bg-[#0c0c0e] border border-[#1f1f23] hover:border-white/30 hover:bg-[#111114] transition-all block group"
                 >
-                  <div className="flex items-center justify-between text-xs text-[#8e87aa] mb-2 font-mono">
-                    <span className="uppercase text-[#9281f7]">{rel.category}</span>
+                  <div className="flex items-center justify-between text-xs text-[#a1a4a5] mb-2 font-mono">
+                    <span className="uppercase text-zinc-400">{rel.category}</span>
                     <span className="text-white font-medium">{relPrice}</span>
                   </div>
-                  <h3 className="text-base font-medium text-white group-hover:text-[#9281f7] transition-colors line-clamp-1">
+                  <h3 className="text-base font-medium text-white group-hover:text-white transition-colors line-clamp-1">
                     {rel.title}
                   </h3>
-                  <p className="text-xs text-[#8e87aa] line-clamp-2 mt-1">
+                  <p className="text-xs text-[#a1a4a5] line-clamp-2 mt-1">
                     {rel.description}
                   </p>
                 </Link>

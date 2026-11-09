@@ -123,18 +123,18 @@ export default function CartPage() {
   if (cartCount === 0 && !isSuccess) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-28 pb-36 text-center">
-        <div className="w-20 h-20 rounded-full bg-[#130f24] border border-[#2a2247] flex items-center justify-center mx-auto text-[#9281f7] mb-6 shadow-[0_0_30px_rgba(146,129,247,0.2)]">
+        <div className="w-20 h-20 rounded-full bg-[#111114] border border-[#222226] flex items-center justify-center mx-auto text-white mb-6">
           <ShoppingCart className="w-10 h-10" />
         </div>
         <h1 className="text-2xl sm:text-4xl font-medium text-white mb-3">
           Your Dedicated Shopping Cart is Empty
         </h1>
-        <p className="text-sm text-[#8e87aa] max-w-md mx-auto mb-8 leading-relaxed">
+        <p className="text-sm text-[#a1a4a5] max-w-md mx-auto mb-8 leading-relaxed">
           Select high-speed V2Ray reality nodes, AMD EPYC NVMe cloud servers, or zero-trust software subscriptions to get started.
         </p>
         <Link
           href="/catalog"
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#9281f7] hover:bg-[#806ff5] text-black text-xs font-semibold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(146,129,247,0.35)]"
+          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold uppercase tracking-wider transition-all"
         >
           <span>Explore Product Catalog</span>
           <ArrowRight className="w-4 h-4" />
@@ -146,21 +146,21 @@ export default function CartPage() {
   if (isSuccess) {
     return (
       <div className="max-w-xl mx-auto px-4 sm:px-6 pt-28 pb-36 text-center animate-in fade-in duration-300">
-        <div className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400 mb-6 shadow-[0_0_30px_rgba(52,211,153,0.3)]">
+        <div className="w-20 h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center mx-auto text-white mb-6">
           <CheckCircle2 className="w-10 h-10" />
         </div>
-        <div className="font-mono text-xs uppercase tracking-[0.2em] text-emerald-400 mb-2">
+        <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">
           Automated Pipeline Complete
         </div>
         <h1 className="text-2xl sm:text-3xl font-medium text-white mb-2">
           Order Verified & Keys Minted!
         </h1>
-        <p className="text-sm text-[#8e87aa] mb-6 leading-relaxed">
+        <p className="text-sm text-[#a1a4a5] mb-6 leading-relaxed">
           Zero-trust keys and connection strings have been minted under 400ms and delivered to your personal Key Vault. Redirecting...
         </p>
         <Link
           href="/vault"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#9281f7] text-black text-xs font-semibold uppercase tracking-wider"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black text-xs font-semibold uppercase tracking-wider"
         >
           <span>Open Key Vault Now</span>
           <ArrowRight className="w-4 h-4" />
@@ -172,18 +172,18 @@ export default function CartPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-32">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs font-mono text-[#8e87aa] mb-8">
+      <div className="flex items-center gap-2 text-xs font-mono text-[#a1a4a5] mb-8">
         <Link href="/" className="hover:text-white transition-colors">Home</Link>
-        <ChevronRight className="w-3.5 h-3.5 text-[#5c5673]" />
+        <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
         <Link href="/catalog" className="hover:text-white transition-colors">Catalog</Link>
-        <ChevronRight className="w-3.5 h-3.5 text-[#5c5673]" />
+        <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
         <span className="text-white">Shopping Cart ({cartCount})</span>
       </div>
 
       {/* Header & Steps */}
-      <div className="mb-10 pb-6 border-b border-[#231e38] flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="mb-10 pb-6 border-b border-[#1f1f23] flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <div className="font-mono text-xs uppercase tracking-[0.2em] text-[#9281f7] mb-2">
+          <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">
             Dedicated Cart & Zero-Trust Checkout
           </div>
           <h1 className="text-3xl sm:text-4xl font-normal tracking-[-0.03em] text-white">
@@ -194,17 +194,17 @@ export default function CartPage() {
         {/* 3-Step Indicator */}
         <div className="flex items-center gap-3 font-mono text-xs">
           <div className="flex items-center gap-1.5 text-white font-medium">
-            <span className="w-5 h-5 rounded-full bg-[#9281f7] text-black text-[11px] font-bold flex items-center justify-center">1</span>
+            <span className="w-5 h-5 rounded-full bg-white text-black text-[11px] font-bold flex items-center justify-center">1</span>
             <span>Cart Review</span>
           </div>
-          <span className="text-[#3b3554]">───</span>
-          <div className="flex items-center gap-1.5 text-[#8e87aa]">
-            <span className="w-5 h-5 rounded-full bg-[#18142b] border border-[#2e264f] text-[11px] flex items-center justify-center">2</span>
+          <span className="text-zinc-600">───</span>
+          <div className="flex items-center gap-1.5 text-[#a1a4a5]">
+            <span className="w-5 h-5 rounded-full bg-[#16161a] border border-[#26262b] text-[11px] flex items-center justify-center">2</span>
             <span>Payment</span>
           </div>
-          <span className="text-[#3b3554]">───</span>
-          <div className="flex items-center gap-1.5 text-[#8e87aa]">
-            <span className="w-5 h-5 rounded-full bg-[#18142b] border border-[#2e264f] text-[11px] flex items-center justify-center">3</span>
+          <span className="text-zinc-600">───</span>
+          <div className="flex items-center gap-1.5 text-[#a1a4a5]">
+            <span className="w-5 h-5 rounded-full bg-[#16161a] border border-[#26262b] text-[11px] flex items-center justify-center">3</span>
             <span>Minted Key</span>
           </div>
         </div>
@@ -217,8 +217,8 @@ export default function CartPage() {
           
           {/* Cart Items List */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-[#1c182d]">
-              <span className="text-xs font-mono uppercase tracking-wider text-[#8e87aa]">
+            <div className="flex items-center justify-between pb-2 border-b border-[#1f1f23]">
+              <span className="text-xs font-mono uppercase tracking-wider text-[#a1a4a5]">
                 Digital Assets in Cart
               </span>
               <button
@@ -242,11 +242,11 @@ export default function CartPage() {
                 return (
                   <div
                     key={item.id}
-                    className="p-5 rounded-[20px] bg-[#0c0919] border border-[#231e38] hover:border-[#9281f7]/40 transition-all shadow-xl"
+                    className="p-5 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23] hover:border-white/30 transition-all shadow-xl"
                   >
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="flex items-start gap-3.5">
-                        <div className="w-11 h-11 rounded-[14px] bg-[#17122b] border border-[#2d234d] flex items-center justify-center text-[#9281f7] shrink-0 mt-0.5">
+                        <div className="w-11 h-11 rounded-[14px] bg-[#16161a] border border-[#26262b] flex items-center justify-center text-white shrink-0 mt-0.5">
                           {item.product.category === 'vpn' && <Shield className="w-5 h-5" />}
                           {item.product.category === 'vps' && <Server className="w-5 h-5" />}
                           {item.product.category === 'subscription' && <Sparkles className="w-5 h-5" />}
@@ -255,16 +255,16 @@ export default function CartPage() {
 
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-mono text-[10px] uppercase text-[#9281f7] tracking-wider">
+                            <span className="font-mono text-[10px] uppercase text-zinc-400 tracking-wider">
                               {item.product.category}
                             </span>
-                            <span className="font-mono text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.2 rounded-full">
+                            <span className="font-mono text-[10px] text-zinc-300 bg-white/5 border border-white/10 px-2 py-0.2 rounded-full">
                               Instant Auto-Mint
                             </span>
                           </div>
                           <Link
                             href={`/products/${item.productId}`}
-                            className="text-base sm:text-lg font-medium text-white hover:text-[#9281f7] transition-colors leading-snug block"
+                            className="text-base sm:text-lg font-medium text-white hover:underline transition-colors leading-snug block"
                           >
                             {item.product.title}
                           </Link>
@@ -282,15 +282,15 @@ export default function CartPage() {
                     </div>
 
                     {/* In-Cart Duration Switcher & ISP Selector */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-[14px] bg-[#120e24] border border-[#231e38] text-xs font-mono mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-[14px] bg-[#141417] border border-[#1f1f23] text-xs font-mono mb-4">
                       <div>
-                        <label className="text-[10px] text-[#8e87aa] uppercase block mb-1">
+                        <label className="text-[10px] text-[#a1a4a5] uppercase block mb-1">
                           Commitment Term:
                         </label>
                         <select
                           value={item.durationIndex}
                           onChange={(e) => updateDuration(item.id, Number(e.target.value))}
-                          className="w-full bg-[#0a0815] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#9281f7] cursor-pointer"
+                          className="w-full bg-[#0c0c0e] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white/30 cursor-pointer"
                         >
                           {item.product.durations.map((dur, dIdx) => (
                             <option key={dur.label} value={dIdx}>
@@ -302,13 +302,13 @@ export default function CartPage() {
 
                       {item.product.category === 'vpn' && (
                         <div>
-                          <label className="text-[10px] text-[#8e87aa] uppercase block mb-1">
+                          <label className="text-[10px] text-[#a1a4a5] uppercase block mb-1">
                             Target ISP Routing:
                           </label>
                           <select
                             value={item.selectedISP || 'SLT Fiber / Mobitel / Dialog'}
                             onChange={(e) => updateISP(item.id, e.target.value)}
-                            className="w-full bg-[#0a0815] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#9281f7] cursor-pointer"
+                            className="w-full bg-[#0c0c0e] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white/30 cursor-pointer"
                           >
                             <option value="SLT Fiber / Mobitel / Dialog">SLT Fiber / Dialog / Mobitel</option>
                             <option value="Dialog 4G / Home Broadband">Dialog 4G / Broadband</option>
@@ -320,16 +320,16 @@ export default function CartPage() {
                     </div>
 
                     {/* Price and Quantity Footer */}
-                    <div className="flex items-center justify-between pt-2 border-t border-[#1c182d]">
+                    <div className="flex items-center justify-between pt-2 border-t border-[#1f1f23]">
                       <div>
-                        <div className="text-[11px] font-mono text-[#8e87aa]">Item Price</div>
+                        <div className="text-[11px] font-mono text-[#a1a4a5]">Item Price</div>
                         <div className="text-sm font-mono text-zinc-300">
                           {currency === 'USD' ? `$${item.priceUSD.toFixed(2)}` : `Rs. ${item.priceLKR.toLocaleString()}`} each
                         </div>
                       </div>
 
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center rounded-xl bg-[#141026] border border-[#2b2344] p-1">
+                        <div className="flex items-center rounded-xl bg-[#141417] border border-[#222226] p-1">
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -348,8 +348,8 @@ export default function CartPage() {
                         </div>
 
                         <div className="text-right min-w-[90px]">
-                          <div className="text-[10px] font-mono text-[#8e87aa]">Line Total</div>
-                          <div className="text-base font-mono font-bold text-[#9281f7]">
+                          <div className="text-[10px] font-mono text-[#a1a4a5]">Line Total</div>
+                          <div className="text-base font-mono font-bold text-white">
                             {lineTotalText}
                           </div>
                         </div>
@@ -364,7 +364,7 @@ export default function CartPage() {
             <div className="flex items-center justify-between pt-2">
               <Link
                 href="/catalog"
-                className="text-xs font-mono text-[#8e87aa] hover:text-white transition-colors flex items-center gap-1.5"
+                className="text-xs font-mono text-[#a1a4a5] hover:text-white transition-colors flex items-center gap-1.5"
               >
                 <span>← Add more items from Catalog</span>
               </Link>
@@ -372,7 +372,7 @@ export default function CartPage() {
           </div>
 
           {/* Payment Method Selector */}
-          <div className="p-6 rounded-[20px] bg-[#0c0919] border border-[#231e38] space-y-5">
+          <div className="p-6 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23] space-y-5">
             <h2 className="text-base font-medium text-white">
               Choose Payment Method
             </h2>
@@ -383,13 +383,13 @@ export default function CartPage() {
                 onClick={() => setPaymentMethod('gateway')}
                 className={`p-4 rounded-[14px] border text-left transition-all cursor-pointer ${
                   paymentMethod === 'gateway'
-                    ? 'bg-[#17122b] border-[#9281f7] shadow-[0_0_15px_rgba(146,129,247,0.25)]'
-                    : 'bg-[#100d21] border-white/5 hover:border-white/20'
+                    ? 'bg-[#18181c] border-white'
+                    : 'bg-[#121215] border-white/5 hover:border-white/20'
                 }`}
               >
-                <CreditCard className="w-5 h-5 text-[#9281f7] mb-2" />
+                <CreditCard className="w-5 h-5 text-white mb-2" />
                 <div className="text-xs font-mono font-medium text-white">Online Cards</div>
-                <div className="text-[10px] font-mono text-[#8e87aa] mt-0.5">Visa / Mastercard / LKR</div>
+                <div className="text-[10px] font-mono text-[#a1a4a5] mt-0.5">Visa / Mastercard / LKR</div>
               </button>
 
               <button
@@ -397,13 +397,13 @@ export default function CartPage() {
                 onClick={() => setPaymentMethod('crypto')}
                 className={`p-4 rounded-[14px] border text-left transition-all cursor-pointer ${
                   paymentMethod === 'crypto'
-                    ? 'bg-[#17122b] border-[#9281f7] shadow-[0_0_15px_rgba(146,129,247,0.25)]'
-                    : 'bg-[#100d21] border-white/5 hover:border-white/20'
+                    ? 'bg-[#18181c] border-white'
+                    : 'bg-[#121215] border-white/5 hover:border-white/20'
                 }`}
               >
-                <Zap className="w-5 h-5 text-amber-400 mb-2" />
+                <Zap className="w-5 h-5 text-white mb-2" />
                 <div className="text-xs font-mono font-medium text-white">Cryptocurrency</div>
-                <div className="text-[10px] font-mono text-[#8e87aa] mt-0.5">USDT TRC20 / TON / BTC</div>
+                <div className="text-[10px] font-mono text-[#a1a4a5] mt-0.5">USDT TRC20 / TON / BTC</div>
               </button>
 
               <button
@@ -411,24 +411,24 @@ export default function CartPage() {
                 onClick={() => setPaymentMethod('bank_transfer')}
                 className={`p-4 rounded-[14px] border text-left transition-all cursor-pointer ${
                   paymentMethod === 'bank_transfer'
-                    ? 'bg-[#17122b] border-[#9281f7] shadow-[0_0_15px_rgba(146,129,247,0.25)]'
-                    : 'bg-[#100d21] border-white/5 hover:border-white/20'
+                    ? 'bg-[#18181c] border-white'
+                    : 'bg-[#121215] border-white/5 hover:border-white/20'
                 }`}
               >
-                <Upload className="w-5 h-5 text-emerald-400 mb-2" />
+                <Upload className="w-5 h-5 text-white mb-2" />
                 <div className="text-xs font-mono font-medium text-white">Bank Transfer / CDM</div>
-                <div className="text-[10px] font-mono text-[#8e87aa] mt-0.5">Instant Slip Upload</div>
+                <div className="text-[10px] font-mono text-[#a1a4a5] mt-0.5">Instant Slip Upload</div>
               </button>
             </div>
 
             {/* Crypto Details View */}
             {paymentMethod === 'crypto' && (
-              <div className="p-4 rounded-[14px] bg-[#120e24] border border-[#2b2447] text-xs font-mono space-y-3">
-                <div className="text-[#9281f7] font-semibold flex items-center justify-between">
+              <div className="p-4 rounded-[14px] bg-[#141417] border border-[#1f1f23] text-xs font-mono space-y-3">
+                <div className="text-white font-semibold flex items-center justify-between">
                   <span>Send Exact Amount: {currency === 'USD' ? `$${finalTotalUSD.toFixed(2)} USDT` : `USDT equivalent of Rs. ${finalTotalLKR.toLocaleString()}`}</span>
-                  <span className="text-[10px] text-emerald-400">TRC20 Network</span>
+                  <span className="text-[10px] text-zinc-400">TRC20 Network</span>
                 </div>
-                <div className="flex items-center justify-between p-2.5 rounded bg-[#0a0815] border border-white/10">
+                <div className="flex items-center justify-between p-2.5 rounded bg-[#0c0c0e] border border-white/10">
                   <span className="text-zinc-300 font-mono truncate max-w-xs">
                     TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t
                   </span>
@@ -439,9 +439,9 @@ export default function CartPage() {
                       setCopiedCrypto(true);
                       setTimeout(() => setCopiedCrypto(false), 1500);
                     }}
-                    className="ml-2 text-[#8e87aa] hover:text-white"
+                    className="ml-2 text-[#a1a4a5] hover:text-white"
                   >
-                    {copiedCrypto ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedCrypto ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
@@ -449,8 +449,8 @@ export default function CartPage() {
 
             {/* Bank Transfer Details View */}
             {paymentMethod === 'bank_transfer' && (
-              <div className="p-4 rounded-[14px] bg-[#120e24] border border-[#2b2447] text-xs font-mono space-y-3">
-                <div className="text-emerald-400 font-semibold">
+              <div className="p-4 rounded-[14px] bg-[#141417] border border-[#1f1f23] text-xs font-mono space-y-3">
+                <div className="text-white font-semibold">
                   Commercial Bank of Ceylon PLC
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-zinc-300">
@@ -460,11 +460,11 @@ export default function CartPage() {
                 </div>
 
                 <div className="pt-2">
-                  <label className="block text-[11px] text-[#8e87aa] mb-1.5">
+                  <label className="block text-[11px] text-[#a1a4a5] mb-1.5">
                     Attach Transfer Receipt Slip:
                   </label>
-                  <label className="flex items-center justify-center gap-2 p-3 rounded-[12px] bg-[#0a0815] border border-dashed border-white/20 hover:border-[#9281f7] cursor-pointer text-zinc-400 hover:text-white transition-colors">
-                    <Upload className="w-4 h-4 text-[#9281f7]" />
+                  <label className="flex items-center justify-center gap-2 p-3 rounded-[12px] bg-[#0c0c0e] border border-dashed border-white/20 hover:border-white/40 cursor-pointer text-zinc-400 hover:text-white transition-colors">
+                    <Upload className="w-4 h-4 text-white" />
                     <span>{uploadedSlip ? 'Slip Attached ✓' : 'Upload Bank Slip / Screenshot'}</span>
                     <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
                   </label>
@@ -474,7 +474,7 @@ export default function CartPage() {
 
             {/* Delivery Email Input */}
             <div className="pt-2">
-              <label className="block text-xs font-mono text-[#8e87aa] uppercase tracking-wider mb-2">
+              <label className="block text-xs font-mono text-[#a1a4a5] uppercase tracking-wider mb-2">
                 Fulfillment & Key Notification Email
               </label>
               <input
@@ -483,10 +483,10 @@ export default function CartPage() {
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
                 placeholder="developer@terminal.sh"
-                className="w-full px-3.5 py-2.5 rounded-[12px] bg-[#120e24] border border-white/10 text-xs text-white placeholder-[#6e6884] focus:outline-none focus:border-[#9281f7] font-mono"
+                className="w-full px-3.5 py-2.5 rounded-[12px] bg-[#141417] border border-white/10 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/30 font-mono"
               />
-              <span className="text-[10px] font-mono text-[#5c5673] mt-1 block">
-                Keys will be dispatched to this email and immediately available in your personal <Link href="/vault" className="text-[#9281f7] hover:underline">Key Vault</Link>.
+              <span className="text-[10px] font-mono text-zinc-500 mt-1 block">
+                Keys will be dispatched to this email and immediately available in your personal <Link href="/vault" className="text-white hover:underline">Key Vault</Link>.
               </span>
             </div>
           </div>
@@ -495,25 +495,25 @@ export default function CartPage() {
 
         {/* Right 5 Columns: Sticky Order Summary & Checkout Card */}
         <div className="lg:col-span-5">
-          <div className="sticky top-24 rounded-[24px] bg-[#0c0919] border border-[#2a2344] p-6 shadow-2xl space-y-6">
+          <div className="sticky top-24 rounded-[24px] bg-[#0c0c0e] border border-[#1f1f23] p-6 shadow-2xl space-y-6">
             
-            <div className="flex items-center justify-between pb-3 border-b border-[#231e38]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#1f1f23]">
               <h2 className="text-base font-medium text-white">
                 Order Summary
               </h2>
               {/* Currency Toggle */}
-              <div className="flex items-center bg-[#151126] border border-white/10 p-0.5 rounded-lg text-xs font-mono">
+              <div className="flex items-center bg-[#141417] border border-white/10 p-0.5 rounded-lg text-xs font-mono">
                 <button
                   type="button"
                   onClick={() => setCurrency('LKR')}
-                  className={`px-2 py-0.5 rounded ${currency === 'LKR' ? 'bg-[#9281f7] text-black font-semibold' : 'text-[#8e87aa]'}`}
+                  className={`px-2 py-0.5 rounded ${currency === 'LKR' ? 'bg-white text-black font-semibold' : 'text-[#a1a4a5]'}`}
                 >
                   LKR
                 </button>
                 <button
                   type="button"
                   onClick={() => setCurrency('USD')}
-                  className={`px-2 py-0.5 rounded ${currency === 'USD' ? 'bg-[#9281f7] text-black font-semibold' : 'text-[#8e87aa]'}`}
+                  className={`px-2 py-0.5 rounded ${currency === 'USD' ? 'bg-white text-black font-semibold' : 'text-[#a1a4a5]'}`}
                 >
                   USD
                 </button>
@@ -528,18 +528,18 @@ export default function CartPage() {
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
                   placeholder="Promo Code (e.g. FIBEZ10)"
-                  className="flex-1 px-3 py-2 rounded-xl bg-[#120e24] border border-white/10 text-xs font-mono text-white placeholder-[#5c5673] focus:outline-none focus:border-[#9281f7] uppercase"
+                  className="flex-1 px-3 py-2 rounded-xl bg-[#141417] border border-white/10 text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-white/30 uppercase"
                 />
                 <button
                   type="button"
                   onClick={handleApplyPromo}
-                  className="px-4 py-2 rounded-xl bg-[#18142b] border border-[#2e264f] hover:border-[#9281f7] text-xs font-mono text-[#9281f7] hover:text-white transition-colors"
+                  className="px-4 py-2 rounded-xl bg-[#16161a] border border-[#26262b] hover:border-white/30 text-xs font-mono text-white transition-colors"
                 >
                   Apply
                 </button>
               </div>
               {appliedPromo && (
-                <div className="mt-2 text-[11px] font-mono text-emerald-400 flex items-center gap-1.5">
+                <div className="mt-2 text-[11px] font-mono text-zinc-300 flex items-center gap-1.5">
                   <Tag className="w-3.5 h-3.5" />
                   <span>Promo &ldquo;{appliedPromo.code}&rdquo; Applied ({appliedPromo.percent}% OFF)</span>
                 </div>
@@ -554,24 +554,24 @@ export default function CartPage() {
             {/* Breakdown */}
             <div className="space-y-3 text-xs font-mono">
               <div className="flex justify-between">
-                <span className="text-[#8e87aa]">Items Subtotal ({cartCount})</span>
+                <span className="text-[#a1a4a5]">Items Subtotal ({cartCount})</span>
                 <span className="text-white">{subtotalFormatted}</span>
               </div>
               {appliedPromo && (
-                <div className="flex justify-between text-emerald-400">
+                <div className="flex justify-between text-zinc-300">
                   <span>Voucher Discount</span>
                   <span>{discountAmountFormatted}</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-[#8e87aa]">Zero-Trust Automated Minting</span>
-                <span className="text-emerald-400 font-semibold">FREE (&lt;400ms)</span>
+                <span className="text-[#a1a4a5]">Zero-Trust Automated Minting</span>
+                <span className="text-zinc-300 font-semibold">FREE (&lt;400ms)</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#8e87aa]">SLA Replacement Warranty</span>
-                <span className="text-emerald-400 font-semibold">INCLUDED</span>
+                <span className="text-[#a1a4a5]">SLA Replacement Warranty</span>
+                <span className="text-zinc-300 font-semibold">INCLUDED</span>
               </div>
-              <div className="pt-4 border-t border-[#231e38] flex items-baseline justify-between text-base">
+              <div className="pt-4 border-t border-[#1f1f23] flex items-baseline justify-between text-base">
                 <span className="text-white font-medium">Grand Total</span>
                 <span className="text-3xl font-bold text-white tracking-tight">
                   {totalFormatted}
@@ -583,7 +583,7 @@ export default function CartPage() {
             <button
               type="submit"
               disabled={isProcessing}
-              className="w-full py-4 px-6 rounded-xl bg-[#9281f7] hover:bg-[#806ff5] text-black font-semibold text-xs tracking-wider uppercase text-center transition-all shadow-[0_0_20px_rgba(146,129,247,0.4)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              className="w-full py-4 px-6 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs tracking-wider uppercase text-center transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
             >
               {isProcessing ? (
                 <span>Minting Encrypted Keys...</span>
@@ -596,13 +596,17 @@ export default function CartPage() {
             </button>
 
             {/* Guarantees */}
-            <div className="pt-2 text-center space-y-1">
-              <div className="flex items-center justify-center gap-1.5 text-xs text-[#8e87aa]">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="pt-2 text-center space-y-1.5">
+              <div className="flex items-center justify-center gap-1.5 text-xs text-[#a1a4a5]">
+                <ShieldCheck className="w-3.5 h-3.5 text-white" />
                 <span>Zero-trust encrypted payload delivery</span>
               </div>
-              <p className="text-[10px] font-mono text-[#5c5673]">
-                Keys immediately appear in your personal <Link href="/vault" className="text-[#9281f7] hover:underline">Key Vault</Link>
+              <p className="text-[10px] font-mono text-zinc-500">
+                Keys immediately appear in your personal <Link href="/vault" className="text-white hover:underline">Key Vault</Link>
+              </p>
+              <p className="text-[10px] font-mono text-zinc-500 pt-1 border-t border-[#1f1f23]">
+                Digital goods: sales final once revealed. 24-hr replacement for invalid keys.{' '}
+                <Link href="/refund" className="text-white hover:underline">Refund Policy</Link>
               </p>
             </div>
           </div>

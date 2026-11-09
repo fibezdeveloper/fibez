@@ -179,7 +179,7 @@ export default function VaultDashboard() {
         {/* Top Header & Mode Toggle */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-12 gap-4 pb-6 border-b border-[#1f2224]">
           <div>
-            <div className="font-mono text-xs uppercase tracking-[0.2em] text-[#9281f7] mb-2">
+            <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">
               Management Portal
             </div>
             <h2 className="text-[36px] sm:text-[48px] font-normal leading-[1.12] tracking-[-0.05em] text-white">
@@ -220,8 +220,8 @@ export default function VaultDashboard() {
               <p className="text-sm text-[#a1a4a5]">
                 Active licenses, connection strings, and credential countdowns stored in your encrypted session.
               </p>
-              <span className="font-mono text-xs text-[#3ad389] flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#3ad389] animate-pulse" />
+              <span className="font-mono text-xs text-zinc-300 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-zinc-400 animate-pulse" />
                 <span>3 Active Services</span>
               </span>
             </div>
@@ -235,10 +235,10 @@ export default function VaultDashboard() {
                   {/* Left Info */}
                   <div className="space-y-1.5 max-w-md">
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-xs text-[#9281f7]">
+                      <span className="font-mono text-xs text-zinc-300">
                         {asset.orderNumber}
                       </span>
-                      <span className="font-mono text-[11px] px-2 py-0.5 rounded-[6px] bg-[#1a1c1e] text-[#3ad389] border border-[#292d30]">
+                      <span className="font-mono text-[11px] px-2 py-0.5 rounded-[6px] bg-[#1a1c1e] text-zinc-300 border border-[#292d30]">
                         {asset.status}
                       </span>
                     </div>
@@ -263,7 +263,7 @@ export default function VaultDashboard() {
                         onClick={() => handleShowQr(asset.payload)}
                         className="btn-ghost-resend text-xs !py-2 !px-3 text-[#f0f0f0]"
                       >
-                        <QrIcon className="w-3.5 h-3.5 text-[#9281f7]" />
+                        <QrIcon className="w-3.5 h-3.5 text-white" />
                         <span>Mobile QR</span>
                       </button>
                     )}
@@ -342,7 +342,7 @@ export default function VaultDashboard() {
                     className="resend-card p-5 space-y-3"
                   >
                     <div className="flex items-center justify-between font-mono text-xs">
-                      <span className="text-[#9281f7]">{rcp.orderNumber}</span>
+                      <span className="text-zinc-300">{rcp.orderNumber}</span>
                       <span className="text-[#6e727a]">{rcp.timestamp}</span>
                     </div>
 
@@ -355,7 +355,7 @@ export default function VaultDashboard() {
 
                     <div className="p-2.5 rounded-[6px] border border-[#292d30] bg-[#050505] flex items-center justify-between font-mono text-xs">
                       <span className="text-[#a1a4a5] truncate">{rcp.receiptName}</span>
-                      <span className="text-[#3ad389] text-[10px] uppercase">Slip Verified</span>
+                      <span className="text-zinc-300 text-[10px] uppercase">Slip Verified</span>
                     </div>
 
                     <div className="pt-2 flex justify-end gap-2">
@@ -378,7 +378,7 @@ export default function VaultDashboard() {
                 <h3 className="text-lg font-normal text-white">
                   Bulk Stock Inventory Vault
                 </h3>
-                <span className="font-mono text-xs text-[#3ad389]">
+                <span className="font-mono text-xs text-zinc-300">
                   Neon DB Encrypted
                 </span>
               </div>
@@ -423,7 +423,7 @@ export default function VaultDashboard() {
                 </div>
 
                 {stockAddedSuccess && (
-                  <div className="text-xs font-mono text-[#3ad389] flex items-center gap-1.5">
+                  <div className="text-xs font-mono text-zinc-300 flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Cryptographically encrypted &amp; inserted into Neon inventory items table!</span>
                   </div>
@@ -460,7 +460,7 @@ export default function VaultDashboard() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="font-mono text-xs uppercase tracking-wider text-[#9281f7]">
+            <div className="font-mono text-xs uppercase tracking-wider text-zinc-400">
               Mobile Quick Connect
             </div>
             <h4 className="text-lg font-normal text-white">Scan V2Ray Reality Config</h4>

@@ -64,7 +64,7 @@ export default function RootLayout({
       </head>
       <body
         suppressHydrationWarning
-        className="min-h-screen bg-black text-[#f0f0f0] font-sans selection:bg-[#9281f7] selection:text-black"
+        className="min-h-screen bg-black text-[#f0f0f0] font-sans selection:bg-white selection:text-black"
       >
         <StoreProvider>
           <ClientLayout>

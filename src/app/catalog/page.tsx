@@ -16,15 +16,18 @@ import {
   ShoppingCart, 
   Check, 
   SlidersHorizontal,
-  ChevronRight
+  ChevronRight,
+  Gift,
+  Cpu
 } from 'lucide-react';
 
 const CATEGORIES = [
-  { id: 'all', label: 'All Products', icon: null },
-  { id: 'vpn', label: 'V2Ray VPN Nodes', icon: Shield },
-  { id: 'vps', label: 'Cloud NVMe VPS', icon: Server },
+  { id: 'all', label: 'All Items', icon: null },
+  { id: 'giftcard', label: 'Gift Cards', icon: Gift },
   { id: 'subscription', label: 'Subscriptions', icon: Sparkles },
-  { id: 'gaming', label: 'Game Keys', icon: Zap },
+  { id: 'gaming', label: 'Game Top-Ups & Keys', icon: Zap },
+  { id: 'software', label: 'Software & AI', icon: Cpu },
+  { id: 'vpn', label: 'VPN & Cloud VPS', icon: Shield },
 ] as const;
 
 function CatalogContent() {
@@ -82,33 +85,34 @@ function CatalogContent() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-32">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs font-mono text-[#8e87aa] mb-6">
+      <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 mb-6">
         <Link href="/" className="hover:text-white transition-colors">Home</Link>
-        <ChevronRight className="w-3.5 h-3.5 text-[#5c5673]" />
-        <span className="text-white">Product Catalog</span>
+        <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
+        <span className="text-zinc-300">Catalog</span>
         {activeCategory !== 'all' && (
           <>
-            <ChevronRight className="w-3.5 h-3.5 text-[#5c5673]" />
-            <span className="text-[#9281f7] capitalize">{activeCategory}</span>
+            <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
+            <span className="text-white capitalize">{activeCategory}</span>
           </>
         )}
       </div>
 
       {/* Header */}
       <div className="mb-10">
-        <div className="font-mono text-xs uppercase tracking-[0.2em] text-[#9281f7] mb-2">
-          Automated Digital Inventory
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 font-mono text-[11px] uppercase tracking-[0.2em] text-zinc-300 mb-3">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Automated Digital Delivery · 24/7 SLA</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-normal tracking-[-0.03em] text-white">
-          Digital Goods & Infrastructure Catalog
+        <h1 className="text-3xl sm:text-5xl font-normal tracking-[-0.04em] text-white">
+          Shop Everything Digital
         </h1>
-        <p className="text-sm text-[#8e87aa] mt-2 max-w-2xl">
-          High-performance V2Ray reality nodes, AMD EPYC NVMe cloud servers, zero-trust subscriptions, and verified game keys with sub-400ms delivery.
+        <p className="text-sm sm:text-base text-zinc-400 mt-2 max-w-2xl leading-relaxed">
+          Official gaming top-ups, digital gift cards, entertainment subscriptions, software licenses, and secure cloud networking with sub-400ms instant dispatch.
         </p>
       </div>
 
       {/* Control Bar: Categories & Search & Sort */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pb-6 mb-8 border-b border-[#231e38]">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pb-6 mb-8 border-b border-white/10">
         {/* Categories */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
           {CATEGORIES.map((cat) => {
@@ -121,8 +125,8 @@ function CatalogContent() {
                 onClick={() => setActiveCategory(cat.id)}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-mono tracking-wider transition-all cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? 'bg-[#9281f7] text-black font-semibold shadow-[0_0_15px_rgba(146,129,247,0.35)]'
-                    : 'bg-[#0e0b1c] text-[#8e87aa] hover:text-white hover:bg-[#18132d] border border-white/5'
+                    ? 'bg-white text-black font-semibold'
+                    : 'bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 border border-white/10'
                 }`}
               >
                 {Icon && <Icon className="w-3.5 h-3.5" />}
@@ -135,27 +139,27 @@ function CatalogContent() {
         {/* Search & Sort */}
         <div className="flex items-center gap-3">
           <div className="relative flex-1 sm:w-64">
-            <Search className="w-4 h-4 text-[#8e87aa] absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search products..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[#0e0b1c] border border-white/10 text-xs text-white placeholder-[#6e6884] focus:outline-none focus:border-[#9281f7] font-mono transition-colors"
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white font-mono transition-colors"
             />
           </div>
 
-          <div className="flex items-center gap-1.5 bg-[#0e0b1c] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-[#8e87aa]">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[#9281f7]" />
+          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-zinc-400">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-300" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
               className="bg-transparent text-white text-xs focus:outline-none cursor-pointer font-mono"
             >
-              <option value="recommended" className="bg-[#0e0b1c]">Recommended</option>
-              <option value="price-asc" className="bg-[#0e0b1c]">Price: Low to High</option>
-              <option value="price-desc" className="bg-[#0e0b1c]">Price: High to Low</option>
-              <option value="stock" className="bg-[#0e0b1c]">Stock Availability</option>
+              <option value="recommended" className="bg-[#121214]">Recommended</option>
+              <option value="price-asc" className="bg-[#121214]">Price: Low to High</option>
+              <option value="price-desc" className="bg-[#121214]">Price: High to Low</option>
+              <option value="stock" className="bg-[#121214]">Stock Availability</option>
             </select>
           </div>
         </div>
@@ -163,16 +167,16 @@ function CatalogContent() {
 
       {/* Product Grid */}
       {filteredProducts.length === 0 ? (
-        <div className="py-24 text-center border border-dashed border-[#231e38] rounded-2xl">
+        <div className="py-24 text-center border border-dashed border-white/10 rounded-2xl">
           <p className="text-base text-zinc-300">No products found matching your filter</p>
-          <p className="text-xs text-[#8e87aa] mt-1">Try resetting the search query or switching categories.</p>
+          <p className="text-xs text-zinc-500 mt-1">Try resetting the search query or switching categories.</p>
           <button
             type="button"
             onClick={() => {
               setActiveCategory('all');
               setSearchQuery('');
             }}
-            className="mt-4 px-4 py-2 rounded-full bg-[#18132d] hover:bg-[#251e45] text-xs font-mono text-[#9281f7] transition-colors"
+            className="mt-4 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-xs font-mono text-white transition-colors"
           >
             Clear Filters
           </button>
@@ -190,46 +194,62 @@ function CatalogContent() {
             return (
               <div
                 key={product.id}
-                className="group relative flex flex-col justify-between rounded-[20px] bg-[#0c0919] border border-[#231e38] hover:border-[#9281f7]/60 transition-all p-6 shadow-xl hover:shadow-[0_10px_30px_-10px_rgba(146,129,247,0.15)]"
+                className="group relative flex flex-col justify-between rounded-[16px] bg-[#111114] border border-white/10 hover:border-white/25 transition-all p-6 shadow-lg"
               >
                 <div>
                   {/* Card Header */}
                   <div className="flex items-start justify-between gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-[12px] bg-[#17122b] border border-[#2d234d] flex items-center justify-center text-[#9281f7] shrink-0">
-                      {product.category === 'vpn' && <Shield className="w-5 h-5" />}
-                      {product.category === 'vps' && <Server className="w-5 h-5" />}
-                      {product.category === 'subscription' && <Sparkles className="w-5 h-5" />}
-                      {product.category === 'gaming' && <Zap className="w-5 h-5" />}
+                    <div className="w-10 h-10 rounded-[10px] bg-white/5 border border-white/10 flex items-center justify-center text-white shrink-0">
+                      {product.category === 'vpn' && <Shield className="w-5 h-5 text-indigo-400" />}
+                      {product.category === 'vps' && <Server className="w-5 h-5 text-cyan-400" />}
+                      {product.category === 'subscription' && <Sparkles className="w-5 h-5 text-purple-400" />}
+                      {product.category === 'gaming' && <Zap className="w-5 h-5 text-amber-400" />}
+                      {product.category === 'giftcard' && <Gift className="w-5 h-5 text-emerald-400" />}
+                      {product.category === 'software' && <Cpu className="w-5 h-5 text-sky-400" />}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-1.5">
                       {product.badge && (
-                        <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#9281f7]/15 border border-[#9281f7]/30 text-[#9281f7]">
+                        <span className="font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-zinc-200">
                           {product.badge}
                         </span>
                       )}
-                      <span className="font-mono text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                      <span className="font-mono text-[9px] text-zinc-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">
                         {product.stockCount} in stock
                       </span>
                     </div>
                   </div>
 
+                  {/* Brand & Region meta */}
+                  <div className="flex items-center gap-2 mb-1.5">
+                    {product.brand && (
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">
+                        {product.brand}
+                      </span>
+                    )}
+                    {product.region && (
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-400">
+                        {product.region}
+                      </span>
+                    )}
+                  </div>
+
                   {/* Title & Detail Link */}
-                  <Link href={`/products/${product.id}`} className="block group-hover:text-[#9281f7] transition-colors">
-                    <h3 className="text-lg font-medium text-white mb-2 leading-snug">
+                  <Link href={`/products/${product.id}`} className="block group-hover:text-zinc-200 transition-colors">
+                    <h3 className="text-base sm:text-lg font-medium text-white mb-2 leading-snug line-clamp-2">
                       {product.title}
                     </h3>
                   </Link>
 
-                  <p className="text-xs text-[#8e87aa] line-clamp-3 mb-6 leading-relaxed">
+                  <p className="text-xs text-zinc-400 line-clamp-2 mb-6 leading-relaxed">
                     {product.description}
                   </p>
                 </div>
 
                 {/* Footer Price & Actions */}
-                <div className="pt-4 border-t border-[#1e1930] flex items-center justify-between gap-3">
+                <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-3">
                   <div>
-                    <div className="text-[11px] font-mono text-[#6e6884]">Starting from</div>
+                    <div className="text-[11px] font-mono text-zinc-500">Starting from</div>
                     <div className="text-lg font-mono font-bold text-white tracking-tight">
                       {priceFormatted}
                     </div>
@@ -241,8 +261,8 @@ function CatalogContent() {
                       onClick={(e) => handleQuickAdd(product, e)}
                       className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
                         isJustAdded
-                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                          : 'bg-[#151126] border-white/10 hover:border-[#9281f7]/50 text-white'
+                          ? 'bg-white text-black border-white'
+                          : 'bg-white/5 border-white/10 hover:border-white/30 text-white'
                       }`}
                       title="Quick Add to Cart"
                     >
@@ -251,7 +271,7 @@ function CatalogContent() {
 
                     <Link
                       href={`/products/${product.id}`}
-                      className="px-3.5 py-2.5 rounded-xl bg-[#9281f7] hover:bg-[#806ff5] text-black font-semibold text-xs tracking-wider uppercase transition-all shadow-[0_0_10px_rgba(146,129,247,0.3)] inline-flex items-center gap-1.5"
+                      className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs tracking-wider uppercase transition-all inline-flex items-center gap-1.5"
                     >
                       <span>Configure</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -277,7 +297,7 @@ function CatalogContent() {
 
 export default function CatalogPage() {
   return (
-    <Suspense fallback={<div className="max-w-7xl mx-auto px-6 py-32 text-center font-mono text-sm text-[#8e87aa]">Loading catalog...</div>}>
+    <Suspense fallback={<div className="max-w-7xl mx-auto px-6 py-32 text-center font-mono text-sm text-zinc-400">Loading catalog...</div>}>
       <CatalogContent />
     </Suspense>
   );

@@ -10,16 +10,17 @@ export interface SearchMenuProps {
   onClose: () => void;
   currency?: 'LKR' | 'USD';
   onSelectProduct?: (product: ProductItem) => void;
-  onSelectCategory?: (category: 'all' | 'vpn' | 'vps' | 'subscription' | 'gaming') => void;
+  onSelectCategory?: (category: 'all' | 'vpn' | 'vps' | 'subscription' | 'gaming' | 'giftcard' | 'software') => void;
   onSearchSubmit?: (query: string) => void;
 }
 
 const CATEGORIES = [
-  { id: 'all', label: 'All Products' },
-  { id: 'vpn', label: 'V2Ray VPN' },
-  { id: 'vps', label: 'Cloud VPS' },
+  { id: 'all', label: 'All Items' },
+  { id: 'giftcard', label: 'Gift Cards' },
   { id: 'subscription', label: 'Subscriptions' },
-  { id: 'gaming', label: 'Gaming Keys' },
+  { id: 'gaming', label: 'Gaming & Top-Ups' },
+  { id: 'software', label: 'Software & AI' },
+  { id: 'vpn', label: 'VPN & Cloud' },
 ] as const;
 
 export default function SearchMenu({
@@ -126,11 +127,11 @@ export default function SearchMenu({
               exit={{ opacity: 0, y: -16, scale: 0.97 }}
               transition={{ type: 'spring', visualDuration: 0.28, bounce: 0 }}
               onKeyDown={handleKeyDown}
-              className="bg-[#0b0914] border border-[#2a243d] rounded-[16px] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden"
+              className="bg-[#0c0c0e] border border-[#1f1f23] rounded-[16px] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.95)] overflow-hidden"
             >
               {/* Search Header Bar */}
-              <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#201b33]">
-                <Search className="w-5 h-5 text-[#9281f7] shrink-0" />
+              <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#1f1f23]">
+                <Search className="w-5 h-5 text-zinc-400 shrink-0" />
                 <input
                   ref={inputRef}
                   type="text"
@@ -140,25 +141,25 @@ export default function SearchMenu({
                     setSelectedIndex(0);
                   }}
                   placeholder="Search products, VPN nodes, cloud VPS, subscriptions..."
-                  className="w-full bg-transparent text-sm sm:text-base text-white placeholder-[#6e6884] focus:outline-none font-sans"
+                  className="w-full bg-transparent text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none font-sans"
                 />
                 {query ? (
                   <button
                     type="button"
                     onClick={() => setQuery('')}
-                    className="p-1 rounded text-[#8e87aa] hover:text-white hover:bg-white/5 transition-colors"
+                    className="p-1 rounded text-[#a1a4a5] hover:text-white hover:bg-white/5 transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 ) : (
-                  <kbd className="hidden sm:inline-block font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-[#181428] border border-[#2b2444] text-[#8e87aa]">
+                  <kbd className="hidden sm:inline-block font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-[#16161a] border border-[#26262b] text-[#a1a4a5]">
                     ESC
                   </kbd>
                 )}
               </div>
 
               {/* Category Filter Chips */}
-              <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-[#1b172c] overflow-x-auto no-scrollbar bg-[#08060f]/60">
+              <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-[#1f1f23] overflow-x-auto no-scrollbar bg-[#08080a]">
                 {CATEGORIES.map((cat) => (
                   <button
                     key={cat.id}
@@ -166,8 +167,8 @@ export default function SearchMenu({
                     onClick={() => handleCategoryClick(cat.id as any)}
                     className={`px-3 py-1 rounded-full text-xs font-mono tracking-wider transition-colors whitespace-nowrap cursor-pointer ${
                       selectedCategory === cat.id
-                        ? 'bg-[#9281f7] text-black font-semibold'
-                        : 'bg-[#151124] text-[#8e87aa] hover:text-white hover:bg-[#1f1a35]'
+                        ? 'bg-white text-black font-semibold'
+                        : 'bg-[#16161a] text-[#a1a4a5] hover:text-white hover:bg-[#202026]'
                     }`}
                   >
                     {cat.label}
@@ -178,9 +179,9 @@ export default function SearchMenu({
               {/* Search Results List */}
               <div className="max-h-[380px] overflow-y-auto p-2 space-y-1">
                 {filteredProducts.length === 0 ? (
-                  <div className="py-12 text-center text-sm text-[#8e87aa]">
+                  <div className="py-12 text-center text-sm text-[#a1a4a5]">
                     <p>No products matching &ldquo;{query}&rdquo;</p>
-                    <p className="text-xs text-[#5c5673] mt-1">Try searching for &quot;v2ray&quot;, &quot;vps&quot;, or &quot;chatgpt&quot;</p>
+                    <p className="text-xs text-zinc-500 mt-1">Try searching for &quot;v2ray&quot;, &quot;vps&quot;, or &quot;chatgpt&quot;</p>
                   </div>
                 ) : (
                   filteredProducts.map((product, idx) => {
@@ -197,12 +198,12 @@ export default function SearchMenu({
                         onClick={() => handleProductClick(product)}
                         className={`flex items-center justify-between p-3 rounded-[10px] transition-colors cursor-pointer ${
                           isSelected
-                            ? 'bg-[#17132a] border border-[#3b315c]/60'
-                            : 'hover:bg-[#120f21] border border-transparent'
+                            ? 'bg-[#18181c] border border-white/20'
+                            : 'hover:bg-[#121215] border border-transparent'
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0 pr-3">
-                          <div className="w-8 h-8 rounded-[8px] bg-[#1a1530] border border-[#2e264f] flex items-center justify-center shrink-0 text-[#9281f7]">
+                          <div className="w-8 h-8 rounded-[8px] bg-[#16161a] border border-[#26262b] flex items-center justify-center shrink-0 text-white">
                             {product.category === 'vpn' && <Shield className="w-4 h-4" />}
                             {product.category === 'vps' && <Server className="w-4 h-4" />}
                             {product.category === 'subscription' && <Sparkles className="w-4 h-4" />}
@@ -215,12 +216,12 @@ export default function SearchMenu({
                                 {product.title}
                               </span>
                               {product.badge && (
-                                <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#9281f7]/15 border border-[#9281f7]/30 text-[#9281f7]">
+                                <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-white/10 border border-white/20 text-zinc-300">
                                   {product.badge}
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-[#8e87aa] truncate mt-0.5 max-w-md">
+                            <p className="text-xs text-[#a1a4a5] truncate mt-0.5 max-w-md">
                               {product.description}
                             </p>
                           </div>
@@ -231,13 +232,13 @@ export default function SearchMenu({
                             <div className="text-sm font-mono font-medium text-white">
                               {priceFormatted}
                             </div>
-                            <div className="text-[10px] font-mono text-emerald-400">
+                            <div className="text-[10px] font-mono text-zinc-400">
                               Instant ({product.stockCount} in stock)
                             </div>
                           </div>
                           <ArrowRight
                             className={`w-4 h-4 transition-transform ${
-                              isSelected ? 'text-white translate-x-0.5' : 'text-[#5c5673]'
+                              isSelected ? 'text-white translate-x-0.5' : 'text-zinc-600'
                             }`}
                           />
                         </div>
@@ -248,19 +249,19 @@ export default function SearchMenu({
               </div>
 
               {/* Footer Guide Bar */}
-              <div className="flex items-center justify-between px-4 py-2.5 bg-[#08060f] border-t border-[#1b172c] text-[11px] font-mono text-[#6e6884]">
+              <div className="flex items-center justify-between px-4 py-2.5 bg-[#08080a] border-t border-[#1f1f23] text-[11px] font-mono text-zinc-500">
                 <div className="flex items-center gap-4">
                   <span>
-                    <kbd className="px-1.5 py-0.5 rounded bg-[#161226] text-zinc-300">↑↓</kbd> navigate
+                    <kbd className="px-1.5 py-0.5 rounded bg-[#16161a] text-zinc-300">↑↓</kbd> navigate
                   </span>
                   <span>
-                    <kbd className="px-1.5 py-0.5 rounded bg-[#161226] text-zinc-300">↵</kbd> select
+                    <kbd className="px-1.5 py-0.5 rounded bg-[#16161a] text-zinc-300">↵</kbd> select
                   </span>
                   <span>
-                    <kbd className="px-1.5 py-0.5 rounded bg-[#161226] text-zinc-300">esc</kbd> close
+                    <kbd className="px-1.5 py-0.5 rounded bg-[#16161a] text-zinc-300">esc</kbd> close
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-emerald-400/90">
+                <div className="flex items-center gap-1.5 text-zinc-400">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>Zero-trust vault</span>
                 </div>

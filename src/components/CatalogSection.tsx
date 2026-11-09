@@ -16,10 +16,10 @@ export default function CatalogSection({
   currency?: 'USD' | 'LKR';
   searchQuery?: string;
   onSearchQueryChange?: (query: string) => void;
-  activeCategory?: 'all' | 'vpn' | 'vps' | 'subscription' | 'gaming';
-  onCategoryChange?: (category: 'all' | 'vpn' | 'vps' | 'subscription' | 'gaming') => void;
+  activeCategory?: 'all' | 'vpn' | 'vps' | 'subscription' | 'gaming' | 'giftcard' | 'software';
+  onCategoryChange?: (category: 'all' | 'vpn' | 'vps' | 'subscription' | 'gaming' | 'giftcard' | 'software') => void;
 } = {}) {
-  const [internalCategory, setInternalCategory] = useState<'all' | 'vpn' | 'vps' | 'subscription' | 'gaming'>('all');
+  const [internalCategory, setInternalCategory] = useState<'all' | 'vpn' | 'vps' | 'subscription' | 'gaming' | 'giftcard' | 'software'>('all');
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
 
@@ -45,7 +45,7 @@ export default function CatalogSection({
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
           <div className="max-w-xl">
-            <div className="font-mono text-xs uppercase tracking-[0.2em] text-[#9281f7] mb-3">
+            <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-3">
               Automated Inventory Vault
             </div>
             <h2 className="text-[40px] sm:text-[56px] font-normal leading-[1.12] tracking-[-0.05em] text-white">
@@ -72,11 +72,12 @@ export default function CatalogSection({
         {/* Filter Category Pills: 6px radius */}
         <div className="flex flex-wrap items-center gap-2 mb-10 pb-4 border-b border-[#1f2224]">
           {[
-            { id: 'all', label: 'All Assets' },
-            { id: 'vpn', label: 'V2Ray & VPN Reality' },
-            { id: 'vps', label: 'Cloud NVMe VPS' },
-            { id: 'subscription', label: 'Developer Subscriptions' },
-            { id: 'gaming', label: 'Global Game Keys' },
+            { id: 'all', label: 'All Items' },
+            { id: 'giftcard', label: 'Gift Cards' },
+            { id: 'subscription', label: 'Subscriptions' },
+            { id: 'gaming', label: 'Game Top-Ups & Keys' },
+            { id: 'software', label: 'Software & AI' },
+            { id: 'vpn', label: 'VPN & Cloud VPS' },
           ].map((cat) => (
             <button
               key={cat.id}
@@ -113,14 +114,14 @@ export default function CatalogSection({
                     </span>
 
                     {/* Stock Status Pill */}
-                    <div className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#3ad389]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#3ad389]" />
+                    <div className="inline-flex items-center gap-1.5 font-mono text-[11px] text-zinc-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
                       <span>{product.stockCount} in Vault</span>
                     </div>
                   </div>
 
                   {/* Title & Description */}
-                  <Link href={`/products/${product.id}`} className="hover:text-[#9281f7] transition-colors block">
+                  <Link href={`/products/${product.id}`} className="hover:text-zinc-300 transition-colors block">
                     <h3 className="text-xl font-normal tracking-[-0.03em] text-white transition-colors mb-2">
                       {product.title}
                     </h3>
@@ -133,7 +134,7 @@ export default function CatalogSection({
                   <div className="space-y-1.5 pt-2 border-t border-[#1f2224] font-mono text-xs text-[#6e727a] mb-6">
                     <div className="flex items-center justify-between">
                       <span>Delivery Velocity:</span>
-                      <span className="text-[#3ad389]">&lt; 400ms Instant</span>
+                      <span className="text-zinc-300">&lt; 400ms Instant</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Warranty Guard:</span>

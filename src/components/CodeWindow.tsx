@@ -110,7 +110,7 @@ func main() {
         
         {/* Section Headline in tight geometric Favorit/Inter */}
         <div className="max-w-2xl mb-12">
-          <div className="font-mono text-xs uppercase tracking-[0.2em] text-[#9281f7] mb-3">
+          <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-3">
             Programmatic Infrastructure
           </div>
           <h2 className="text-[40px] sm:text-[54px] font-normal leading-[1.12] tracking-[-0.05em] text-white">
@@ -202,7 +202,7 @@ func main() {
                       <span>
                         {line.split(/(['"].*?['"])/).map((segment, segIdx) => {
                           if (segment.startsWith("'") || segment.startsWith('"')) {
-                            return <span key={segIdx} className="text-[#9281f7]">{segment}</span>;
+                            return <span key={segIdx} className="text-zinc-300">{segment}</span>;
                           }
                           if (segment.includes('const ') || segment.includes('import ') || segment.includes('from ') || segment.includes('await ') || segment.includes('func ') || segment.includes('package ')) {
                             return <span key={segIdx} className="text-white font-medium">{segment}</span>;
@@ -223,8 +223,8 @@ func main() {
                   <span className="font-mono text-xs uppercase tracking-wider text-[#a1a4a5]">
                     Vault Telemetry
                   </span>
-                  <div className="flex items-center gap-1.5 font-mono text-xs text-[#3ad389]">
-                    <span className="w-2 h-2 rounded-full bg-[#3ad389] animate-pulse" />
+                  <div className="flex items-center gap-1.5 font-mono text-xs text-white">
+                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                     <span>EDGE READY</span>
                   </div>
                 </div>
@@ -236,15 +236,15 @@ func main() {
                   </div>
                   <div className="flex justify-between py-1 border-b border-[#1f2224]">
                     <span className="text-[#6e727a]">Encryption</span>
-                    <span className="text-[#9281f7]">AES-GCM-256</span>
+                    <span className="text-white">AES-GCM-256</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-[#1f2224]">
                     <span className="text-[#6e727a]">Region Latency</span>
-                    <span className="text-[#70b8ff]">18ms (Singapore)</span>
+                    <span className="text-zinc-300">18ms (Singapore)</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-[#1f2224]">
                     <span className="text-[#6e727a]">Inventory State</span>
-                    <span className="text-[#3ad389]">Instant Auto-Fulfill</span>
+                    <span className="text-white">Instant Auto-Fulfill</span>
                   </div>
                 </div>
 
@@ -252,13 +252,13 @@ func main() {
                 {executionResult ? (
                   <div className="mt-5 p-3 rounded-[6px] border border-[#292d30] bg-[#080808] space-y-2">
                     <div className="flex items-center justify-between font-mono text-[11px]">
-                      <span className="text-[#3ad389] flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#3ad389]" />
+                      <span className="text-white flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
                         {executionResult.status}
                       </span>
                       <span className="text-[#a1a4a5]">{executionResult.durationMs}ms</span>
                     </div>
-                    <div className="font-mono text-[11px] text-[#9281f7] truncate">
+                    <div className="font-mono text-[11px] text-zinc-300 truncate">
                       {executionResult.payloadPreview}
                     </div>
                     <div className="font-mono text-[10px] text-[#6e727a]">

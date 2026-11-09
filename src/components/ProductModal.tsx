@@ -6,22 +6,8 @@ import {
   X, Check, Copy, ArrowRight, ShieldCheck, Zap, Download, 
   Terminal, Server, Key, QrCode as QrIcon, Upload, Clock, AlertCircle, Sparkles 
 } from 'lucide-react';
-
-export interface ProductItem {
-  id: string;
-  category: 'vpn' | 'vps' | 'subscription' | 'gaming';
-  title: string;
-  description: string;
-  priceUSD: number;
-  priceLKR: number;
-  stockCount: number;
-  badge?: string;
-  isInstant: boolean;
-  durations: { label: string; days: number; multiplier: number }[];
-  options?: { label: string; values: string[] }[];
-  guideMarkdown: string;
-  warranty: string;
-}
+import { ProductItem } from '@/lib/products';
+export type { ProductItem };
 
 export default function ProductModal({
   product,
@@ -156,7 +142,7 @@ export default function ProductModal({
         {/* Header Bar */}
         <div className="h-14 px-6 border-b border-[#292d30] flex items-center justify-between shrink-0 bg-black">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs uppercase tracking-wider text-[#9281f7]">
+            <span className="font-mono text-xs uppercase tracking-wider text-white">
               {step === 'configure' && '1. Configure Asset'}
               {step === 'checkout' && '2. Instant Checkout'}
               {step === 'vault' && '3. Secure Key Vault'}
@@ -450,9 +436,9 @@ export default function ProductModal({
           {step === 'vault' && dispensedData && (
             <div className="space-y-6 pt-1">
               
-              <div className="p-4 rounded-[6px] border border-[#3ad389]/40 bg-[#050505] flex items-center justify-between">
+              <div className="p-4 rounded-[6px] border border-white/20 bg-[#050505] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#3ad389]/20 flex items-center justify-center text-[#3ad389]">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white">
                     <Check className="w-4 h-4" />
                   </div>
                   <div>
@@ -465,7 +451,7 @@ export default function ProductModal({
                   </div>
                 </div>
 
-                <span className="font-mono text-xs px-2.5 py-1 rounded-[6px] bg-[#1a1c1e] text-[#3ad389] border border-[#292d30]">
+                <span className="font-mono text-xs px-2.5 py-1 rounded-[6px] bg-[#1a1c1e] text-zinc-300 border border-[#292d30]">
                   DELIVERED &lt; 380ms
                 </span>
               </div>
@@ -483,7 +469,7 @@ export default function ProductModal({
                         />
                       </div>
                       <div className="space-y-2 text-left">
-                        <div className="font-mono text-xs text-[#9281f7] uppercase tracking-wider">
+                        <div className="font-mono text-xs text-zinc-400 uppercase tracking-wider">
                           Mobile Quick Scan
                         </div>
                         <p className="text-xs text-[#a1a4a5] leading-relaxed">
@@ -499,13 +485,13 @@ export default function ProductModal({
                       <span>VLESS Reality URI</span>
                       <button
                         onClick={() => handleCopyPayload(dispensedData.vlessUri || '')}
-                        className="text-[#9281f7] hover:underline flex items-center gap-1"
+                        className="text-white hover:underline flex items-center gap-1"
                       >
-                        {copiedKey ? <Check className="w-3 h-3 text-[#3ad389]" /> : <Copy className="w-3 h-3" />}
+                        {copiedKey ? <Check className="w-3 h-3 text-white" /> : <Copy className="w-3 h-3" />}
                         <span>{copiedKey ? 'Copied' : 'Copy URI'}</span>
                       </button>
                     </div>
-                    <div className="font-mono text-xs text-[#9281f7] break-all p-2 rounded bg-black border border-[#1f2224]">
+                    <div className="font-mono text-xs text-zinc-300 break-all p-2 rounded bg-black border border-[#1f2224]">
                       {dispensedData.vlessUri}
                     </div>
                   </div>
@@ -519,9 +505,9 @@ export default function ProductModal({
                     <span className="text-[#a1a4a5]">SSH Root Login</span>
                     <button
                       onClick={() => handleCopyPayload(`ssh root@${dispensedData.credentials?.ip}`)}
-                      className="text-[#9281f7] hover:underline flex items-center gap-1"
+                      className="text-white hover:underline flex items-center gap-1"
                     >
-                      {copiedKey ? <Check className="w-3 h-3 text-[#3ad389]" /> : <Copy className="w-3 h-3" />}
+                      {copiedKey ? <Check className="w-3 h-3 text-white" /> : <Copy className="w-3 h-3" />}
                       <span>{copiedKey ? 'Copied' : 'Copy SSH Command'}</span>
                     </button>
                   </div>
@@ -530,7 +516,7 @@ export default function ProductModal({
                     <div><span className="text-[#6e727a]">Host IP:</span> {dispensedData.credentials.ip}</div>
                     <div><span className="text-[#6e727a]">Port:</span> 22</div>
                     <div><span className="text-[#6e727a]">Username:</span> {dispensedData.credentials.user}</div>
-                    <div><span className="text-[#6e727a]">Password:</span> <span className="text-[#9281f7]">{dispensedData.credentials.pass}</span></div>
+                    <div><span className="text-[#6e727a]">Password:</span> <span className="text-zinc-300">{dispensedData.credentials.pass}</span></div>
                   </div>
                 </div>
               )}
@@ -542,16 +528,16 @@ export default function ProductModal({
                     <span className="text-[#a1a4a5]">Login Credentials</span>
                     <button
                       onClick={() => handleCopyPayload(`User: ${dispensedData.credentials?.user}\nPass: ${dispensedData.credentials?.pass}`)}
-                      className="text-[#9281f7] hover:underline flex items-center gap-1"
+                      className="text-white hover:underline flex items-center gap-1"
                     >
-                      {copiedKey ? <Check className="w-3 h-3 text-[#3ad389]" /> : <Copy className="w-3 h-3" />}
+                      {copiedKey ? <Check className="w-3 h-3 text-white" /> : <Copy className="w-3 h-3" />}
                       <span>{copiedKey ? 'Copied' : 'Copy All'}</span>
                     </button>
                   </div>
 
                   <div className="p-3 rounded bg-black border border-[#1f2224] space-y-1.5 text-white">
                     <div><span className="text-[#6e727a]">Email / User:</span> {dispensedData.credentials.user}</div>
-                    <div><span className="text-[#6e727a]">Password:</span> <span className="text-[#9281f7]">{dispensedData.credentials.pass}</span></div>
+                    <div><span className="text-[#6e727a]">Password:</span> <span className="text-zinc-300">{dispensedData.credentials.pass}</span></div>
                   </div>
                 </div>
               )}
@@ -563,15 +549,15 @@ export default function ProductModal({
                     <span className="text-[#a1a4a5]">Retail Activation Key</span>
                     <button
                       onClick={() => handleCopyPayload(dispensedData.licenseKey || '')}
-                      className="text-[#9281f7] hover:underline flex items-center gap-1"
+                      className="text-white hover:underline flex items-center gap-1"
                     >
-                      {copiedKey ? <Check className="w-3 h-3 text-[#3ad389]" /> : <Copy className="w-3 h-3" />}
+                      {copiedKey ? <Check className="w-3 h-3 text-white" /> : <Copy className="w-3 h-3" />}
                       <span>{copiedKey ? 'Copied' : 'Copy Key'}</span>
                     </button>
                   </div>
 
                   <div className="p-3 rounded bg-black border border-[#1f2224] text-center">
-                    <span className="text-base text-[#9281f7] font-bold tracking-widest">
+                    <span className="text-base text-white font-bold tracking-widest">
                       {dispensedData.licenseKey}
                     </span>
                   </div>

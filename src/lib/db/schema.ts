@@ -106,6 +106,7 @@ export const user = pgTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
+  role: text('role').default('user'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -144,4 +145,47 @@ export const verification = pgTable('verification', {
   expiresAt: timestamp('expires_at').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Support Ticket System Tables
+export const tickets = pgTable('tickets', {
+  id: text('id').primaryKey(),
+  ticketNumber: text('ticket_number').unique().notNull(),
+  userId: text('user_id'),
+  customerName: text('customer_name').notNull(),
+  customerEmail: text('customer_email').notNull(),
+  subject: text('subject').notNull(),
+  category: text('category').notNull().default('General'),
+  priority: text('priority').notNull().default('MEDIUM'),
+  status: text('status').notNull().default('OPEN'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const ticketMessages = pgTable('ticket_messages', {
+  id: text('id').primaryKey(),
+  ticketId: text('ticket_id').notNull().references(() => tickets.id, { onDelete: 'cascade' }),
+  senderId: text('sender_id'),
+  senderName: text('sender_name').notNull(),
+  senderRole: text('sender_role').notNull().default('user'),
+  message: text('message').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+// Product Reviews and Ratings Table
+export const reviews = pgTable('reviews', {
+  id: text('id').primaryKey(),
+  productId: text('product_id').notNull(),
+  userId: text('user_id'),
+  userName: text('user_name').notNull(),
+  userEmail: text('user_email'),
+  rating: integer('rating').notNull(),
+  headline: text('headline').notNull(),
+  comment: text('comment').notNull(),
+  isVerifiedPurchase: boolean('is_verified_purchase').default(true),
+  status: text('status').notNull().default('APPROVED'),
+  helpfulCount: integer('helpful_count').default(0),
+  adminReply: text('admin_reply'),
+  adminReplyAt: timestamp('admin_reply_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });

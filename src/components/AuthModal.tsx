@@ -97,7 +97,7 @@ export default function AuthModal({
 
         {/* Title */}
         <div className="mb-6">
-          <div className="font-mono text-xs uppercase tracking-[0.2em] text-[#9281f7] mb-2">
+          <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">
             Fibez Console Access
           </div>
           <h3 className="text-2xl font-normal tracking-[-0.03em] text-white">
@@ -215,7 +215,61 @@ export default function AuthModal({
               <span>{mode === 'login' ? 'Sign In' : 'Create Account'} ›</span>
             )}
           </button>
+
+          {/* Terms of Service & Privacy Agreement Notice */}
+          <p className="text-[11px] text-zinc-500 text-center leading-relaxed mt-3">
+            By signing in or creating an account, you agree to Fibez&apos;s{' '}
+            <a href="/terms" target="_blank" className="text-zinc-300 underline hover:text-white">
+              Terms of Service
+            </a>{' '}
+            and acknowledge our{' '}
+            <a href="/privacy" target="_blank" className="text-zinc-300 underline hover:text-white">
+              Privacy Policy
+            </a>.
+          </p>
         </form>
+
+        {/* Quick Test Role Logins */}
+        <div className="mt-5 pt-4 border-t border-white/10">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2 text-center">
+            Demo Logins (3 Roles)
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('user@fibez.io');
+                setPassword('Password123!');
+                setMode('login');
+              }}
+              className="px-2 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] font-mono text-zinc-300 hover:text-white transition-colors cursor-pointer text-center"
+            >
+              User
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('admin@fibez.io');
+                setPassword('Password123!');
+                setMode('login');
+              }}
+              className="px-2 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] font-mono text-zinc-300 hover:text-white transition-colors cursor-pointer text-center"
+            >
+              Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('owner@fibez.io');
+                setPassword('Password123!');
+                setMode('login');
+              }}
+              className="px-2 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] font-mono text-zinc-300 hover:text-white transition-colors cursor-pointer text-center"
+            >
+              Owner
+            </button>
+          </div>
+        </div>
 
         {/* Footer switch */}
         <div className="mt-6 pt-4 border-t border-[#1f2224] text-center text-xs text-[#a1a4a5]">

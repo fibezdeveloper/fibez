@@ -61,7 +61,7 @@ export default function Hero({
                 href="#api"
                 className="btn-ghost-resend text-[15px] px-5 py-2.5 text-[#f0f0f0] backdrop-blur-md bg-black/40"
               >
-                <Terminal className="w-4 h-4 text-[#9281f7]" />
+                <Terminal className="w-4 h-4 text-white" />
                 <span>API Reference</span>
               </a>
             </div>

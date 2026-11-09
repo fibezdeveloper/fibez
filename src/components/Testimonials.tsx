@@ -30,7 +30,7 @@ export default function Testimonials() {
         
         {/* Section Headline */}
         <div className="max-w-2xl mb-16">
-          <div className="font-mono text-xs uppercase tracking-[0.2em] text-[#9281f7] mb-3">
+          <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-3">
             Real Experience
           </div>
           <h2 className="text-[40px] sm:text-[56px] font-normal leading-[1.12] tracking-[-0.05em] text-white">

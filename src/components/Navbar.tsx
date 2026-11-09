@@ -18,6 +18,8 @@ import {
   UserPlus, 
   Activity,
   BookOpen,
+  LayoutDashboard,
+  LifeBuoy,
   X
 } from 'lucide-react';
 
@@ -71,6 +73,15 @@ export default function Navbar(props: NavbarProps) {
   // Account dropdown actions (Cart, Currency Settings, Vault, Infrastructure, and Auth)
   const dropdownActions: GooeyDropdownAction[] = [
     {
+      id: 'dashboard',
+      label: 'Control Dashboard',
+      icon: <LayoutDashboard className="w-4 h-4 text-zinc-300" />,
+      detail: 'User, Admin & Owner consoles',
+      onSelect: () => {
+        router.push('/dashboard');
+      },
+    },
+    {
       id: 'cart',
       label: `Shopping Cart (${cartCount})`,
       icon: <ShoppingCart className="w-4 h-4 text-zinc-300" />,
@@ -111,6 +122,15 @@ export default function Navbar(props: NavbarProps) {
       detail: 'Client configuration tutorials',
       onSelect: () => {
         router.push('/docs');
+      },
+    },
+    {
+      id: 'tickets',
+      label: 'Support Tickets',
+      icon: <LifeBuoy className="w-4 h-4 text-zinc-300" />,
+      detail: 'Open tickets & 24/7 staff helpdesk',
+      onSelect: () => {
+        router.push('/tickets');
       },
     },
     ...(session?.user
@@ -175,9 +195,10 @@ export default function Navbar(props: NavbarProps) {
       ]
     },
     {
-      label: 'Docs & Community',
+      label: 'Docs & Support',
       description: 'Tutorials and direct engineer assistance.',
       links: [
+        { label: 'Support Tickets & Helpdesk', href: '/tickets' },
         { label: 'Knowledge Base', href: '/docs' },
         { label: 'v2rayNG & Sing-box Guide', href: '/docs#v2ray' },
         { label: 'Ubuntu VPS Hardening', href: '/docs#vps' },

@@ -16,22 +16,22 @@ export default function VaultPage() {
       </div>
 
       {/* Header */}
-      <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 pb-8 border-b border-[#231e38]">
+      <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 pb-8 border-b border-[#1f1f23]">
         <div>
-          <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-[#9281f7] mb-2">
+          <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">
             <Lock className="w-3.5 h-3.5" />
             <span>Zero-Trust Developer Vault</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-normal tracking-[-0.03em] text-white">
             Encrypted Key Vault & Order Command Center
           </h1>
-          <p className="text-sm text-[#8e87aa] mt-2 max-w-2xl leading-relaxed">
+          <p className="text-sm text-[#a1a4a5] mt-2 max-w-2xl leading-relaxed">
             Directly retrieve client configuration strings, QR codes, SSH server root credentials, and track automated provisioning pipelines in real-time.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#120f26] border border-[#2b2447] text-xs font-mono text-emerald-400">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#16161a] border border-[#26262b] text-xs font-mono text-zinc-300">
             <ShieldCheck className="w-4 h-4" />
             <span>AES-256 Client-Side Masked</span>
           </div>

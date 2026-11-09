@@ -10,7 +10,7 @@ export default function FeaturesGrid() {
         
         {/* Section Header */}
         <div className="max-w-2xl mb-16">
-          <div className="font-mono text-xs uppercase tracking-[0.2em] text-[#9281f7] mb-3">
+          <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-3">
             Core Architecture
           </div>
           <h2 className="text-[40px] sm:text-[56px] font-normal leading-[1.12] tracking-[-0.05em] text-white">
@@ -29,11 +29,11 @@ export default function FeaturesGrid() {
           <div className="md:col-span-7 resend-card p-8 flex flex-col justify-between group">
             <div>
               <div className="flex items-center justify-between mb-6">
-                <div className="w-10 h-10 rounded-[6px] border border-[#292d30] bg-black flex items-center justify-center text-white group-hover:border-[#9281f7] transition-colors">
-                  <QrCode className="w-5 h-5 text-[#9281f7]" />
+                <div className="w-10 h-10 rounded-[6px] border border-[#292d30] bg-black flex items-center justify-center text-white group-hover:border-white/40 transition-colors">
+                  <QrCode className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-mono text-xs text-[#3ad389] flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#3ad389]" />
+                <span className="font-mono text-xs text-zinc-300 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
                   REALITY PROTOCOL
                 </span>
               </div>
@@ -48,8 +48,8 @@ export default function FeaturesGrid() {
               {/* Terminal Code Mockup */}
               <div className="p-4 rounded-[6px] border border-[#292d30] bg-[#050505] font-mono text-xs text-[#f0f0f0] space-y-1.5 overflow-x-auto">
                 <div className="text-[#6e727a]">// Config connection string</div>
-                <div className="text-[#9281f7] truncate">vless://98e4d1b8-3a91-4c12@singapore.edge.fibez.io:443?security=reality&amp;sni=apple.com</div>
-                <div className="text-[#3ad389] flex items-center gap-1 pt-1 text-[11px]">
+                <div className="text-zinc-300 truncate">vless://98e4d1b8-3a91-4c12@singapore.edge.fibez.io:443?security=reality&amp;sni=apple.com</div>
+                <div className="text-zinc-400 flex items-center gap-1 pt-1 text-[11px]">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Verified 10 Gbps Uplink · Ping: 18ms</span>
                 </div>
@@ -66,11 +66,11 @@ export default function FeaturesGrid() {
           <div className="md:col-span-5 resend-card p-8 flex flex-col justify-between group">
             <div>
               <div className="flex items-center justify-between mb-6">
-                <div className="w-10 h-10 rounded-[6px] border border-[#292d30] bg-black flex items-center justify-center text-white group-hover:border-[#3b9eff] transition-colors">
-                  <Server className="w-5 h-5 text-[#70b8ff]" />
+                <div className="w-10 h-10 rounded-[6px] border border-[#292d30] bg-black flex items-center justify-center text-white group-hover:border-white/40 transition-colors">
+                  <Server className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-mono text-xs text-[#70b8ff] flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#70b8ff]" />
+                <span className="font-mono text-xs text-zinc-300 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
                   INSTANT ROOT
                 </span>
               </div>
@@ -97,7 +97,7 @@ export default function FeaturesGrid() {
 
             <div className="pt-6 mt-6 border-t border-[#1f2224] flex items-center justify-between text-xs text-[#a1a4a5]">
               <span>Locations: Frankfurt, Singapore, US-East</span>
-              <span className="font-mono text-[#3ad389]">&lt; 15s Provision</span>
+              <span className="font-mono text-zinc-300">&lt; 15s Provision</span>
             </div>
           </div>
 
@@ -105,11 +105,11 @@ export default function FeaturesGrid() {
           <div className="md:col-span-5 resend-card p-8 flex flex-col justify-between group">
             <div>
               <div className="flex items-center justify-between mb-6">
-                <div className="w-10 h-10 rounded-[6px] border border-[#292d30] bg-black flex items-center justify-center text-white group-hover:border-[#baa7ff] transition-colors">
-                  <Key className="w-5 h-5 text-[#baa7ff]" />
+                <div className="w-10 h-10 rounded-[6px] border border-[#292d30] bg-black flex items-center justify-center text-white group-hover:border-white/40 transition-colors">
+                  <Key className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-mono text-xs text-[#baa7ff] flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#baa7ff]" />
+                <span className="font-mono text-xs text-zinc-300 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
                   WARRANTY BACKED
                 </span>
               </div>
@@ -140,11 +140,11 @@ export default function FeaturesGrid() {
           <div className="md:col-span-7 resend-card p-8 flex flex-col justify-between group">
             <div>
               <div className="flex items-center justify-between mb-6">
-                <div className="w-10 h-10 rounded-[6px] border border-[#292d30] bg-black flex items-center justify-center text-white group-hover:border-[#3ad389] transition-colors">
-                  <Lock className="w-5 h-5 text-[#3ad389]" />
+                <div className="w-10 h-10 rounded-[6px] border border-[#292d30] bg-black flex items-center justify-center text-white group-hover:border-white/40 transition-colors">
+                  <Lock className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-mono text-xs text-[#3ad389] flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#3ad389]" />
+                <span className="font-mono text-xs text-zinc-300 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
                   INSTANT SERIAL VAULT
                 </span>
               </div>
@@ -159,7 +159,7 @@ export default function FeaturesGrid() {
               {/* Key Vault Simulation Bar */}
               <div className="flex items-center justify-between p-3.5 rounded-[6px] border border-[#292d30] bg-[#050505] font-mono text-xs">
                 <span className="text-[#6e727a]">SERIAL KEY:</span>
-                <span className="text-[#9281f7] tracking-widest font-semibold">XXXXX-XXXXX-FBZ26-VALID</span>
+                <span className="text-white tracking-widest font-semibold">XXXXX-XXXXX-FBZ26-VALID</span>
                 <span className="text-xs px-2 py-0.5 rounded-[6px] bg-[#1a1c1e] text-[#f0f0f0] border border-[#292d30]">
                   GENUINE
                 </span>
@@ -168,7 +168,7 @@ export default function FeaturesGrid() {
 
             <div className="pt-6 mt-6 border-t border-[#1f2224] flex items-center justify-between text-xs text-[#a1a4a5]">
               <span>Region-Free Global Activation</span>
-              <span className="font-mono text-[#3ad389]">Instant Delivery</span>
+              <span className="font-mono text-zinc-300">Instant Delivery</span>
             </div>
           </div>
 

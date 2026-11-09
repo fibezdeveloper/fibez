@@ -42,7 +42,7 @@ export default function BackToTop() {
           onSend={handleScrollToTop}
           padColor="#f0f0f0"
           iconColor="#000000"
-          accentColor="#9281f7"
+          accentColor="#ffffff"
           wellColor="#141618"
           bandColor="#292d30"
           size={52}

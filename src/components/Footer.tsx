@@ -28,10 +28,12 @@ export default function Footer() {
             <Link href="/vault" className="hover:text-white transition-colors">Key Vault</Link>
             <Link href="/infrastructure" className="hover:text-white transition-colors">Infrastructure</Link>
             <Link href="/docs" className="hover:text-white transition-colors">Documentation</Link>
+            <Link href="/tickets" className="hover:text-white transition-colors">Support Tickets</Link>
             <Link href="/cart" className="hover:text-white transition-colors">Shopping Cart</Link>
             <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+            <Link href="/refund" className="hover:text-white transition-colors">Refund Policy</Link>
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
-            <a href="https://wa.me/94771234567" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Support</a>
+            <a href="https://wa.me/94771234567" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">WhatsApp</a>
           </div>
 
           <div className="font-mono text-xs text-[#6e727a]">
