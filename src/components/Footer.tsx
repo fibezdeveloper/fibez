@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import FibezLogo from '@/components/FibezLogo';
 import { useStore, SocialLinkConfig } from '@/lib/store-context';
 import { 
   Landmark, 
@@ -94,10 +95,8 @@ export default function Footer() {
           
           {/* Brand & Socials Column (5 Columns on Desktop) */}
           <div className="lg:col-span-5 space-y-6">
-            <Link href="/" className="inline-flex items-baseline font-mono text-[26px] font-bold tracking-[0.34em] text-white select-none hover:opacity-90 transition-opacity">
-              <span>F</span>
-              <span className="text-[1.28em] font-black text-[#9281f7] leading-none mx-[1px]">I</span>
-              <span>BEZ</span>
+            <Link href="/" className="inline-block hover:opacity-85 transition-opacity" aria-label="FIBEZ Home">
+              <FibezLogo size="lg" withVersion={false} />
             </Link>
 
             <p className="text-sm text-zinc-400 leading-relaxed max-w-sm">

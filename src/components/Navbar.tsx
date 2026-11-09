@@ -381,15 +381,13 @@ export default function Navbar(props: NavbarProps) {
           cardEffect="rise"
           stagger={0.1}
           speed={1}
-          /* FIBEZ wordmark: enlarged with wide character spacing and iconic taller I */
+          /* FIBEZ wordmark: enlarged with wide character spacing, uniform typography, no icon */
           logo={
             <Link
               href="/"
-              className="font-mono text-[24px] sm:text-[27px] font-bold tracking-[0.38em] text-white hover:opacity-85 transition-opacity select-none inline-flex items-baseline pl-[0.18em]"
+              className="font-mono text-[24px] sm:text-[27px] font-bold tracking-[0.38em] text-white hover:opacity-85 transition-opacity select-none pl-[0.18em]"
             >
-              <span>F</span>
-              <span className="text-[1.28em] font-black text-[#9281f7] leading-none mx-[1px]">I</span>
-              <span>BEZ</span>
+              FIBEZ
             </Link>
           }
           logoHref="/"
