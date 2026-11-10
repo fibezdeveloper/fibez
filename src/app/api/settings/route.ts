@@ -1,70 +1,95 @@
+import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@/lib/db';
+import { buildRlsContext, requireRole } from '@/lib/dal';
+import { withRlsTransaction } from '@/lib/db/rls';
 
 export async function GET(request: NextRequest) {
   try {
-    if (!sql) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    const authResult = await requireRole(['admin', 'owner']);
+    if ('response' in authResult) {
+      return authResult.response;
     }
 
     const { searchParams } = new URL(request.url);
-    const key = searchParams.get('key');
+    const key = searchParams.get('key')?.trim() || '';
 
-    if (key) {
-      const rows = await sql`SELECT * FROM store_settings WHERE key = ${key} LIMIT 1`;
-      if (rows.length === 0) {
-        return NextResponse.json({ error: 'Setting not found' }, { status: 404 });
+    const result = await withRlsTransaction(buildRlsContext(authResult.user), async (client) => {
+      if (key) {
+        const rows = await client.query(
+          `SELECT key, value FROM public.store_settings WHERE key = $1 LIMIT 1`,
+          [key]
+        );
+        if (rows.rows.length === 0) {
+          return { notFound: true as const };
+        }
+        return { single: rows.rows[0] };
       }
-      return NextResponse.json({ key: rows[0].key, value: rows[0].value });
+
+      const rows = await client.query(`SELECT key, value FROM public.store_settings`);
+      const settingsMap: Record<string, unknown> = {};
+      for (const r of rows.rows) {
+        settingsMap[r.key] = r.value;
+      }
+      return { all: settingsMap };
+    });
+
+    if ('notFound' in result) {
+      return NextResponse.json({ error: 'Setting not found' }, { status: 404 });
+    }
+    if ('single' in result) {
+      return NextResponse.json({ key: result.single.key, value: result.single.value });
     }
 
-    const rows = await sql`SELECT * FROM store_settings`;
-    const settingsMap: Record<string, any> = {};
-    for (const r of rows) {
-      settingsMap[r.key] = r.value;
-    }
-
-    return NextResponse.json({ settings: settingsMap });
-  } catch (error: any) {
+    return NextResponse.json({ settings: result.all });
+  } catch (error: unknown) {
     console.error('Error fetching settings:', error);
-    return NextResponse.json({ error: error.message || 'Failed to fetch settings' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
-    if (!sql) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    const authResult = await requireRole(['owner']);
+    if ('response' in authResult) {
+      return authResult.response;
     }
+    const actor = authResult.user;
 
-    const body = await request.json();
-    const { key, value, updatedBy } = body;
+    const body = await request.json().catch(() => ({}));
+    const key = typeof body.key === 'string' ? body.key.trim() : '';
+    const value = body.value;
 
     if (!key || value === undefined) {
       return NextResponse.json({ error: 'Key and value are required' }, { status: 400 });
     }
 
-    await sql`
-      INSERT INTO store_settings (key, value, updated_at, updated_by)
-      VALUES (${key}, ${JSON.stringify(value)}::jsonb, NOW(), ${updatedBy || null})
-      ON CONFLICT (key) DO UPDATE SET
-        value = EXCLUDED.value,
-        updated_at = NOW(),
-        updated_by = EXCLUDED.updated_by;
-    `;
+    await withRlsTransaction(buildRlsContext(actor), async (client) => {
+      await client.query(
+        `INSERT INTO public.store_settings (key, value, updated_at, updated_by)
+         VALUES ($1, $2::jsonb, NOW(), $3)
+         ON CONFLICT (key) DO UPDATE SET
+           value = EXCLUDED.value,
+           updated_at = NOW(),
+           updated_by = EXCLUDED.updated_by`,
+        [key, JSON.stringify(value), actor.email]
+      );
 
-    // Audit log
-    await sql`
-      INSERT INTO audit_logs (id, user_email, action, entity_type, entity_id, details)
-      VALUES (
-        ${`audit_setting_${key}_${Date.now()}`}, ${updatedBy || 'owner@fibez.io'}, 'SETTING_UPDATED', 'STORE_SETTINGS', ${key},
-        ${JSON.stringify({ key, value })}::jsonb
-      )
-    `;
+      await client.query(
+        `INSERT INTO public.audit_logs (id, user_id, user_email, action, entity_type, entity_id, details)
+         VALUES ($1, $2, $3, 'SETTING_UPDATED', 'STORE_SETTINGS', $4, $5::jsonb)`,
+        [
+          `audit_setting_${crypto.randomUUID()}`,
+          actor.id,
+          actor.email,
+          key,
+          JSON.stringify({ key }),
+        ]
+      );
+    });
 
     return NextResponse.json({ success: true, key });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating setting:', error);
-    return NextResponse.json({ error: error.message || 'Failed to update setting' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update setting' }, { status: 500 });
   }
 }

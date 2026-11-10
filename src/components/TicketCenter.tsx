@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   LifeBuoy, 
   Plus, 
@@ -76,6 +77,17 @@ export default function TicketCenter({
   userRole?: 'user' | 'admin' | 'owner';
   userEmail?: string;
 }) {
+  const [verifiedUser, setVerifiedUser] = useState<{
+    id: string;
+    email: string;
+    name: string;
+    role: 'user' | 'admin' | 'owner';
+  } | null>(userEmail ? { id: '', email: userEmail, name: '', role: userRole } : null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  const effectiveRole: 'user' | 'admin' | 'owner' = verifiedUser?.role ?? 'user';
+  const effectiveEmail = verifiedUser?.email || userEmail || '';
+
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,23 +112,48 @@ export default function TicketCenter({
   const [creatingTicket, setCreatingTicket] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    fetch('/api/me', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : { user: null }))
+      .then((data) => {
+        if (!active) return;
+        const u = data.user ?? null;
+        setVerifiedUser(u);
+        if (u) {
+          setNewCustomerEmail(u.email);
+          if (u.name) setNewCustomerName((prev) => prev || u.name);
+        }
+        setAuthChecked(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setVerifiedUser(null);
+        setAuthChecked(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!authChecked) return;
+    if (!verifiedUser) {
+      setTickets([]);
+      setLoading(false);
+      return;
+    }
     fetchTickets();
-  }, [userRole, userEmail]);
+  }, [authChecked, verifiedUser?.id, verifiedUser?.role]);
 
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      const url =
-        userRole === 'admin' || userRole === 'owner'
-          ? `/api/tickets?role=${userRole}`
-          : userEmail
-          ? `/api/tickets?email=${encodeURIComponent(userEmail)}&role=user`
-          : `/api/tickets?role=user`;
-
-      const res = await fetch(url);
+      const res = await fetch('/api/tickets', { cache: 'no-store' });
       const data = await res.json();
-      if (data.tickets) {
+      if (res.ok && Array.isArray(data.tickets)) {
         setTickets(data.tickets);
+      } else {
+        setTickets([]);
       }
     } catch (err) {
       console.error('Failed to load tickets:', err);
@@ -131,7 +168,7 @@ export default function TicketCenter({
       setLoadingMessages(true);
       const res = await fetch(`/api/tickets/${ticket.id}`);
       const data = await res.json();
-      if (data.messages) {
+      if (res.ok && data.messages) {
         setMessages(data.messages);
       }
     } catch (err) {
@@ -147,22 +184,16 @@ export default function TicketCenter({
 
     try {
       setSendingReply(true);
-      const senderName =
-        userRole === 'owner' ? 'Owner Desk' : userRole === 'admin' ? 'Support Engineer' : activeTicket.customer_name;
-
       const res = await fetch(`/api/tickets/${activeTicket.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: replyText.trim(),
-          senderName,
-          senderRole: userRole,
         }),
       });
 
       if (res.ok) {
         setReplyText('');
-        // Refresh thread
         const updatedRes = await fetch(`/api/tickets/${activeTicket.id}`);
         const updatedData = await updatedRes.json();
         if (updatedData.messages) {
@@ -203,7 +234,7 @@ export default function TicketCenter({
 
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCustomerEmail.trim() || !newSubject.trim() || !newInitialMessage.trim()) return;
+    if (!newSubject.trim() || !newInitialMessage.trim()) return;
 
     try {
       setCreatingTicket(true);
@@ -211,8 +242,7 @@ export default function TicketCenter({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerName: newCustomerName.trim() || 'Anonymous User',
-          customerEmail: newCustomerEmail.trim(),
+          customerName: newCustomerName.trim() || verifiedUser?.name || 'Customer',
           subject: newSubject.trim(),
           category: newCategory,
           priority: newPriority,
@@ -385,7 +415,7 @@ export default function TicketCenter({
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder={
-                  userRole === 'admin' || userRole === 'owner'
+                  effectiveRole === 'admin' || effectiveRole === 'owner'
                     ? 'Write official support reply or resolution steps...'
                     : 'Add follow-up details, configuration errors, or client log output...'
                 }
@@ -395,7 +425,7 @@ export default function TicketCenter({
 
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono text-[#a1a4a5]">
-                Signed as: <strong>{userRole.toUpperCase()}</strong> ({userEmail || 'Active Session'})
+                Signed as: <strong>{effectiveRole.toUpperCase()}</strong> ({effectiveEmail || 'Active Session'})
               </span>
               <button
                 type="submit"
@@ -421,21 +451,47 @@ export default function TicketCenter({
                 <span>Support Ticket System</span>
               </h2>
               <p className="text-xs text-[#a1a4a5] mt-0.5">
-                {userRole === 'admin' || userRole === 'owner'
+                {effectiveRole === 'admin' || effectiveRole === 'owner'
                   ? 'Manage and resolve customer support queries, connection bottlenecks, and billing issues.'
                   : 'Track your inquiries, request assistance with node configurations, or submit error logs.'}
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsNewModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-semibold uppercase tracking-wider transition-colors cursor-pointer self-start sm:self-auto"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Open New Ticket</span>
-            </button>
+            {verifiedUser && (
+              <button
+                type="button"
+                onClick={() => setIsNewModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-semibold uppercase tracking-wider transition-colors cursor-pointer self-start sm:self-auto"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Open New Ticket</span>
+              </button>
+            )}
           </div>
+
+          {!authChecked ? (
+            <div className="p-12 rounded-[16px] bg-[#0c0c0e] border border-[#1f1f23] text-center text-xs font-mono text-[#a1a4a5]">
+              Verifying session...
+            </div>
+          ) : !verifiedUser ? (
+            <div className="p-12 rounded-[16px] bg-[#0c0c0e] border border-[#1f1f23] text-center space-y-4">
+              <Shield className="w-8 h-8 text-zinc-500 mx-auto" />
+              <div className="space-y-1.5">
+                <h3 className="text-base font-medium text-white">Sign In Required</h3>
+                <p className="text-xs text-[#a1a4a5] max-w-md mx-auto leading-relaxed">
+                  Support tickets are protected by account authentication and Row-Level Security so only you and authorized support staff can view your conversations.
+                </p>
+              </div>
+              <Link
+                href="/login?callbackUrl=/tickets"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-semibold uppercase tracking-wider transition-colors"
+              >
+                <span>Sign In to View or Open Tickets</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          ) : (
+            <>
 
           {/* Search & Filter Controls */}
           <div className="p-4 rounded-[16px] bg-[#0c0c0e] border border-[#1f1f23] space-y-3">
@@ -570,6 +626,8 @@ export default function TicketCenter({
               ))
             )}
           </div>
+          </>
+          )}
 
         </div>
       )}
@@ -614,10 +672,10 @@ export default function TicketCenter({
                   <input
                     type="email"
                     required
+                    readOnly
                     value={newCustomerEmail}
-                    onChange={(e) => setNewCustomerEmail(e.target.value)}
                     placeholder="ruwan@corp.lk"
-                    className="w-full px-3 py-2 rounded-xl bg-[#141417] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-white/30"
+                    className="w-full px-3 py-2 rounded-xl bg-[#141417] border border-white/10 text-zinc-400 placeholder-zinc-500 focus:outline-none cursor-not-allowed"
                   />
                 </div>
               </div>

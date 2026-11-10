@@ -2,6 +2,7 @@ import { neon } from '@neondatabase/serverless';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PRODUCTS } from '../products';
+import { applyPostgresRls } from './apply-rls';
 
 // 1. Resolve DATABASE_URL
 let databaseUrl = process.env.DATABASE_URL || '';
@@ -401,6 +402,9 @@ async function runMigrationAndSeed() {
     `;
   }
   console.log(`✓ Seeded ${settingsList.length} store settings`);
+
+  console.log('\n--- Step 5: Applying PostgreSQL Row-Level Security (RLS) ---');
+  await applyPostgresRls();
 
   console.log('\n======================================================');
   console.log('🎉 ALL DATABASE TABLES INITIALIZED WITH REAL CATALOG DATA (NO FAKE ORDERS/REVIEWS/TICKETS)!');

@@ -1,77 +1,116 @@
+import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@/lib/db';
+import { buildRlsContext, requireRole } from '@/lib/dal';
+import { withRlsTransaction } from '@/lib/db/rls';
+
+const VALID_STOCK_TYPES = new Set([
+  'SERIAL_KEY',
+  'ACCOUNT_CREDENTIALS',
+  'CONNECTION_CONFIG',
+  'CUSTOM_TOKEN',
+]);
 
 export async function GET(request: NextRequest) {
   try {
-    if (!sql) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    const authResult = await requireRole(['admin', 'owner']);
+    if ('response' in authResult) {
+      return authResult.response;
     }
 
     const { searchParams } = new URL(request.url);
-    const productId = searchParams.get('productId');
+    const productId = searchParams.get('productId')?.trim() || '';
 
-    const rows = productId
-      ? await sql`SELECT * FROM inventory_items WHERE product_id = ${productId} ORDER BY created_at DESC LIMIT 100`
-      : await sql`SELECT * FROM inventory_items WHERE status = 'AVAILABLE' ORDER BY created_at DESC LIMIT 100`;
+    const items = await withRlsTransaction(buildRlsContext(authResult.user), async (client) => {
+      if (productId) {
+        const res = await client.query(
+          `SELECT * FROM public.inventory_items WHERE product_id = $1 ORDER BY created_at DESC LIMIT 100`,
+          [productId]
+        );
+        return res.rows;
+      }
 
-    return NextResponse.json({ items: rows });
-  } catch (error: any) {
+      const res = await client.query(
+        `SELECT * FROM public.inventory_items WHERE status = 'AVAILABLE' ORDER BY created_at DESC LIMIT 100`
+      );
+      return res.rows;
+    });
+
+    return NextResponse.json({ items });
+  } catch (error: unknown) {
     console.error('Error fetching inventory:', error);
-    return NextResponse.json({ error: error.message || 'Failed to fetch inventory' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch inventory' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    if (!sql) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    const authResult = await requireRole(['admin', 'owner']);
+    if ('response' in authResult) {
+      return authResult.response;
+    }
+    const actor = authResult.user;
+
+    const body = await request.json().catch(() => ({}));
+    const productId = typeof body.productId === 'string' ? body.productId.trim() : '';
+    const stockType =
+      typeof body.stockType === 'string' && VALID_STOCK_TYPES.has(body.stockType)
+        ? body.stockType
+        : 'SERIAL_KEY';
+    const entries: unknown[] = Array.isArray(body.entries) ? body.entries : [];
+
+    if (!productId || entries.length === 0 || entries.length > 500) {
+      return NextResponse.json(
+        { error: 'productId and non-empty entries array (max 500) are required' },
+        { status: 400 }
+      );
     }
 
-    const body = await request.json();
-    const { productId, stockType = 'SERIAL_KEY', entries } = body;
+    const inserted = await withRlsTransaction(buildRlsContext(actor), async (client) => {
+      let count = 0;
 
-    if (!productId || !Array.isArray(entries) || entries.length === 0) {
-      return NextResponse.json({ error: 'productId and entries array are required' }, { status: 400 });
-    }
+      for (const rawEntry of entries) {
+        const entry = String(rawEntry).trim();
+        if (!entry) continue;
 
-    let inserted = 0;
-    for (const rawEntry of entries) {
-      const entry = String(rawEntry).trim();
-      if (!entry) continue;
+        const invId = `inv_${crypto.randomUUID()}`;
+        let credUser: string | null = null;
+        let credPass: string | null = null;
 
-      const invId = `inv_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
-      let credUser: string | null = null;
-      let credPass: string | null = null;
+        if (stockType === 'ACCOUNT_CREDENTIALS' && entry.includes(':')) {
+          const [u, ...rest] = entry.split(':');
+          credUser = u.trim();
+          credPass = rest.join(':').trim();
+        }
 
-      if (stockType === 'ACCOUNT_CREDENTIALS' && entry.includes(':')) {
-        const [u, ...rest] = entry.split(':');
-        credUser = u.trim();
-        credPass = rest.join(':').trim();
+        await client.query(
+          `INSERT INTO public.inventory_items (
+             id, product_id, stock_type, key_payload, credential_user, credential_pass, status
+           ) VALUES ($1, $2, $3, $4, $5, $6, 'AVAILABLE')`,
+          [invId, productId, stockType, entry, credUser, credPass]
+        );
+        count++;
       }
 
-      await sql`
-        INSERT INTO inventory_items (
-          id, product_id, stock_type, key_payload, credential_user, credential_pass, status
-        ) VALUES (
-          ${invId}, ${productId}, ${stockType}, ${entry}, ${credUser}, ${credPass}, 'AVAILABLE'
-        )
-      `;
-      inserted++;
-    }
+      if (count > 0) {
+        await client.query(
+          `INSERT INTO public.audit_logs (id, user_id, user_email, action, entity_type, entity_id, details)
+           VALUES ($1, $2, $3, 'INVENTORY_ADDED', 'INVENTORY', $4, $5::jsonb)`,
+          [
+            `audit_inv_${crypto.randomUUID()}`,
+            actor.id,
+            actor.email,
+            productId,
+            JSON.stringify({ stockType, insertedCount: count }),
+          ]
+        );
+      }
 
-    if (inserted > 0) {
-      const countRes = await sql`
-        SELECT COUNT(*)::int AS cnt FROM inventory_items WHERE product_id = ${productId} AND status = 'AVAILABLE'
-      `;
-      const avail = countRes[0]?.cnt ?? inserted;
-      await sql`
-        UPDATE products SET stock_count = GREATEST(stock_count, ${avail}), updated_at = NOW() WHERE id = ${productId}
-      `;
-    }
+      return count;
+    });
 
     return NextResponse.json({ success: true, inserted });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error adding inventory:', error);
-    return NextResponse.json({ error: error.message || 'Failed to add inventory' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to add inventory' }, { status: 500 });
   }
 }

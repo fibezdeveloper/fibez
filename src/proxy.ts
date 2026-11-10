@@ -19,7 +19,6 @@ export default auth.middleware({
     '/refund',
     '/terms',
     '/tickets',
-    '/dashboard',
     '/api',
   ],
 });

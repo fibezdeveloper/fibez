@@ -38,8 +38,14 @@ interface PendingReceipt {
 
 export default function VaultDashboard() {
   const { data: session } = authClient.useSession();
-  const userRole = (session?.user as any)?.role;
-  const isAdmin = userRole === 'admin' || userRole === 'owner';
+  const [verifiedUser, setVerifiedUser] = useState<{
+    id: string;
+    email: string;
+    name: string;
+    role: 'user' | 'admin' | 'owner';
+  } | null>(null);
+  const [lookupError, setLookupError] = useState<string | null>(null);
+  const isAdmin = verifiedUser?.role === 'admin' || verifiedUser?.role === 'owner';
 
   const [activeTab, setActiveTab] = useState<'vault' | 'admin'>('vault');
   const [assets, setAssets] = useState<ActiveAsset[]>([]);
@@ -58,13 +64,23 @@ export default function VaultDashboard() {
   const [stockAddedCount, setStockAddedCount] = useState<number | null>(null);
   const [webhookNotice, setWebhookNotice] = useState(false);
 
+  useEffect(() => {
+    fetch('/api/me', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : { user: null }))
+      .then((data) => {
+        setVerifiedUser(data.user ?? null);
+      })
+      .catch(() => setVerifiedUser(null));
+  }, [session?.user?.id]);
+
   const loadVaultAssets = (queryParam?: string) => {
     setLoadingAssets(true);
+    setLookupError(null);
     let url = '';
     if (queryParam && queryParam.trim()) {
       url = `/api/vault?order_number=${encodeURIComponent(queryParam.trim().toUpperCase())}`;
-    } else if (session?.user?.email) {
-      url = `/api/vault?email=${encodeURIComponent(session.user.email)}`;
+    } else if (session?.user?.email || verifiedUser?.email) {
+      url = '/api/vault';
     } else {
       setAssets([]);
       setLoadingAssets(false);
@@ -72,8 +88,13 @@ export default function VaultDashboard() {
     }
 
     fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          setLookupError(data.error || 'Unable to access keys for this order.');
+          setAssets([]);
+          return;
+        }
         if (Array.isArray(data.assets)) {
           setAssets(data.assets);
         } else {
@@ -88,13 +109,15 @@ export default function VaultDashboard() {
   };
 
   useEffect(() => {
-    loadVaultAssets();
-  }, [session?.user?.email]);
+    const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const orderFromUrl = params?.get('order');
+    loadVaultAssets(orderFromUrl || undefined);
+  }, [session?.user?.email, verifiedUser?.email]);
 
   useEffect(() => {
     if (!isAdmin) return;
-    fetch('/api/orders?role=admin')
-      .then((res) => res.json())
+    fetch('/api/orders')
+      .then((res) => (res.ok ? res.json() : { orders: [] }))
       .then((data) => {
         if (Array.isArray(data.orders)) {
           const formatted: PendingReceipt[] = data.orders
@@ -258,6 +281,17 @@ export default function VaultDashboard() {
                 </button>
               </form>
             </div>
+
+            {lookupError && (
+              <div className="p-4 rounded-[12px] border border-white/15 bg-[#121216] text-xs font-mono text-zinc-300 flex items-center justify-between gap-3">
+                <span>{lookupError}</span>
+                {!verifiedUser && (
+                  <Link href="/login?callbackUrl=/vault" className="btn-action-resend text-xs !py-1.5 !px-3 shrink-0">
+                    Sign In
+                  </Link>
+                )}
+              </div>
+            )}
 
             {loadingAssets ? (
               <div className="resend-card p-12 text-center font-mono text-xs text-zinc-400">
