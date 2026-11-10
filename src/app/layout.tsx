@@ -23,7 +23,13 @@ const playfairDisplay = Playfair_Display({
   weight: ["400", "500", "600"],
 });
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+
 export const metadata: Metadata = {
+  metadataBase:
+    appUrl && (appUrl.startsWith("http://") || appUrl.startsWith("https://"))
+      ? new URL(appUrl)
+      : new URL("https://fibez.store"),
   title: "Fibez — Digital Products, Gift Cards, Subscriptions & VLESS VPN",
   description:
     "Instant digital store for High-Speed VLESS VPN (SLT, Dialog, Hutch & Airtel), gift cards, game top-ups, streaming accounts, and software keys delivered in seconds.",

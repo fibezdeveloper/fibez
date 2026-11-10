@@ -15,22 +15,22 @@ export async function POST(req: NextRequest) {
     let userName: string = 'Free Trial User';
 
     try {
-      const session = await auth.api.getSession({ headers: req.headers });
-      if (session?.user?.email) {
-        userEmail = session.user.email;
-        userId = session.user.id;
-        userName = session.user.name || userEmail.split('@')[0];
+      const { data: sessionData } = await auth.getSession();
+      if (sessionData?.user?.email) {
+        userEmail = sessionData.user.email;
+        userId = sessionData.user.id;
+        userName = sessionData.user.name || userEmail.split('@')[0];
       }
     } catch {
       // Session fallback
     }
 
-    // Fallback: check passed email against registered users in database
+    // Fallback: check passed email against registered Neon Auth users in database
     if (!userEmail && (body.userEmail || body.email)) {
       const candidateEmail = String(body.userEmail || body.email).trim().toLowerCase();
       if (sql) {
         const userRows = await sql`
-          SELECT id, email, name FROM "user" WHERE LOWER(email) = ${candidateEmail} LIMIT 1
+          SELECT id::text AS id, email, name FROM neon_auth."user" WHERE LOWER(email) = ${candidateEmail} LIMIT 1
         `;
         if (userRows.length > 0) {
           userEmail = userRows[0].email;

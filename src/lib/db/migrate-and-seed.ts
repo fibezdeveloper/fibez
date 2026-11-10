@@ -130,7 +130,7 @@ async function runMigrationAndSeed() {
     CREATE TABLE orders (
       id TEXT PRIMARY KEY,
       order_number TEXT UNIQUE NOT NULL,
-      user_id TEXT REFERENCES "user"(id) ON DELETE SET NULL,
+      user_id TEXT,
       customer_email TEXT NOT NULL,
       customer_whatsapp TEXT,
       customer_name TEXT,
@@ -144,7 +144,7 @@ async function runMigrationAndSeed() {
       receipt_uploaded_at TIMESTAMPTZ,
       promo_code TEXT,
       discount_amount_lkr INTEGER DEFAULT 0,
-      reviewed_by TEXT REFERENCES "user"(id) ON DELETE SET NULL,
+      reviewed_by TEXT,
       review_notes TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()

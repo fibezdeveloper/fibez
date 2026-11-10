@@ -1,7 +1,25 @@
-import { createAuthClient } from "better-auth/react";
+'use client';
 
-export const authClient = createAuthClient({
-  baseURL: typeof window !== "undefined" ? window.location.origin : "http://localhost:3005",
-});
+import { createAuthClient } from '@neon/auth/next';
+
+export const authClient = createAuthClient();
 
 export const { signIn, signUp, signOut, useSession } = authClient;
+
+/**
+ * Extracts a human-readable error message from either Better Auth's
+ * `{ error }` result object or a thrown Neon Auth `AuthHttpError`.
+ */
+export function extractAuthErrorMessage(err: unknown, fallback: string): string {
+  if (!err) return fallback;
+  if (typeof err === 'string') return err;
+  if (typeof err === 'object') {
+    const anyErr = err as {
+      message?: string;
+      error?: { message?: string };
+    };
+    if (anyErr.error?.message) return anyErr.error.message;
+    if (anyErr.message) return anyErr.message;
+  }
+  return fallback;
+}

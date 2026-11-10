@@ -124,7 +124,7 @@ export const inventoryItems = pgTable('inventory_items', {
 export const orders = pgTable('orders', {
   id: text('id').primaryKey(),
   orderNumber: text('order_number').unique().notNull(),
-  userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+  userId: text('user_id'),
   customerEmail: text('customer_email').notNull(),
   customerWhatsapp: text('customer_whatsapp'),
   customerName: text('customer_name'),
@@ -138,7 +138,7 @@ export const orders = pgTable('orders', {
   receiptUploadedAt: timestamp('receipt_uploaded_at', { withTimezone: true }),
   promoCode: text('promo_code'),
   discountAmountLKR: integer('discount_amount_lkr').default(0),
-  reviewedBy: text('reviewed_by').references(() => user.id, { onDelete: 'set null' }),
+  reviewedBy: text('reviewed_by'),
   reviewNotes: text('review_notes'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),

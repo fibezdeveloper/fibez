@@ -9,16 +9,16 @@ export async function GET() {
 
     const users = await sql`
       SELECT 
-        u.id,
+        u.id::text AS id,
         u.name,
         u.email,
         u.role,
-        u.created_at,
+        u."createdAt" AS created_at,
         COALESCE(SUM(CASE WHEN o.payment_status = 'VERIFIED' THEN o.total_amount_lkr ELSE 0 END), 0) AS total_spend_lkr
-      FROM "user" u
+      FROM neon_auth."user" u
       LEFT JOIN orders o ON LOWER(o.customer_email) = LOWER(u.email)
-      GROUP BY u.id, u.name, u.email, u.role, u.created_at
-      ORDER BY u.created_at DESC
+      GROUP BY u.id, u.name, u.email, u.role, u."createdAt"
+      ORDER BY u."createdAt" DESC
     `;
 
     return NextResponse.json({ users });
@@ -42,9 +42,9 @@ export async function PATCH(request: NextRequest) {
     }
 
     await sql`
-      UPDATE "user"
-      SET role = ${role}, updated_at = NOW()
-      WHERE id = ${userId}
+      UPDATE neon_auth."user"
+      SET role = ${role}, "updatedAt" = NOW()
+      WHERE id::text = ${userId}
     `;
 
     return NextResponse.json({ success: true, userId, role });
