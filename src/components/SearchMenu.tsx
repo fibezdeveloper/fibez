@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, X, ArrowRight, ShieldCheck, Zap, Server, Shield, Sparkles } from 'lucide-react';
+import { Search, X, ArrowRight, ShieldCheck, Zap, Shield, Sparkles, Gift, Cpu } from 'lucide-react';
 import { PRODUCTS, ProductItem } from '@/lib/products';
 
 export interface SearchMenuProps {
@@ -10,13 +10,13 @@ export interface SearchMenuProps {
   onClose: () => void;
   currency?: 'LKR' | 'USD';
   onSelectProduct?: (product: ProductItem) => void;
-  onSelectCategory?: (category: 'all' | 'vpn' | 'vps' | 'subscription' | 'gaming' | 'giftcard' | 'software') => void;
+  onSelectCategory?: (category: 'all' | 'vpn' | 'subscription' | 'gaming' | 'giftcard' | 'software') => void;
   onSearchSubmit?: (query: string) => void;
 }
 
 const CATEGORIES = [
   { id: 'all', label: 'All Items' },
-  { id: 'vpn', label: 'V2Ray' },
+  { id: 'vpn', label: 'VLESS VPN' },
   { id: 'giftcard', label: 'Gift Cards' },
   { id: 'subscription', label: 'Subscriptions' },
   { id: 'gaming', label: 'Game Top-ups' },
@@ -54,8 +54,7 @@ export default function SearchMenu({
     return PRODUCTS.filter((item) => {
       const matchesCat =
         selectedCategory === 'all' ||
-        item.category === selectedCategory ||
-        (selectedCategory === 'vpn' && item.category === 'vps');
+        item.category === selectedCategory;
       if (!matchesCat) return false;
       if (!q) return true;
       return (
@@ -100,7 +99,7 @@ export default function SearchMenu({
     onClose();
   };
 
-  const handleCategoryClick = (catId: 'all' | 'vpn' | 'vps' | 'subscription' | 'gaming') => {
+  const handleCategoryClick = (catId: 'all' | 'vpn' | 'subscription' | 'gaming' | 'giftcard' | 'software') => {
     setSelectedCategory(catId);
     if (onSelectCategory) {
       onSelectCategory(catId);
@@ -143,7 +142,7 @@ export default function SearchMenu({
                     setQuery(e.target.value);
                     setSelectedIndex(0);
                   }}
-                  placeholder="Search products, VPN nodes, cloud VPS, subscriptions..."
+                  placeholder="Search VLESS VPN, gift cards, subscriptions, software..."
                   className="w-full bg-transparent text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none font-sans"
                 />
                 {query ? (
@@ -184,7 +183,7 @@ export default function SearchMenu({
                 {filteredProducts.length === 0 ? (
                   <div className="py-12 text-center text-sm text-[#a1a4a5]">
                     <p>No products matching &ldquo;{query}&rdquo;</p>
-                    <p className="text-xs text-zinc-500 mt-1">Try searching for &quot;v2ray&quot;, &quot;vps&quot;, or &quot;chatgpt&quot;</p>
+                    <p className="text-xs text-zinc-500 mt-1">Try searching for &quot;vless&quot;, &quot;steam&quot;, or &quot;netflix&quot;</p>
                   </div>
                 ) : (
                   filteredProducts.map((product, idx) => {
@@ -208,9 +207,10 @@ export default function SearchMenu({
                         <div className="flex items-center gap-3 min-w-0 pr-3">
                           <div className="w-8 h-8 rounded-[8px] bg-[#16161a] border border-[#26262b] flex items-center justify-center shrink-0 text-white">
                             {product.category === 'vpn' && <Shield className="w-4 h-4" />}
-                            {product.category === 'vps' && <Server className="w-4 h-4" />}
+                            {product.category === 'giftcard' && <Gift className="w-4 h-4" />}
                             {product.category === 'subscription' && <Sparkles className="w-4 h-4" />}
                             {product.category === 'gaming' && <Zap className="w-4 h-4" />}
+                            {product.category === 'software' && <Cpu className="w-4 h-4" />}
                           </div>
 
                           <div className="min-w-0">

@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
         LIMIT 1
       `;
 
+      let itemStatus = 'DELIVERED';
       if (availableKeys.length > 0) {
         const inv = availableKeys[0];
         keyPayload = inv.key_payload;
@@ -117,29 +118,11 @@ export async function POST(request: NextRequest) {
           WHERE id = ${inv.id}
         `;
       } else {
-        // Mint dynamically if inventory is depleted
-        const isVpn = (item.category === 'vpn') || (item.title && item.title.toLowerCase().includes('v2ray'));
-        const isVps = (item.category === 'vps') || (item.title && item.title.toLowerCase().includes('vps'));
+        const isVpn = (item.category === 'vpn') || (item.title && (item.title.toLowerCase().includes('v2ray') || item.title.toLowerCase().includes('vless')));
         const isSub = (item.category === 'subscription');
-
-        if (isVpn) {
-          keyType = 'CONNECTION_CONFIG';
-          const nodeUuid = '98e4d1b8-3a91-4c12-9281-7bf812c402aa';
-          keyPayload = `vless://${nodeUuid}@sg-edge.fibez.io:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=gateway.apple.com&fp=chrome#Fibez-SG-${orderNumber}`;
-        } else if (isVps) {
-          keyType = 'ACCOUNT_CREDENTIALS';
-          credUser = 'root';
-          credPass = `fbz_nvme_${Math.random().toString(36).substring(2, 8)}#Secure`;
-          keyPayload = `ssh root@138.199.34.${Math.floor(10 + Math.random() * 80)}`;
-        } else if (isSub) {
-          keyType = 'ACCOUNT_CREDENTIALS';
-          credUser = `customer_${randomSuffix}@fibez.vault`;
-          credPass = `FbzSub_${Math.random().toString(36).substring(2, 8).toUpperCase()}!2026`;
-          keyPayload = `${credUser} : ${credPass}`;
-        } else {
-          keyType = 'SERIAL_KEY';
-          keyPayload = `FBZ-${orderNumber.replace('FBZ-', '')}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-        }
+        keyType = isVpn ? 'CONNECTION_CONFIG' : isSub ? 'ACCOUNT_CREDENTIALS' : 'SERIAL_KEY';
+        itemStatus = paymentStatus === 'PENDING_REVIEW' ? 'PENDING_VERIFICATION' : 'PENDING_FULFILLMENT';
+        keyPayload = 'Pending staff verification & dispatch to your email and Key Vault.';
       }
 
       await sql`
@@ -152,8 +135,8 @@ export async function POST(request: NextRequest) {
           ${itemId}, ${orderId}, ${item.productId || item.id}, ${item.title},
           ${item.variantTitle || 'Standard'}, ${qty}, ${unitLkr}, ${unitUsd},
           ${unitLkr * qty}, ${unitUsd * qty}, ${keyPayload}, ${credUser}, ${credPass},
-          ${keyType}, ${item.guideMarkdown || 'Instant automated digital fulfillment'},
-          ${item.warranty || '24-hour invalid key replacement guarantee'}, 'DELIVERED'
+          ${keyType}, ${item.guideMarkdown || 'Delivered to your email and Key Vault upon verification.'},
+          ${item.warranty || '24-hour invalid key replacement guarantee'}, ${itemStatus}
         )
       `;
 

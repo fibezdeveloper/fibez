@@ -46,11 +46,58 @@ export default function V2RayPage() {
   const [selectedDurations, setSelectedDurations] = useState<Record<string, number>>({});
   const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
   const [addedItemNotice, setAddedItemNotice] = useState<string | null>(null);
+  const [liveReviews, setLiveReviews] = useState<any[]>([]);
+  const [dbVpnProducts, setDbVpnProducts] = useState<ProductItem[]>([]);
 
-  // Filter only V2Ray / VLESS VPN products
-  const v2rayProducts = useMemo(() => {
-    return PRODUCTS.filter((p) => p.category === 'vpn' && p.id.startsWith('v2ray'));
+  useEffect(() => {
+    fetch('/api/reviews')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.reviews)) {
+          setLiveReviews(data.reviews.filter((r: any) => String(r.product_id || '').startsWith('v2ray')).slice(0, 3));
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/products?category=vpn')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.products) && data.products.length > 0) {
+          setDbVpnProducts(
+            data.products.map((p: any) => ({
+              id: p.id,
+              category: p.category_id,
+              brand: p.brand || undefined,
+              region: p.region || undefined,
+              title: p.title,
+              description: p.description,
+              priceUSD: Number(p.price_usd),
+              priceLKR: Number(p.price_lkr),
+              stockCount: Number(p.stock_count),
+              badge: p.badge || undefined,
+              isInstant: p.is_instant,
+              durations: p.durations || [],
+              options: p.options || [],
+              guideMarkdown: p.guide_markdown || '',
+              warranty: p.warranty_terms || '',
+            }))
+          );
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  // Filter only VLESS VPN products and merge live DB stock & prices
+  const v2rayProducts = useMemo(() => {
+    const base = PRODUCTS.filter((p) => p.category === 'vpn' && p.id.startsWith('v2ray'));
+    if (dbVpnProducts.length === 0) return base;
+    return base
+      .map((local) => {
+        const remote = dbVpnProducts.find((d) => d.id === local.id);
+        return remote ? { ...local, priceLKR: remote.priceLKR, priceUSD: remote.priceUSD, stockCount: remote.stockCount } : local;
+      })
+      .filter((p) => p.stockCount > 0);
+  }, [dbVpnProducts]);
 
   const filteredProducts = useMemo(() => {
     if (activeIspFilter === 'all') return v2rayProducts;
@@ -92,30 +139,6 @@ export default function V2RayPage() {
     addToCart(product, durationIdx);
     router.push('/cart');
   };
-
-  const reviews = [
-    {
-      author: 'Kavinda R.',
-      location: 'Kandy · SLT Fiber 100Mbps',
-      rating: 5,
-      date: 'Yesterday',
-      text: 'SLT throttles YouTube and downloads after 7 PM every single day. Switched to Fibez SLT Netflix node with NetMod PC and I get full 11.2 MB/s on Steam and IDM with zero buffering on 4K. Absolute lifesaver.',
-    },
-    {
-      author: 'Nadeem S.',
-      location: 'Colombo · Dialog Home Broadband',
-      rating: 5,
-      date: '2 days ago',
-      text: 'Running the Dialog Zoom node on my router via NetMod. Works perfectly with the *678# work and learn package. All household devices connect through hotspot and my main data is completely untouched.',
-    },
-    {
-      author: 'Praveen D.',
-      location: 'Galle · Competitive Gamer',
-      rating: 5,
-      date: '3 days ago',
-      text: 'Normal VPNs buffer constantly during evening hours on Dialog 4G. Fibez VLESS node maintains a super stable connection to Singapore servers with zero buffering on streams all night.',
-    },
-  ];
 
   const faqs = [
     {
@@ -416,40 +439,56 @@ export default function V2RayPage() {
       <section className="py-16 max-w-6xl mx-auto px-4 sm:px-6 border-t border-[#181820]">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400 mb-2 font-semibold">
-            Verified Experiences from Sri Lanka
+            Customer Feedback
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-            Trusted by Streamers, Gamers & Engineers
+            Verified Customer Reviews
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {reviews.map((rev, idx) => (
-            <div
-              key={idx}
-              className="p-6 rounded-2xl bg-[#0d0d10] border border-[#1f1f26] flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center gap-1 mb-3 text-white">
-                  {[...Array(rev.rating)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-current" />
-                  ))}
-                </div>
-                <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-6">
-                  &ldquo;{rev.text}&rdquo;
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+        {liveReviews.length === 0 ? (
+          <div className="p-8 rounded-2xl bg-[#0d0d10] border border-[#1f1f26] text-center space-y-2 max-w-xl mx-auto">
+            <p className="text-sm text-zinc-300">No VLESS VPN reviews posted yet.</p>
+            <p className="text-xs text-zinc-500">
+              Try a package or 24-hour free trial and leave a review on any VLESS product page.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {liveReviews.map((rev) => (
+              <div
+                key={rev.id}
+                className="p-6 rounded-2xl bg-[#0d0d10] border border-[#1f1f26] flex flex-col justify-between"
+              >
                 <div>
-                  <div className="font-semibold text-white">{rev.author}</div>
-                  <div className="text-zinc-500 font-mono text-[11px]">{rev.location}</div>
+                  <div className="flex items-center gap-1 mb-3 text-white">
+                    {[...Array(rev.rating || 5)].map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                    ))}
+                  </div>
+                  {rev.headline && (
+                    <div className="text-sm font-semibold text-white mb-1.5">{rev.headline}</div>
+                  )}
+                  <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-6">
+                    &ldquo;{rev.comment}&rdquo;
+                  </p>
                 </div>
-                <span className="text-zinc-600 font-mono text-[10px]">{rev.date}</span>
+
+                <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div>
+                    <div className="font-semibold text-white">{rev.user_name}</div>
+                    <div className="text-zinc-500 font-mono text-[11px]">
+                      {rev.is_verified_purchase ? 'Verified Purchase' : 'Customer'}
+                    </div>
+                  </div>
+                  <span className="text-zinc-600 font-mono text-[10px]">
+                    {new Date(rev.created_at).toLocaleDateString()}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Frequently Asked Questions */}

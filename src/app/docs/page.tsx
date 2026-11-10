@@ -45,7 +45,7 @@ export default function DocsPage() {
           Client Configuration & Deployment Guides
         </h1>
         <p className="text-sm text-[#a1a4a5] mt-2 max-w-2xl leading-relaxed">
-          Comprehensive step-by-step setup guides for Sing-box, v2rayNG, Shadowrocket, and initial Linux Cloud VPS hardening.
+          Step-by-step setup guides for NetMod Syna (Windows/Android), v2rayNG (Android), Shadowrocket (iOS), and product activation.
         </p>
       </div>
 
@@ -58,9 +58,8 @@ export default function DocsPage() {
             <nav className="flex flex-col space-y-2 text-xs font-mono text-[#a1a4a5]">
               <a href="#v2ray-android" className="hover:text-white transition-colors">1. Android (v2rayNG)</a>
               <a href="#v2ray-ios" className="hover:text-white transition-colors">2. iOS (Shadowrocket / Streisand)</a>
-              <a href="#v2ray-windows" className="hover:text-white transition-colors">3. Windows & Mac (Sing-box)</a>
-              <a href="#vps-hardening" className="hover:text-white transition-colors">4. Cloud VPS Initial Setup</a>
-              <a href="#faq" className="hover:text-white transition-colors">5. Frequently Asked Questions</a>
+              <a href="#v2ray-windows" className="hover:text-white transition-colors">3. Windows &amp; Android (NetMod)</a>
+              <a href="#faq" className="hover:text-white transition-colors">4. Frequently Asked Questions</a>
             </nav>
           </div>
 
@@ -162,45 +161,20 @@ export default function DocsPage() {
             </div>
           </section>
 
-          {/* Section 4: Cloud VPS Hardening */}
-          <section id="vps-hardening" className="p-6 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23] space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-[8px] bg-[#16161a] border border-[#26262b] flex items-center justify-center text-white">
-                <Server className="w-4 h-4" />
-              </div>
-              <h2 className="text-lg font-medium text-white">4. Cloud VPS: Ubuntu 24.04 Initial Hardening</h2>
-            </div>
-            <p className="text-xs text-[#a1a4a5] leading-relaxed">
-              Once you claim your root SSH credentials in the Key Vault, execute these initial security hardening commands:
-            </p>
-            <div className="p-3.5 rounded-[12px] bg-black/60 border border-white/5 font-mono text-xs text-zinc-300 space-y-2">
-              <div className="flex items-center justify-between p-2.5 rounded bg-[#07050d] border border-[#1f1f23]">
-                <code>sudo apt update && sudo apt upgrade -y && sudo ufw allow 22 && sudo ufw enable</code>
-                <button
-                  type="button"
-                  onClick={() => copyToClipboard('sudo apt update && sudo apt upgrade -y && sudo ufw allow 22 && sudo ufw enable', 'c2')}
-                  className="text-[#a1a4a5] hover:text-white"
-                >
-                  {copiedCode === 'c2' ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 5: FAQs */}
+          {/* Section 4: FAQs */}
           <section id="faq" className="p-6 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23] space-y-4">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-8 h-8 rounded-[8px] bg-[#16161a] border border-[#26262b] flex items-center justify-center text-white">
                 <HelpCircle className="w-4 h-4" />
               </div>
-              <h2 className="text-lg font-medium text-white">5. Frequently Asked Questions</h2>
+              <h2 className="text-lg font-medium text-white">4. Frequently Asked Questions</h2>
             </div>
 
             <div className="space-y-3 text-xs">
               <div className="p-3.5 rounded-[12px] bg-[#141417] border border-[#1f1f23]">
-                <div className="font-semibold text-white mb-1">How fast are licenses and credentials delivered?</div>
+                <div className="font-semibold text-white mb-1">How fast are configs and codes delivered?</div>
                 <p className="text-[#a1a4a5]">
-                  Fulfillment is 100% automated via our zero-trust pipeline. Once payment is confirmed, payload keys are minted and available in your Key Vault in under 400 milliseconds.
+                  Config links, gift codes, and subscription logins are sent to your email and displayed in your Key Vault shortly after payment verification.
                 </p>
               </div>
 

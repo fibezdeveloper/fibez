@@ -1,15 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PRODUCTS, ProductItem } from '@/lib/products';
 import { useStore } from '@/lib/store-context';
 import ProductModal from '@/components/ProductModal';
 import { 
   Search, 
-  Shield, 
-  Server, 
   Sparkles, 
   Zap, 
   ArrowRight, 
@@ -17,32 +15,60 @@ import {
   Check, 
   SlidersHorizontal,
   ChevronRight,
+  ChevronDown,
   Gift,
   Cpu
 } from 'lucide-react';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Items', icon: null },
-  { id: 'vpn', label: 'V2Ray', icon: Shield },
   { id: 'giftcard', label: 'Gift Cards', icon: Gift },
   { id: 'subscription', label: 'Subscriptions', icon: Sparkles },
   { id: 'gaming', label: 'Game Top-ups', icon: Zap },
   { id: 'software', label: 'Software', icon: Cpu },
 ] as const;
 
+const SORT_OPTIONS = [
+  { value: 'recommended', label: 'Recommended' },
+  { value: 'price-asc', label: 'Price: Low to High' },
+  { value: 'price-desc', label: 'Price: High to Low' },
+  { value: 'stock', label: 'Stock Availability' },
+] as const;
+
 function CatalogContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { currency, addToCart } = useStore();
 
   const initialCat = (searchParams.get('category') as any) || 'all';
   const initialQuery = searchParams.get('q') || '';
 
-  const [productList, setProductList] = useState<ProductItem[]>(PRODUCTS);
-  const [activeCategory, setActiveCategory] = useState<string>(initialCat);
+  const [productList, setProductList] = useState<ProductItem[]>(PRODUCTS.filter((p) => p.category !== 'vpn'));
+  const [activeCategory, setActiveCategory] = useState<string>(initialCat === 'vpn' ? 'all' : initialCat);
   const [searchQuery, setSearchQuery] = useState<string>(initialQuery);
   const [sortBy, setSortBy] = useState<'recommended' | 'price-asc' | 'price-desc' | 'stock'>('recommended');
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortRef = useRef<HTMLDivElement>(null);
+  const [inStockOnly, setInStockOnly] = useState<boolean>(true);
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
   const [addedId, setAddedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+        setSortOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSortOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   useEffect(() => {
     fetch('/api/products')
@@ -66,7 +92,7 @@ function CatalogContent() {
             guideMarkdown: p.guide_markdown || '',
             warranty: p.warranty_terms || '',
           }));
-          setProductList(mapped);
+          setProductList(mapped.filter((p) => p.category !== 'vpn'));
         }
       })
       .catch((err) => console.error('Failed to fetch catalog from DB:', err));
@@ -74,17 +100,20 @@ function CatalogContent() {
 
   useEffect(() => {
     const cat = searchParams.get('category');
+    if (cat === 'vpn') {
+      router.replace('/v2ray');
+      return;
+    }
     if (cat) setActiveCategory(cat);
     const q = searchParams.get('q');
     if (q) setSearchQuery(q);
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   const filteredProducts = useMemo(() => {
-    let list = productList.filter((item) => {
-      const matchesCat =
-        activeCategory === 'all' ||
-        item.category === activeCategory ||
-        (activeCategory === 'vpn' && item.category === 'vps');
+    const list = productList.filter((item) => {
+      if (item.category === 'vpn') return false;
+      if (inStockOnly && item.stockCount <= 0) return false;
+      const matchesCat = activeCategory === 'all' || item.category === activeCategory;
       if (!matchesCat) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
@@ -105,10 +134,11 @@ function CatalogContent() {
     }
 
     return list;
-  }, [activeCategory, searchQuery, sortBy, currency]);
+  }, [activeCategory, searchQuery, sortBy, currency, productList, inStockOnly]);
 
   const handleQuickAdd = (product: ProductItem, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (product.stockCount <= 0) return;
     addToCart(product, 0);
     setAddedId(product.id);
     setTimeout(() => setAddedId(null), 1400);
@@ -133,14 +163,23 @@ function CatalogContent() {
       <div className="mb-10">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 font-mono text-[11px] uppercase tracking-[0.2em] text-zinc-300 mb-3">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Automated Digital Delivery · 24/7 SLA</span>
+          <span>Instant Email &amp; Key Vault Delivery</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-normal tracking-[-0.04em] text-white">
           Shop Everything Digital
         </h1>
         <p className="text-sm sm:text-base text-zinc-400 mt-2 max-w-2xl leading-relaxed">
-          Official gaming top-ups, digital gift cards, entertainment subscriptions, software licenses, and secure cloud networking with sub-400ms instant dispatch.
+          Official gaming top-ups, digital gift cards, streaming subscriptions, and software licenses with instant email &amp; vault delivery.
         </p>
+        <div className="mt-4">
+          <Link
+            href="/v2ray"
+            className="inline-flex items-center gap-2 text-xs font-mono text-zinc-300 hover:text-white bg-black border border-white/15 hover:border-white/35 px-3.5 py-2 rounded-full transition-colors"
+          >
+            <span>Need High-Speed VLESS / V2Ray VPN? Go to V2Ray Page</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
       </div>
 
       {/* Control Bar: Categories & Search & Sort */}
@@ -158,7 +197,7 @@ function CatalogContent() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-sans font-medium tracking-wide transition-all duration-150 cursor-pointer whitespace-nowrap select-none ${
                   isActive
                     ? 'bg-white text-black font-semibold shadow-sm'
-                    : 'bg-[#0c0d16] border border-[#212338] text-[#d6d6de] hover:border-zinc-500 hover:text-white hover:bg-[#141522]'
+                    : 'bg-black border border-white/15 text-[#d6d6de] hover:border-white/40 hover:text-white'
                 }`}
               >
                 {Icon && <Icon className="w-3.5 h-3.5" />}
@@ -168,31 +207,71 @@ function CatalogContent() {
           })}
         </div>
 
-        {/* Search & Sort */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 sm:w-64">
+        {/* Search, In-Stock Filter & Black Sort Dropdown */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setInStockOnly((v) => !v)}
+            className={`px-3 py-2 rounded-xl border text-xs font-mono transition-colors cursor-pointer whitespace-nowrap ${
+              inStockOnly
+                ? 'bg-black border-white/40 text-white'
+                : 'bg-black border-white/15 text-zinc-400 hover:text-white'
+            }`}
+          >
+            {inStockOnly ? '✓ In Stock Only' : 'All Stock'}
+          </button>
+
+          <div className="relative flex-1 sm:w-56">
             <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search products..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white font-mono transition-colors"
+              className="w-full pl-9 pr-3 py-2 rounded-xl bg-black border border-white/15 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white font-mono transition-colors"
             />
           </div>
 
-          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-zinc-400">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-300" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-transparent text-white text-xs focus:outline-none cursor-pointer font-mono"
+          <div ref={sortRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setSortOpen((o) => !o)}
+              aria-haspopup="listbox"
+              aria-expanded={sortOpen}
+              className="flex items-center gap-2 bg-black border border-white/15 hover:border-white/35 rounded-xl px-3 py-2 text-xs text-white font-mono cursor-pointer transition-colors"
             >
-              <option value="recommended" className="bg-[#121214]">Recommended</option>
-              <option value="price-asc" className="bg-[#121214]">Price: Low to High</option>
-              <option value="price-desc" className="bg-[#121214]">Price: High to Low</option>
-              <option value="stock" className="bg-[#121214]">Stock Availability</option>
-            </select>
+              <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-300" />
+              <span>{SORT_OPTIONS.find((opt) => opt.value === sortBy)?.label || 'Recommended'}</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 transition-transform ${sortOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {sortOpen && (
+              <div
+                role="listbox"
+                className="absolute right-0 mt-2 w-48 rounded-xl bg-black border border-white/15 shadow-2xl py-1.5 z-40"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    role="option"
+                    aria-selected={sortBy === opt.value}
+                    onClick={() => {
+                      setSortBy(opt.value);
+                      setSortOpen(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2 text-xs font-mono flex items-center justify-between transition-colors cursor-pointer ${
+                      sortBy === opt.value
+                        ? 'bg-white/10 text-white font-semibold'
+                        : 'bg-black text-zinc-300 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    {sortBy === opt.value && <Check className="w-3.5 h-3.5 text-white" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -207,6 +286,7 @@ function CatalogContent() {
             onClick={() => {
               setActiveCategory('all');
               setSearchQuery('');
+              setInStockOnly(false);
             }}
             className="mt-4 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-xs font-mono text-white transition-colors"
           >
@@ -232,8 +312,6 @@ function CatalogContent() {
                   {/* Card Header */}
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div className="w-10 h-10 rounded-[10px] bg-white/5 border border-white/10 flex items-center justify-center text-white shrink-0">
-                      {product.category === 'vpn' && <Shield className="w-5 h-5 text-indigo-400" />}
-                      {product.category === 'vps' && <Server className="w-5 h-5 text-cyan-400" />}
                       {product.category === 'subscription' && <Sparkles className="w-5 h-5 text-purple-400" />}
                       {product.category === 'gaming' && <Zap className="w-5 h-5 text-amber-400" />}
                       {product.category === 'giftcard' && <Gift className="w-5 h-5 text-emerald-400" />}
@@ -246,8 +324,12 @@ function CatalogContent() {
                           {product.badge}
                         </span>
                       )}
-                      <span className="font-mono text-[9px] text-zinc-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">
-                        {product.stockCount} in stock
+                      <span className={`font-mono text-[9px] px-2 py-0.5 rounded-full border ${
+                        product.stockCount > 0
+                          ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20'
+                          : 'text-zinc-500 bg-white/5 border-white/10'
+                      }`}>
+                        {product.stockCount > 0 ? 'In Stock' : 'Out of Stock'}
                       </span>
                     </div>
                   </div>
@@ -290,13 +372,16 @@ function CatalogContent() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
+                      disabled={product.stockCount <= 0}
                       onClick={(e) => handleQuickAdd(product, e)}
-                      className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
-                        isJustAdded
-                          ? 'bg-white text-black border-white'
-                          : 'bg-white/5 border-white/10 hover:border-white/30 text-white'
+                      className={`p-2.5 rounded-xl border transition-all ${
+                        product.stockCount <= 0
+                          ? 'bg-white/5 border-white/5 text-zinc-600 cursor-not-allowed'
+                          : isJustAdded
+                            ? 'bg-white text-black border-white cursor-pointer'
+                            : 'bg-white/5 border-white/10 hover:border-white/30 text-white cursor-pointer'
                       }`}
-                      title="Quick Add to Cart"
+                      title={product.stockCount <= 0 ? 'Out of Stock' : 'Quick Add to Cart'}
                     >
                       {isJustAdded ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
                     </button>
@@ -305,7 +390,7 @@ function CatalogContent() {
                       href={`/products/${product.id}`}
                       className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs tracking-wider uppercase transition-all inline-flex items-center gap-1.5"
                     >
-                      <span>Configure</span>
+                      <span>{product.stockCount > 0 ? 'Buy Now' : 'Details'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>

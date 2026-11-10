@@ -225,13 +225,13 @@ export default function CartPage() {
           <CheckCircle2 className="w-10 h-10" />
         </div>
         <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">
-          Automated Pipeline Complete
+          Order Placed
         </div>
         <h1 className="text-2xl sm:text-3xl font-medium text-white mb-2">
-          Order Verified & Keys Minted!
+          Order Submitted!
         </h1>
         <p className="text-sm text-[#a1a4a5] mb-6 leading-relaxed">
-          Zero-trust keys and connection strings have been minted under 400ms and delivered to your personal Key Vault. Redirecting...
+          Your order and receipt slip have been received. Once verified, your codes or VLESS configs will be sent to your email and unlocked in your Key Vault. Redirecting...
         </p>
         <Link
           href="/vault"
@@ -323,7 +323,6 @@ export default function CartPage() {
                       <div className="flex items-start gap-3.5">
                         <div className="w-11 h-11 rounded-[14px] bg-[#16161a] border border-[#26262b] flex items-center justify-center text-white shrink-0 mt-0.5">
                           {item.product.category === 'vpn' && <Shield className="w-5 h-5" />}
-                          {item.product.category === 'vps' && <Server className="w-5 h-5" />}
                           {item.product.category === 'subscription' && <Sparkles className="w-5 h-5" />}
                           {item.product.category === 'gaming' && <Zap className="w-5 h-5" />}
                         </div>
@@ -662,8 +661,8 @@ export default function CartPage() {
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-[#a1a4a5]">Zero-Trust Automated Minting</span>
-                <span className="text-zinc-300 font-semibold">FREE (&lt;400ms)</span>
+                <span className="text-[#a1a4a5]">Digital Delivery</span>
+                <span className="text-zinc-300 font-semibold">FREE (Email &amp; Vault)</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#a1a4a5]">SLA Replacement Warranty</span>

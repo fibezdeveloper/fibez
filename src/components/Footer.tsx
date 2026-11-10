@@ -100,7 +100,7 @@ export default function Footer() {
             </Link>
 
             <p className="text-sm text-zinc-400 leading-relaxed max-w-sm">
-              Instant zero-trust digital goods, streaming subscriptions, and high-performance anti-censorship cloud networking. Built for the autonomous web.
+              Instant gift cards, streaming &amp; AI subscriptions, game top-ups, and high-speed VLESS VPN — optimised for SLT, Dialog, Hutch &amp; Airtel.
             </p>
 
             {/* Configurable Social Media Links (Enabled via Owner Dashboard) */}
@@ -146,10 +146,10 @@ export default function Footer() {
           {/* Navigation Columns (7 Columns on Desktop, split into 3 groups) */}
           <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
             
-            {/* Column 1: V2Ray & Platform */}
+            {/* Column 1: Store & VPN */}
             <div className="space-y-4">
               <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-300 font-semibold">
-                V2Ray & Nodes
+                Store &amp; VPN
               </div>
               <ul className="space-y-2.5 text-sm">
                 <li>

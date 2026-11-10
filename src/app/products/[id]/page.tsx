@@ -77,14 +77,22 @@ function ProductDetailContent({
       <div className="flex items-center gap-2 text-xs font-mono text-[#8e87aa] mb-8">
         <Link href="/" className="hover:text-white transition-colors">Home</Link>
         <ChevronRight className="w-3.5 h-3.5 text-[#5c5673]" />
-        <Link href="/catalog" className="hover:text-white transition-colors">Catalog</Link>
-        <ChevronRight className="w-3.5 h-3.5 text-[#5c5673]" />
-        <Link 
-          href={`/catalog?category=${product.category}`} 
-          className="text-white hover:underline capitalize"
-        >
-          {product.category}
-        </Link>
+        {product.category === 'vpn' ? (
+          <Link href="/v2ray" className="text-white hover:underline">
+            VLESS / V2Ray
+          </Link>
+        ) : (
+          <>
+            <Link href="/catalog" className="hover:text-white transition-colors">Catalog</Link>
+            <ChevronRight className="w-3.5 h-3.5 text-[#5c5673]" />
+            <Link
+              href={`/catalog?category=${product.category}`}
+              className="text-white hover:underline capitalize"
+            >
+              {product.category}
+            </Link>
+          </>
+        )}
         <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
         <span className="text-white truncate max-w-xs">{product.title}</span>
       </div>
@@ -99,15 +107,19 @@ function ProductDetailContent({
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <span className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400">
-                {product.category.toUpperCase()} INFRASTRUCTURE
+                {product.category === 'vpn' ? 'VLESS VPN' : product.category.toUpperCase()}
               </span>
               {product.badge && (
                 <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-white">
                   {product.badge}
                 </span>
               )}
-              <span className="font-mono text-[10px] text-zinc-300 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">
-                {product.stockCount} Available Now
+              <span className={`font-mono text-[10px] px-2 py-0.5 rounded-full border ${
+                product.stockCount > 0
+                  ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20'
+                  : 'text-zinc-500 bg-white/5 border-white/10'
+              }`}>
+                {product.stockCount > 0 ? 'In Stock' : 'Out of Stock'}
               </span>
             </div>
 
@@ -119,24 +131,24 @@ function ProductDetailContent({
             </p>
           </div>
 
-          {/* Quick SLA Matrix Bar */}
+          {/* Quick Store Matrix Bar */}
           <div className="grid grid-cols-3 gap-3 p-4 rounded-[16px] bg-[#0c0c0e] border border-[#1f1f23]">
             <div className="text-center sm:text-left">
-              <div className="text-[11px] font-mono text-[#a1a4a5]">Provisioning SLA</div>
+              <div className="text-[11px] font-mono text-[#a1a4a5]">Delivery</div>
               <div className="text-sm sm:text-base font-mono font-semibold text-white mt-0.5">
-                &lt; 400ms Auto
+                Instant Email
               </div>
             </div>
             <div className="text-center sm:text-left border-x border-[#1f1f23] px-3">
-              <div className="text-[11px] font-mono text-[#a1a4a5]">Uptime Guarantee</div>
+              <div className="text-[11px] font-mono text-[#a1a4a5]">Protection</div>
               <div className="text-sm sm:text-base font-mono font-semibold text-white mt-0.5">
-                99.99% Tier 1
+                Full Warranty
               </div>
             </div>
             <div className="text-center sm:text-left pl-1">
-              <div className="text-[11px] font-mono text-[#a1a4a5]">Zero-Trust Key</div>
+              <div className="text-[11px] font-mono text-[#a1a4a5]">Storage</div>
               <div className="text-sm sm:text-base font-mono font-semibold text-zinc-300 mt-0.5">
-                Encrypted
+                Key Vault
               </div>
             </div>
           </div>
@@ -229,26 +241,17 @@ function ProductDetailContent({
 
             {activeTab === 'guide' && (
               <div className="space-y-4">
-                <div className="p-4 rounded-[14px] bg-[#0c0c0e] border border-[#1f1f23] font-mono text-xs text-zinc-300 space-y-2">
-                  <div className="text-white font-semibold">Immediate Client Activation:</div>
+                <div className="p-4 rounded-[14px] bg-[#0c0c0e] border border-[#1f1f23] font-mono text-xs text-zinc-300 space-y-3">
+                  <div className="text-white font-semibold">Activation &amp; Setup Guide:</div>
                   <p className="leading-relaxed text-[#a1a4a5]">{product.guideMarkdown}</p>
-                  <div className="p-3 rounded-[8px] bg-black/60 border border-white/5 flex items-center justify-between mt-3">
-                    <code className="text-zinc-400 select-all">
-                      vless://fibez-vpn@{product.id}.fibez.net:443?encryption=none&security=tls
-                    </code>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(`vless://fibez-vpn@${product.id}.fibez.net:443?encryption=none&security=tls`);
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 1500);
-                      }}
-                      className="ml-2 text-[#a1a4a5] hover:text-white"
-                      title="Copy sample config"
-                    >
-                      {copied ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                  </div>
+                  {product.category === 'vpn' && (
+                    <div className="pt-2 border-t border-white/10">
+                      <Link href="/v2ray/guide" className="text-white hover:underline inline-flex items-center gap-1">
+                        <span>Open NetMod Syna &amp; v2rayNG Setup Guide</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

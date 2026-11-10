@@ -46,8 +46,10 @@ export interface TicketMessage {
 const CATEGORIES = [
   'All',
   'VPN Connection',
-  'Cloud VPS',
+  'Gift Cards',
   'Subscription Credentials',
+  'Game Top-ups',
+  'Software',
   'Billing & Slip',
   'General',
 ];
@@ -631,8 +633,10 @@ export default function TicketCenter({
                     className="w-full px-3 py-2 rounded-xl bg-[#141417] border border-white/10 text-white focus:outline-none focus:border-white/30 cursor-pointer"
                   >
                     <option value="VPN Connection">VPN Connection (High-Speed VLESS)</option>
-                    <option value="Cloud VPS">Cloud VPS (SSH / Hypervisor)</option>
-                    <option value="Subscription Credentials">Subscription Credentials (ChatGPT / Netflix)</option>
+                    <option value="Gift Cards">Gift Cards &amp; Digital Codes</option>
+                    <option value="Subscription Credentials">Subscriptions (Netflix / Spotify / ChatGPT)</option>
+                    <option value="Game Top-ups">Game Top-ups (Free Fire / PUBG / Valorant)</option>
+                    <option value="Software">Software Licenses</option>
                     <option value="Billing & Slip">Billing &amp; Bank Slip Verification</option>
                     <option value="General">General Question</option>
                   </select>

@@ -140,12 +140,7 @@ export async function POST(req: NextRequest) {
     const trialUuid = `fbz-${randomSuffix.toLowerCase()}-${Date.now().toString(36)}`;
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    let configUri = '';
-    if (protocol === 'vless') {
-      configUri = `vless://${trialUuid}@sg-edge1.fibez.store:443?encryption=none&security=reality&sni=${sni}&fp=chrome&pbk=7kZz9XQ0YhJtF8WqK1bV2mN3sP4cD5eG6iU7oA8rS9M&sid=fa4c10&type=tcp&headerType=none#Fibez-${label}-24h-Trial`;
-    } else {
-      configUri = `hy2://${trialUuid}@sg-hy2.fibez.store:20000-50000?sni=${sni}&insecure=0#Fibez-Hy2-${label}-24h-Trial`;
-    }
+    const configUri = `vless://${trialUuid}@sg.fibez.store:443?encryption=none&security=tls&sni=${sni}&fp=chrome&type=ws&path=/vless#Fibez-${label}-24h-Trial`;
 
     // Generate QR code for mobile scanning
     let qrDataUrl = '';

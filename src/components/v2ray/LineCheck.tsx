@@ -54,15 +54,15 @@ export default function LineCheck() {
   const sampleConfigs = [
     {
       label: 'Sample Dialog Zoom VLESS',
-      uri: 'vless://fbz-dialog-demo@sg-node.fibez.store:443?encryption=none&security=reality&sni=zoom.us&fp=chrome&pbk=7kZz9XQ0YhJtF8WqK1bV2mN3sP4cD5eG6iU7oA8rS9M&sid=fa4c10&type=tcp#Fibez-Dialog-Zoom-VLESS',
+      uri: 'vless://fbz-dialog-demo@sg.fibez.store:443?encryption=none&security=tls&sni=zoom.us&type=ws#Fibez-Dialog-Zoom-VLESS',
     },
     {
       label: 'Sample SLT Fiber Netflix VLESS',
-      uri: 'vless://fbz-slt-demo@sg-node.fibez.store:443?encryption=none&security=reality&sni=netflix.com&fp=chrome&pbk=7kZz9XQ0YhJtF8WqK1bV2mN3sP4cD5eG6iU7oA8rS9M&sid=fa4c10&type=tcp#Fibez-SLT-Netflix-VLESS',
+      uri: 'vless://fbz-slt-demo@sg.fibez.store:443?encryption=none&security=tls&sni=netflix.com&type=ws#Fibez-SLT-Netflix-VLESS',
     },
     {
       label: 'Sample Airtel TikTok VLESS',
-      uri: 'vless://fbz-airtel-demo@sg-node.fibez.store:443?encryption=none&security=reality&sni=tiktokv.com&fp=chrome&pbk=7kZz9XQ0YhJtF8WqK1bV2mN3sP4cD5eG6iU7oA8rS9M&sid=fa4c10&type=tcp#Fibez-Airtel-TikTok-VLESS',
+      uri: 'vless://fbz-airtel-demo@sg.fibez.store:443?encryption=none&security=tls&sni=tiktokv.com&type=ws#Fibez-Airtel-TikTok-VLESS',
     },
   ];
 

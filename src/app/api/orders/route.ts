@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     } else if (role === 'admin' || role === 'owner') {
       orderRows = await sql`SELECT * FROM orders ORDER BY created_at DESC LIMIT 50`;
     } else {
-      orderRows = await sql`SELECT * FROM orders ORDER BY created_at DESC LIMIT 20`;
+      return NextResponse.json({ orders: [] });
     }
 
     const dbSql = sql;

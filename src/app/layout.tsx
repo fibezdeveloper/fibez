@@ -24,9 +24,9 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Fibez — Automated Digital Goods & Subscription Marketplace",
+  title: "Fibez — Digital Products, Gift Cards, Subscriptions & VLESS VPN",
   description:
-    "The digital delivery engine for developers. Instant automated provisioning for V2Ray VPN configurations, Cloud VPS instances, subscriptions, and game keys.",
+    "Instant digital store for High-Speed VLESS VPN (SLT, Dialog, Hutch & Airtel), gift cards, game top-ups, streaming accounts, and software keys delivered in seconds.",
   manifest: "/site.webmanifest",
   appleWebApp: {
     title: "Fibez",

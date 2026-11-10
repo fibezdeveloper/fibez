@@ -1,8 +1,8 @@
-export type ProductCategory = 'all' | 'vpn' | 'vps' | 'subscription' | 'gaming' | 'giftcard' | 'software';
+export type ProductCategory = 'all' | 'vpn' | 'subscription' | 'gaming' | 'giftcard' | 'software';
 
 export interface ProductItem {
   id: string;
-  category: 'vpn' | 'vps' | 'subscription' | 'gaming' | 'giftcard' | 'software';
+  category: 'vpn' | 'subscription' | 'gaming' | 'giftcard' | 'software';
   brand?: string;
   region?: string;
   title: string;
@@ -848,25 +848,7 @@ export const PRODUCTS: ProductItem[] = [
     warranty: COMMON_WARRANTY,
   },
 
-  // --- INFRASTRUCTURE, VPN & VPS ---
-  {
-    id: 'nordvpn-dedicated-1year',
-    category: 'vpn',
-    brand: 'NordVPN',
-    title: 'NordVPN Dedicated IP & Threat Protection (1 Year)',
-    description: 'High-speed WireGuard / NordLynx encrypted tunnel with dedicated static IP, CyberSec malware blocker, and double VPN multi-hop.',
-    priceUSD: 16.00,
-    priceLKR: 5280,
-    stockCount: 85,
-    badge: 'ZERO-LOG',
-    isInstant: true,
-    durations: [
-      { label: '1 Year Dedicated', days: 365, multiplier: 1 },
-      { label: '2 Years Dedicated', days: 730, multiplier: 1.8 },
-    ],
-    guideMarkdown: 'Account credentials with dedicated server IP credentials delivered into your Key Vault.',
-    warranty: COMMON_WARRANTY,
-  },
+  // --- VLESS VPN ---
   {
     id: 'v2ray-dialog-zoom',
     category: 'vpn',
@@ -1003,43 +985,6 @@ export const PRODUCTS: ProductItem[] = [
       { label: '1 Year', days: 365, multiplier: 8.5 },
     ],
     guideMarkdown: 'Supported clients: NetMod Syna (Windows/Android), v2rayNG (Android), Sing-box. Copy VLESS URI from email.',
-    warranty: COMMON_WARRANTY,
-  },
-  {
-    id: 'vps-nvme-4c8g',
-    category: 'vps',
-    brand: 'Fibez Cloud',
-    title: 'NVMe Cloud VPS — 4 Core / 8GB RAM',
-    description: 'Dedicated AMD EPYC 9004 processor, 120GB PCIe 4.0 NVMe SSD, 10Gbps unmetered bandwidth, dedicated clean IPv4 & IPv6.',
-    priceUSD: 12.00,
-    priceLKR: 3950,
-    stockCount: 16,
-    badge: 'ENTERPRISE',
-    isInstant: true,
-    durations: [
-      { label: '1 Month', days: 30, multiplier: 1 },
-      { label: '3 Months', days: 90, multiplier: 2.8 },
-      { label: '1 Year', days: 365, multiplier: 9.0 },
-    ],
-    guideMarkdown: 'Instant SSH credentials delivered upon payment. Root access enabled by default. Clean OS image of Ubuntu 24.04 LTS.',
-    warranty: COMMON_WARRANTY,
-  },
-  {
-    id: 'vps-nvme-2c4g',
-    category: 'vps',
-    brand: 'Fibez Cloud',
-    title: 'NVMe Cloud VPS — 2 Core / 4GB RAM',
-    description: 'Cost-efficient cloud instance for bot hosting, microservices, and proxy nodes. 60GB NVMe storage and dedicated IP.',
-    priceUSD: 7.00,
-    priceLKR: 2300,
-    stockCount: 29,
-    isInstant: true,
-    durations: [
-      { label: '1 Month', days: 30, multiplier: 1 },
-      { label: '3 Months', days: 90, multiplier: 2.8 },
-      { label: '1 Year', days: 365, multiplier: 9.0 },
-    ],
-    guideMarkdown: 'Instant SSH access with custom root password. Full control panel for reinstallation and reboot.',
     warranty: COMMON_WARRANTY,
   },
 ];

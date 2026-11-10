@@ -25,7 +25,7 @@ export interface Product {
   id: string;
   slug: string;
   title: string;
-  category: 'v2ray' | 'vps' | 'subscriptions' | 'gaming';
+  category: 'v2ray' | 'subscriptions' | 'gaming' | 'giftcards' | 'software';
   categoryLabel: string;
   tagline: string;
   description: string;

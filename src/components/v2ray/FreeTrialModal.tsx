@@ -124,7 +124,7 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
               <ul className="space-y-2 text-xs text-zinc-300">
                 <li className="flex items-center gap-2.5">
                   <span className="w-4 h-4 rounded-full bg-white/10 text-white flex items-center justify-center text-[10px] shrink-0">✓</span>
-                  <span><strong>24 Hours Unmetered Access</strong> on Singapore 10Gbps Tier-1 backbone</span>
+                  <span><strong>24-Hour Free Trial</strong> — instant High-Speed VLESS VPN test config</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <span className="w-4 h-4 rounded-full bg-white/10 text-white flex items-center justify-center text-[10px] shrink-0">✓</span>

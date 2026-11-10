@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import HeroCube from '@/components/HeroCube';
 import GradientASCII from '@/components/GradientASCII';
-import { ArrowRight, ChevronRight, Terminal, ShieldCheck, Zap } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 export default function Hero({
   onExploreCatalog,
@@ -36,13 +37,13 @@ export default function Hero({
             
             {/* Editorial Serif Display Headline */}
             <h1 className="font-serif text-[56px] sm:text-[72px] lg:text-[84px] leading-[1.02] tracking-[-0.01em] text-white font-normal drop-shadow-sm">
-              Digital delivery <br />
-              <span className="italic font-normal text-[#f0f0f0]">for developers.</span>
+              Digital products, <br />
+              <span className="italic font-normal text-[#f0f0f0]">delivered in seconds.</span>
             </h1>
 
             {/* Sub-headline */}
             <p className="text-[17px] sm:text-[19px] leading-[1.5] text-[#a1a4a5] max-w-xl font-normal">
-              The high-velocity automated marketplace and key vault for V2Ray VPN configurations, NVMe Cloud VPS, developer subscriptions, and global game licenses.
+              Instant gift cards, streaming subscriptions, game top-ups, software keys, and high-speed VLESS VPN — sent straight to your email and vault.
             </p>
 
             {/* CTAs */}
@@ -53,32 +54,32 @@ export default function Hero({
                 })}
                 className="btn-action-resend text-[15px] px-5 py-2.5 shadow-lg"
               >
-                <span>Explore marketplace</span>
+                <span>Shop All Products</span>
                 <span className="text-sm">›</span>
               </button>
 
-              <a
-                href="#api"
+              <Link
+                href="/v2ray"
                 className="btn-ghost-resend text-[15px] px-5 py-2.5 text-[#f0f0f0] backdrop-blur-md bg-black/40"
               >
-                <Terminal className="w-4 h-4 text-white" />
-                <span>API Reference</span>
-              </a>
+                <ShieldCheck className="w-4 h-4 text-white" />
+                <span>High-Speed VLESS VPN</span>
+              </Link>
             </div>
 
             {/* Minimal Metrics Row */}
             <div className="grid grid-cols-3 gap-6 pt-6 border-t border-[#292d30] w-full max-w-lg backdrop-blur-xs">
               <div>
-                <div className="font-mono text-xl text-white font-medium">&lt; 350ms</div>
-                <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">Average dispatch</div>
+                <div className="font-mono text-xl text-white font-medium">50+</div>
+                <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">Products in stock</div>
               </div>
               <div>
-                <div className="font-mono text-xl text-white font-medium">99.99%</div>
-                <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">Automated uptime</div>
+                <div className="font-mono text-xl text-white font-medium">Instant</div>
+                <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">Email &amp; vault delivery</div>
               </div>
               <div>
-                <div className="font-mono text-xl text-white font-medium">AES-256</div>
-                <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">Zero-trust vault</div>
+                <div className="font-mono text-xl text-white font-medium">100%</div>
+                <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">Warranty protected</div>
               </div>
             </div>
 

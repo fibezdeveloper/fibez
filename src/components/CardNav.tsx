@@ -130,32 +130,31 @@ const ARROW_IN = 'card-nav__arrow-icon card-nav__arrow-icon--in';
 
 const DEFAULT_ITEMS: CardNavItem[] = [
   {
-    label: 'Shop & Vault',
-    description: 'Instant digital goods & zero-trust fulfillment.',
+    label: 'Shop Products',
+    description: 'Gift cards, games, subscriptions, software & VLESS VPN.',
     links: [
-      { label: 'Shop All Products', href: '#catalog' },
-      { label: 'V2Ray Singapore 10Gbps', href: '#catalog' },
+      { label: 'All Products', href: '/catalog' },
       { label: 'High-Speed VLESS VPN', badge: 'FREE TRIAL', href: '/v2ray' },
-      { label: 'NVMe Cloud VPS', href: '#catalog' }
+      { label: 'Gift Cards & Gaming', href: '/catalog?category=giftcard' },
+      { label: 'Subscriptions & Software', href: '/catalog?category=subscription' }
     ]
   },
   {
-    label: 'Key Vault & Orders',
-    description: 'Instant credentials and order management.',
+    label: 'Orders & Setup',
+    description: 'View keys, track orders, and configure apps.',
     links: [
-      { label: 'Track Order', href: '#vault' },
-      { label: 'Personal Key Vault', href: '#vault' },
-      { label: 'Customer Reviews', href: '#reviews' },
-      { label: 'Admin Command Center', href: '#vault' }
+      { label: 'My Key Vault & Orders', href: '/vault' },
+      { label: 'Shopping Cart', href: '/cart' },
+      { label: 'NetMod & v2rayNG Guide', href: '/v2ray/guide' }
     ]
   },
   {
-    label: 'Support & Community',
-    description: 'Direct engineer contact and platform guides.',
+    label: 'Support',
+    description: 'Get fast help from our team.',
     links: [
-      { label: 'Home Page', href: '/' },
-      { label: 'WhatsApp Instant Support', href: 'https://wa.me/94771234567' },
-      { label: 'Discord Community', href: 'https://discord.gg/fibez' }
+      { label: 'Support Tickets', href: '/tickets' },
+      { label: 'VLESS Line Check', href: '/v2ray#line-check' },
+      { label: 'WhatsApp Support', href: 'https://wa.me/94771234567' }
     ]
   }
 ];

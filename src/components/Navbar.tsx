@@ -17,8 +17,6 @@ import {
   LogOut, 
   LogIn, 
   UserPlus, 
-  Activity,
-  BookOpen,
   LayoutDashboard,
   LifeBuoy,
   X
@@ -30,7 +28,7 @@ export interface NavbarProps {
   onCurrencyChange?: (currency: 'LKR' | 'USD') => void;
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
-  onSelectCategory?: (category: 'all' | 'vpn' | 'vps' | 'subscription' | 'gaming') => void;
+  onSelectCategory?: (category: 'all' | 'vpn' | 'subscription' | 'gaming' | 'giftcard' | 'software') => void;
   cartCount?: number;
   onOpenCart?: () => void;
 }
@@ -67,71 +65,54 @@ export default function Navbar(props: NavbarProps) {
     router.push(mode === 'register' ? '/login?mode=register' : '/login');
   };
 
-  // Account dropdown actions (Cart, Currency Settings, Vault, Infrastructure, and Auth)
+  // Account dropdown actions (concise essentials only)
   const dropdownActions: GooeyDropdownAction[] = [
-    {
-      id: 'dashboard',
-      label: 'Control Dashboard',
-      icon: <LayoutDashboard className="w-4 h-4 text-zinc-300" />,
-      detail: 'User, Admin & Owner consoles',
-      onSelect: () => {
-        router.push('/dashboard');
-      },
-    },
     {
       id: 'cart',
       label: `Shopping Cart (${cartCount})`,
       icon: <ShoppingCart className="w-4 h-4 text-zinc-300" />,
-      detail: cartCount > 0 ? `${cartCount} item(s) in dedicated cart` : 'View dedicated cart',
+      detail: cartCount > 0 ? `${cartCount} item(s) ready to checkout` : 'View your cart',
       onSelect: () => {
         router.push('/cart');
       },
     },
     {
-      id: 'currency',
-      label: `Settings: ${currentCurrency}`,
-      icon: <Globe className="w-4 h-4 text-zinc-300" />,
-      detail: `Switch currency to ${currentCurrency === 'LKR' ? 'USD ($)' : 'LKR (Rs.)'}`,
-      onSelect: () => handleCurrencyToggle(currentCurrency === 'LKR' ? 'USD' : 'LKR'),
-    },
-    {
       id: 'vault',
       label: 'Key Vault & Orders',
       icon: <KeyRound className="w-4 h-4 text-zinc-300" />,
-      detail: 'Access credentials and active tokens',
+      detail: 'View purchases & codes',
       onSelect: () => {
         router.push('/vault');
       },
     },
     {
-      id: 'infrastructure',
-      label: 'Network Status',
-      icon: <Activity className="w-4 h-4 text-zinc-300" />,
-      detail: 'Global 10Gbps edge telemetry',
-      onSelect: () => {
-        router.push('/infrastructure');
-      },
-    },
-    {
-      id: 'docs',
-      label: 'Setup Guides & Docs',
-      icon: <BookOpen className="w-4 h-4 text-zinc-300" />,
-      detail: 'Client configuration tutorials',
-      onSelect: () => {
-        router.push('/docs');
-      },
-    },
-    {
-      id: 'tickets',
-      label: 'Support Tickets',
-      icon: <LifeBuoy className="w-4 h-4 text-zinc-300" />,
-      detail: 'Open tickets & 24/7 staff helpdesk',
-      onSelect: () => {
-        router.push('/tickets');
-      },
+      id: 'currency',
+      label: `Currency: ${currentCurrency}`,
+      icon: <Globe className="w-4 h-4 text-zinc-300" />,
+      detail: `Switch to ${currentCurrency === 'LKR' ? 'USD ($)' : 'LKR (Rs.)'}`,
+      onSelect: () => handleCurrencyToggle(currentCurrency === 'LKR' ? 'USD' : 'LKR'),
     },
     ...(session?.user
       ? [
+          {
+            id: 'dashboard',
+            label: 'Account Dashboard',
+            icon: <LayoutDashboard className="w-4 h-4 text-zinc-300" />,
+            detail: 'Manage account & orders',
+            divider: true,
+            onSelect: () => {
+              router.push('/dashboard');
+            },
+          },
+          {
+            id: 'tickets',
+            label: 'Support Tickets',
+            icon: <LifeBuoy className="w-4 h-4 text-zinc-300" />,
+            detail: 'Help & ticket history',
+            onSelect: () => {
+              router.push('/tickets');
+            },
+          },
           {
             id: 'signout',
             label: 'Sign Out',
@@ -149,7 +130,7 @@ export default function Navbar(props: NavbarProps) {
             id: 'signin',
             label: 'Sign In',
             icon: <LogIn className="w-4 h-4 text-zinc-300" />,
-            detail: 'Access developer console & keys',
+            detail: 'Access your orders & keys',
             divider: true,
             onSelect: () => handleOpenAuthModal('login'),
           },
@@ -157,7 +138,7 @@ export default function Navbar(props: NavbarProps) {
             id: 'register',
             label: 'Create Account',
             icon: <UserPlus className="w-4 h-4 text-zinc-300" />,
-            detail: 'Deploy digital infrastructure',
+            detail: 'Register for instant delivery',
             onSelect: () => handleOpenAuthModal('register'),
           },
         ]),
@@ -167,109 +148,68 @@ export default function Navbar(props: NavbarProps) {
     ? (session.user.name ? session.user.name.split(' ')[0] : session.user.email?.split('@')[0] || 'Account')
     : (cartCount > 0 ? `Cart (${cartCount})` : 'Account');
 
-  // Standard Menu Navigation Cards
+  // Focused 3-Card Menu Navigation
   const navItems: CardNavItem[] = [
     {
-      label: 'High-Speed VLESS VPN',
-      description: 'Optimised for SLT, Dialog, Hutch & Airtel. Instant delivery.',
+      label: 'Shop Products',
+      description: 'Gift cards, games, subscriptions, software & VPN.',
       links: [
-        { label: 'VLESS VPN Packages', href: '/v2ray' },
-        { label: 'Line Check Diagnostic Tool', href: '/v2ray#line-check' },
-        { label: 'NetMod & v2rayNG Guide', href: '/v2ray/guide' },
-        { label: 'Dialog Zoom Package Bypass', href: '/products/v2ray-dialog-zoom' },
-        { label: 'SLT Fiber Netflix Bypass', href: '/products/v2ray-slt-netflix' },
-        { label: 'Direct High-Speed Node', href: '/products/v2ray-singapore-direct' },
-      ]
-    },
-    {
-      label: 'Store & Catalog',
-      description: 'Zero-trust automated fulfillment under 400ms.',
-      links: [
-        { label: 'All Products & Items', href: '/catalog' },
-        { label: 'Dedicated Shopping Cart', href: '/cart' },
+        { label: 'All Products', href: '/catalog' },
         { label: 'High-Speed VLESS VPN', href: '/v2ray' },
-        { label: 'Gift Cards (Steam, PSN)', href: '/catalog?category=giftcard' },
-        { label: 'Subscriptions (AI & Streaming)', href: '/catalog?category=subscription' },
-        { label: 'Game Top-ups (Free Fire, UC)', href: '/catalog?category=gaming' },
-        { label: 'Software Licenses (Win 11, IDM)', href: '/catalog?category=software' },
+        { label: 'Gift Cards & Gaming', href: '/catalog?category=giftcard' },
+        { label: 'Subscriptions & Software', href: '/catalog?category=subscription' },
       ]
     },
     {
-      label: 'Key Vault & Orders',
-      description: 'Instant credentials and order management.',
+      label: 'Orders & Setup',
+      description: 'View keys, track orders, and configure apps.',
       links: [
-        { label: 'Personal Key Vault', href: '/vault' },
-        { label: 'Track Order Status', href: '/vault?tab=orders' },
-        { label: 'Global Server Telemetry', href: '/infrastructure' },
-        { label: 'Client Setup Guides', href: '/v2ray/guide' },
-      ]
-    },
-    {
-      label: 'Docs & Support',
-      description: 'Tutorials and direct engineer assistance.',
-      links: [
-        { label: 'Support Tickets & Helpdesk', href: '/tickets' },
+        { label: 'My Key Vault & Orders', href: '/vault' },
+        { label: 'Shopping Cart', href: '/cart' },
         { label: 'NetMod & v2rayNG Guide', href: '/v2ray/guide' },
-        { label: 'Line Check Diagnostics', href: '/v2ray#line-check' },
-        { label: 'Knowledge Base', href: '/docs' },
-        { label: 'WhatsApp Instant Support', href: 'https://wa.me/94771234567' },
-        { label: 'Discord Community', href: 'https://discord.gg/fibez' },
+      ]
+    },
+    {
+      label: 'Support',
+      description: 'Get fast help from our team.',
+      links: [
+        { label: 'Support Tickets', href: '/tickets' },
+        { label: 'VLESS Line Check', href: '/v2ray#line-check' },
+        { label: 'WhatsApp Support', href: 'https://wa.me/94771234567' },
       ]
     }
   ];
 
-  // Default Search Category Cards: V2Ray, Gift Cards, Subscriptions, Game Top-ups, Software
+  // Clean 3-Card Default Search Suggestions
   const defaultSearchCards: CardNavItem[] = [
     {
-      label: 'High-Speed VLESS VPN',
-      description: 'Optimised for SLT, Dialog, Hutch & Airtel. Config sent in seconds.',
+      label: 'VLESS VPN',
+      description: 'Optimised for SLT, Dialog, Hutch & Airtel.',
       links: [
-        { label: 'Explore VLESS VPN Packages ›', href: '/v2ray' },
-        { label: 'Line Check Diagnostic Tool ›', href: '/v2ray#line-check' },
-        { label: 'NetMod & v2rayNG Setup Guide ›', href: '/v2ray/guide' },
-        { label: 'Dialog Zoom Package Bypass', href: '/products/v2ray-dialog-zoom' },
+        { label: 'All VLESS Packages ›', href: '/v2ray' },
+        { label: 'Dialog Zoom VLESS VPN', href: '/products/v2ray-dialog-zoom' },
         { label: 'SLT Fiber Netflix Bypass', href: '/products/v2ray-slt-netflix' },
-        { label: 'Direct High-Speed Node', href: '/products/v2ray-singapore-direct' },
+        { label: 'Free 24-Hour Trial', href: '/v2ray' },
       ]
     },
     {
-      label: 'Gift Cards',
-      description: 'Instant official digital store codes & wallet top-ups.',
+      label: 'Gift Cards & Gaming',
+      description: 'Steam, PSN, Free Fire, PUBG UC & top-ups.',
       links: [
-        { label: 'Steam Wallet $10 Digital Code', href: '/products/steam-wallet-code-global' },
-        { label: 'PlayStation Store $25 Card', href: '/products/psn-wallet-card-us' },
-        { label: 'Nintendo eShop $20 Card', href: '/products/nintendo-eshop-gift-card' },
-        { label: 'Browse All Gift Cards ›', href: '/catalog?category=giftcard' },
+        { label: 'Steam Wallet $10', href: '/products/steam-wallet-code-global' },
+        { label: 'Free Fire 1,080 Diamonds', href: '/products/freefire-diamonds-1080' },
+        { label: 'PUBG Mobile 660 UC', href: '/products/pubg-mobile-uc-660' },
+        { label: 'All Gift Cards & Games ›', href: '/catalog?category=giftcard' },
       ]
     },
     {
-      label: 'Subscriptions',
-      description: 'Verified AI models, developer tooling & streaming.',
+      label: 'Subscriptions & Software',
+      description: 'Netflix, ChatGPT Plus, Spotify & Microsoft 365.',
       links: [
-        { label: 'ChatGPT Plus 1 Month', href: '/products/chatgpt-plus-shared' },
-        { label: 'Claude Pro 1 Month', href: '/products/claude-pro-shared' },
-        { label: 'Spotify Premium 1 Year', href: '/products/spotify-premium-1y' },
-        { label: 'Browse All Subscriptions ›', href: '/catalog?category=subscription' },
-      ]
-    },
-    {
-      label: 'Game Top-ups',
-      description: 'Direct in-game diamond, UC, and coin top-ups.',
-      links: [
-        { label: 'Free Fire 1080+108 Diamonds', href: '/products/freefire-diamonds-topup' },
-        { label: 'PUBG Mobile 660 UC', href: '/products/pubg-mobile-uc-topup' },
-        { label: 'Valorant 2050 VP Points', href: '/products/valorant-points-topup' },
-        { label: 'Browse All Game Top-ups ›', href: '/catalog?category=gaming' },
-      ]
-    },
-    {
-      label: 'Software',
-      description: 'Genuine digital licenses and productivity tools.',
-      links: [
-        { label: 'Windows 11 Pro Retail License', href: '/products/windows-11-pro-retail' },
-        { label: 'Internet Download Manager (IDM)', href: '/products/idm-internet-download-manager' },
-        { label: 'Microsoft Office 365 ProPlus', href: '/products/office-365-proplus' },
-        { label: 'Browse All Software ›', href: '/catalog?category=software' },
+        { label: 'Netflix 4K UHD', href: '/products/netflix-4k-uhd' },
+        { label: 'ChatGPT Plus / Team', href: '/products/chatgpt-plus-team' },
+        { label: 'Microsoft 365 ProPlus', href: '/products/microsoft-365-proplus' },
+        { label: 'All Subscriptions & Software ›', href: '/catalog?category=subscription' },
       ]
     }
   ];
@@ -298,7 +238,7 @@ export default function Navbar(props: NavbarProps) {
     }
 
     // Split matches into categorized result cards
-    const vpnMatches = matches.filter(m => m.category === 'vpn' || m.category === 'vps');
+    const vpnMatches = matches.filter(m => m.category === 'vpn');
     const giftMatches = matches.filter(m => m.category === 'giftcard');
     const subMatches = matches.filter(m => m.category === 'subscription');
     const gameMatches = matches.filter(m => m.category === 'gaming');
@@ -308,37 +248,37 @@ export default function Navbar(props: NavbarProps) {
 
     if (vpnMatches.length > 0) {
       resultCards.push({
-        label: `V2Ray Results (${vpnMatches.length})`,
-        description: 'Matching V2Ray tunnel nodes',
-        links: vpnMatches.map(m => ({ label: m.title, href: `/products/${m.id}` }))
+        label: `VLESS VPN (${vpnMatches.length})`,
+        description: 'High-speed VLESS VPN packages',
+        links: vpnMatches.slice(0, 4).map(m => ({ label: m.title, href: `/products/${m.id}` }))
       });
     }
     if (giftMatches.length > 0) {
       resultCards.push({
         label: `Gift Cards (${giftMatches.length})`,
-        description: 'Matching digital wallet codes',
-        links: giftMatches.map(m => ({ label: m.title, href: `/products/${m.id}` }))
+        description: 'Official digital wallet codes',
+        links: giftMatches.slice(0, 4).map(m => ({ label: m.title, href: `/products/${m.id}` }))
       });
     }
     if (subMatches.length > 0) {
       resultCards.push({
         label: `Subscriptions (${subMatches.length})`,
-        description: 'Matching accounts & licenses',
-        links: subMatches.map(m => ({ label: m.title, href: `/products/${m.id}` }))
+        description: 'Streaming, music & accounts',
+        links: subMatches.slice(0, 4).map(m => ({ label: m.title, href: `/products/${m.id}` }))
       });
     }
     if (gameMatches.length > 0) {
       resultCards.push({
         label: `Game Top-ups (${gameMatches.length})`,
-        description: 'Matching game currencies & gems',
-        links: gameMatches.map(m => ({ label: m.title, href: `/products/${m.id}` }))
+        description: 'In-game diamonds, UC & keys',
+        links: gameMatches.slice(0, 4).map(m => ({ label: m.title, href: `/products/${m.id}` }))
       });
     }
     if (softwareMatches.length > 0) {
       resultCards.push({
-        label: `Software (${softwareMatches.length})`,
-        description: 'Matching licenses & tools',
-        links: softwareMatches.map(m => ({ label: m.title, href: `/products/${m.id}` }))
+        label: `Software & AI (${softwareMatches.length})`,
+        description: 'Licenses & productivity tools',
+        links: softwareMatches.slice(0, 4).map(m => ({ label: m.title, href: `/products/${m.id}` }))
       });
     }
 
@@ -347,13 +287,13 @@ export default function Navbar(props: NavbarProps) {
         label: `Matching Products (${matches.length})`,
         description: `Direct results for "${searchQuery}"`,
         links: [
-          ...matches.slice(0, 5).map(m => ({ label: m.title, href: `/products/${m.id}` })),
+          ...matches.slice(0, 4).map(m => ({ label: m.title, href: `/products/${m.id}` })),
           { label: `View all results for "${searchQuery}" in Catalog ›`, href: `/catalog?q=${encodeURIComponent(searchQuery)}` }
         ]
       });
     }
 
-    return resultCards;
+    return resultCards.slice(0, 3);
   }, [searchQuery]);
 
   // Full-width search bar taking up the whole top bar when search is active
@@ -375,7 +315,7 @@ export default function Navbar(props: NavbarProps) {
             }
           }
         }}
-        placeholder="Search all products, VPN nodes, cloud VPS, subscriptions..."
+        placeholder="Search VLESS VPN, Steam, Netflix, ChatGPT, Free Fire..."
         className="flex-1 bg-transparent text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none font-sans"
         autoFocus
       />

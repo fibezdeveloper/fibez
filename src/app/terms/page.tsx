@@ -38,7 +38,7 @@ export default function TermsPage() {
             <span>Acceptance of Terms</span>
           </h2>
           <p>
-            By accessing, browsing, or purchasing digital infrastructure, V2Ray configurations, Cloud VPS virtual machines, software subscriptions, or gaming licenses from Fibez (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;the Platform&rdquo;), you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
+            By accessing, browsing, or purchasing High-Speed VLESS VPN packages, gift cards, streaming subscriptions, game top-ups, or software licenses from Fibez (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;the Platform&rdquo;), you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
           </p>
         </section>
 
@@ -46,10 +46,10 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-lg font-medium text-white flex items-center gap-2">
             <span className="font-mono text-xs text-[#ffffff]">02.</span>
-            <span>Automated Zero-Trust Delivery & Provisioning</span>
+            <span>Digital Delivery &amp; Fulfillment</span>
           </h2>
           <p>
-            Fibez operates an automated digital delivery engine engineered to mint credentials, configurations, and license keys under 400 milliseconds upon validated payment confirmation. Digital goods are delivered electronically directly into your personal <Link href="/vault" className="text-[#ffffff] hover:underline">Key Vault</Link> and to your designated email address.
+            Fibez delivers digital codes, account credentials, and VLESS configuration strings upon verified payment confirmation directly into your personal <Link href="/vault" className="text-[#ffffff] hover:underline">Key Vault</Link> and to your designated email address.
           </p>
           <div className="p-4 rounded-[12px] bg-[#0c0c0e] border border-[#1f1f23] text-xs font-mono text-[#a1a4a5]">
             <span className="text-emerald-400 font-semibold">Delivery SLA:</span> If automated provisioning fails to dispatch keys within 15 minutes of payment receipt, our automated reconciliation pipeline triggers priority queue dispatch or an immediate wallet refund upon request.

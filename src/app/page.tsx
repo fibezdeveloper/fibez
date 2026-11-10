@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation';
 import Hero from '@/components/Hero';
 import TrustBar from '@/components/TrustBar';
 import CatalogSection from '@/components/CatalogSection';
-import CodeWindow from '@/components/CodeWindow';
+import HowItWorks from '@/components/HowItWorks';
 import FeaturesGrid from '@/components/FeaturesGrid';
 import Testimonials from '@/components/Testimonials';
 import { useStore } from '@/lib/store-context';
-import { ArrowRight, ShieldCheck, Zap, KeyRound, Server, Activity } from 'lucide-react';
+import { ArrowRight, ShoppingBag, KeyRound, ShieldCheck, LifeBuoy } from 'lucide-react';
 
 export default function HomePage() {
   const router = useRouter();
@@ -18,67 +18,37 @@ export default function HomePage() {
 
   return (
     <main className="flex flex-col">
-      {/* Hero with Domaine Editorial Typography & 3D Cube */}
+      {/* Store Hero */}
       <Hero
         onExploreCatalog={() => {
           router.push('/catalog');
         }}
       />
 
-      {/* Monochromatic Infrastructure Trust Proof */}
+      {/* Popular Brands & Networks Strip */}
       <TrustBar />
 
-      {/* Featured Digital Goods Section */}
-      <div className="relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 flex items-center justify-between">
-          <div>
-            <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-1">
-              Live Provisioning Vault
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-normal tracking-[-0.03em] text-white">
-              Featured Infrastructure & Digital Assets
-            </h2>
-          </div>
-          <Link
-            href="/catalog"
-            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 hover:border-white/30 text-xs font-mono text-[#a1a4a5] hover:text-white transition-colors"
-          >
-            <span>View Full Catalog</span>
-            <ArrowRight className="w-3.5 h-3.5 text-zinc-400" />
-          </Link>
-        </div>
+      {/* Featured Products Catalog */}
+      <CatalogSection currency={currency} />
 
-        <CatalogSection currency={currency} />
+      {/* 3-Step Ordering Guide */}
+      <HowItWorks />
 
-        <div className="text-center pb-16">
-          <Link
-            href="/catalog"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#111114] border border-[#222226] hover:border-white/40 text-white text-sm font-medium transition-all hover:bg-[#18181c]"
-          >
-            <span>Browse All 9+ Available Nodes & Subscriptions</span>
-            <ArrowRight className="w-4 h-4 text-zinc-400" />
-          </Link>
-        </div>
-      </div>
-
-      {/* Developer Terminal Code Window & Live Provisioning Simulator */}
-      <CodeWindow />
-
-      {/* Resend 16px Bento Feature Pillars */}
+      {/* Product Categories Bento Grid */}
       <FeaturesGrid />
 
-      {/* Quick Navigation Hub to Dedicated Sub-Pages */}
+      {/* Quick Store Navigation */}
       <section className="py-20 border-t border-[#181a1c] bg-[#050505]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">
-              Multi-Cloud Architecture
+              Quick Access
             </div>
             <h2 className="text-3xl font-normal tracking-[-0.03em] text-white">
-              Explore the Fibez Ecosystem
+              Everything you need in one place
             </h2>
             <p className="text-sm text-[#a1a4a5] mt-2">
-              Direct access to our dedicated product catalog, real-time edge telemetry, encrypted license vault, and developer documentation.
+              Shop the full catalog, get a free VLESS VPN trial, view your delivered keys, or reach support.
             </p>
           </div>
 
@@ -88,14 +58,30 @@ export default function HomePage() {
               className="group p-6 rounded-[16px] bg-[#0c0c0e] border border-[#1f1f23] hover:border-white/30 hover:bg-[#111114] transition-all block relative overflow-hidden"
             >
               <div className="w-10 h-10 rounded-[10px] bg-[#16161a] border border-[#26262b] flex items-center justify-center text-white mb-4 group-hover:scale-105 transition-transform">
-                <Server className="w-5 h-5" />
+                <ShoppingBag className="w-5 h-5" />
               </div>
               <h3 className="text-base font-medium text-white group-hover:text-white transition-colors flex items-center justify-between">
                 <span>Product Catalog</span>
                 <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-zinc-400" />
               </h3>
               <p className="text-xs text-[#a1a4a5] mt-1.5 leading-relaxed">
-                Filter by VPN bypass nodes, cloud VPS, software subscriptions, and instant game activations.
+                Browse gift cards, streaming accounts, game top-ups, software licenses &amp; VLESS VPN plans.
+              </p>
+            </Link>
+
+            <Link
+              href="/v2ray"
+              className="group p-6 rounded-[16px] bg-[#0c0c0e] border border-[#1f1f23] hover:border-white/30 hover:bg-[#111114] transition-all block relative overflow-hidden"
+            >
+              <div className="w-10 h-10 rounded-[10px] bg-[#16161a] border border-[#26262b] flex items-center justify-center text-white mb-4 group-hover:scale-105 transition-transform">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-medium text-white group-hover:text-white transition-colors flex items-center justify-between">
+                <span>High-Speed VLESS VPN</span>
+                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-zinc-400" />
+              </h3>
+              <p className="text-xs text-[#a1a4a5] mt-1.5 leading-relaxed">
+                Optimised for SLT, Dialog, Hutch &amp; Airtel. Test your line or claim a free 24-hour trial.
               </p>
             </Link>
 
@@ -107,50 +93,34 @@ export default function HomePage() {
                 <KeyRound className="w-5 h-5" />
               </div>
               <h3 className="text-base font-medium text-white group-hover:text-white transition-colors flex items-center justify-between">
-                <span>Key Vault & Orders</span>
+                <span>Key Vault &amp; Orders</span>
                 <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-zinc-400" />
               </h3>
               <p className="text-xs text-[#a1a4a5] mt-1.5 leading-relaxed">
-                Retrieve revealed credentials, QR codes, SSH keys, order tracking, and receipt slips.
+                Access purchased gift codes, account logins, VLESS QR codes, and order tracking.
               </p>
             </Link>
 
             <Link
-              href="/infrastructure"
+              href="/tickets"
               className="group p-6 rounded-[16px] bg-[#0c0c0e] border border-[#1f1f23] hover:border-white/30 hover:bg-[#111114] transition-all block relative overflow-hidden"
             >
               <div className="w-10 h-10 rounded-[10px] bg-[#16161a] border border-[#26262b] flex items-center justify-center text-white mb-4 group-hover:scale-105 transition-transform">
-                <Activity className="w-5 h-5" />
+                <LifeBuoy className="w-5 h-5" />
               </div>
               <h3 className="text-base font-medium text-white group-hover:text-white transition-colors flex items-center justify-between">
-                <span>Network Status</span>
+                <span>Support &amp; Guides</span>
                 <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-zinc-400" />
               </h3>
               <p className="text-xs text-[#a1a4a5] mt-1.5 leading-relaxed">
-                Real-time node telemetry, latency measurements across Singapore, Tokyo, and Frankfurt.
-              </p>
-            </Link>
-
-            <Link
-              href="/docs"
-              className="group p-6 rounded-[16px] bg-[#0c0c0e] border border-[#1f1f23] hover:border-white/30 hover:bg-[#111114] transition-all block relative overflow-hidden"
-            >
-              <div className="w-10 h-10 rounded-[10px] bg-[#16161a] border border-[#26262b] flex items-center justify-center text-white mb-4 group-hover:scale-105 transition-transform">
-                <Zap className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-medium text-white group-hover:text-white transition-colors flex items-center justify-between">
-                <span>Developer Docs</span>
-                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-zinc-400" />
-              </h3>
-              <p className="text-xs text-[#a1a4a5] mt-1.5 leading-relaxed">
-                Step-by-step guides for Sing-box, v2rayNG, Shadowrocket, and cloud server provisioning.
+                Open a support ticket, check NetMod &amp; v2rayNG setup steps, or get replacement warranty help.
               </p>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Developer Experience Testimonial Quotes */}
+      {/* Customer Reviews */}
       <Testimonials />
     </main>
   );

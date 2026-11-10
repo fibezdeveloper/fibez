@@ -20,20 +20,20 @@ export default function VaultPage() {
         <div>
           <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">
             <Lock className="w-3.5 h-3.5" />
-            <span>Zero-Trust Developer Vault</span>
+            <span>Personal Key Vault</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-normal tracking-[-0.03em] text-white">
-            Encrypted Key Vault & Order Command Center
+            Your Key Vault &amp; Orders
           </h1>
           <p className="text-sm text-[#a1a4a5] mt-2 max-w-2xl leading-relaxed">
-            Directly retrieve client configuration strings, QR codes, SSH server root credentials, and track automated provisioning pipelines in real-time.
+            View delivered gift card codes, subscription logins, and VLESS VPN configuration links &amp; QR codes.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#16161a] border border-[#26262b] text-xs font-mono text-zinc-300">
             <ShieldCheck className="w-4 h-4" />
-            <span>AES-256 Client-Side Masked</span>
+            <span>Protected Order Delivery</span>
           </div>
         </div>
       </div>

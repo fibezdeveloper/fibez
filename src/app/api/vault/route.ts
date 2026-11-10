@@ -60,29 +60,8 @@ export async function GET(request: NextRequest) {
         ORDER BY oi.created_at DESC
       `;
     } else {
-      // Default / public vault sample assets from DB
-      itemsQuery = await sql`
-        SELECT 
-          oi.id,
-          o.order_number,
-          oi.product_title as product_name,
-          p.category_id as category,
-          oi.variant_title,
-          oi.quantity,
-          oi.dispensed_key as payload,
-          oi.credential_user as username,
-          oi.credential_pass as password,
-          oi.key_type as type,
-          oi.guide_markdown,
-          oi.warranty,
-          oi.status,
-          o.created_at
-        FROM order_items oi
-        JOIN orders o ON oi.order_id = o.id
-        LEFT JOIN products p ON oi.product_id = p.id
-        ORDER BY oi.created_at DESC
-        LIMIT 10
-      `;
+      // Require either an authenticated email or specific order number
+      return NextResponse.json({ assets: [] });
     }
 
     const assets = itemsQuery.map((item: any) => ({

@@ -5,7 +5,7 @@ import TicketCenter from '@/components/TicketCenter';
 
 export const metadata = {
   title: 'Support Desk & Ticket System — Fibez',
-  description: 'Submit technical inquiries, report connection issues, or verify payment slips with Fibez infrastructure engineers.',
+  description: 'Submit questions, report VLESS connection issues, get replacement keys, or verify bank payment slips.',
 };
 
 export default function TicketsPage() {
@@ -35,7 +35,7 @@ export default function TicketsPage() {
             Support Ticket Center
           </h1>
           <p className="text-sm text-[#a1a4a5] mt-2 max-w-2xl leading-relaxed">
-            Directly communicate with Fibez network engineers regarding V2Ray routing, SSH credentials, Sing-box configurations, and payment reconciliation.
+            Get help with High-Speed VLESS VPN setup (NetMod &amp; v2rayNG), gift card redemption, subscriptions, and bank slip payment verification.
           </p>
         </div>
 

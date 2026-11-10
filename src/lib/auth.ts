@@ -33,6 +33,6 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     },
   },
-  secret: process.env.BETTER_AUTH_SECRET || "fibez-super-secure-better-auth-secret-key-32chars",
+  secret: process.env.BETTER_AUTH_SECRET || process.env.NEON_AUTH_COOKIE_SECRET || "fibez-super-secure-better-auth-secret-key-32chars",
   baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3005",
 });
