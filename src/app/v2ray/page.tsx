@@ -229,22 +229,26 @@ export default function V2RayPage() {
             </div>
 
             {/* Highlights Row */}
-            <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-left w-full max-w-2xl">
+            <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-left w-full max-w-3xl">
               <div className="p-3.5 rounded-xl bg-[#0d0d10] border border-[#1d1d24]">
                 <div className="text-[10px] font-mono text-zinc-500 uppercase">Fulfillment</div>
-                <div className="text-sm font-bold text-white font-mono mt-0.5">Instant Email</div>
+                <div className="text-sm font-bold text-white font-mono mt-1 leading-snug">Instant Email</div>
               </div>
               <div className="p-3.5 rounded-xl bg-[#0d0d10] border border-[#1d1d24]">
                 <div className="text-[10px] font-mono text-zinc-500 uppercase">Optimised For</div>
-                <div className="text-sm font-bold text-[#3ad389] font-mono mt-0.5 truncate">SLT · Dialog · Hutch · Airtel</div>
+                <div className="text-sm font-bold text-[#3ad389] font-mono mt-1 leading-snug">
+                  SLT · Dialog{' '}
+                  <br />
+                  Hutch · Airtel
+                </div>
               </div>
               <div className="p-3.5 rounded-xl bg-[#0d0d10] border border-[#1d1d24]">
                 <div className="text-[10px] font-mono text-zinc-500 uppercase">Protocol</div>
-                <div className="text-sm font-bold text-white font-mono mt-0.5">VLESS VPN</div>
+                <div className="text-sm font-bold text-white font-mono mt-1 leading-snug">VLESS VPN</div>
               </div>
               <div className="p-3.5 rounded-xl bg-[#0d0d10] border border-[#1d1d24]">
                 <div className="text-[10px] font-mono text-zinc-500 uppercase">Supported Apps</div>
-                <div className="text-sm font-bold text-white font-mono mt-0.5">NetMod &amp; v2rayNG</div>
+                <div className="text-sm font-bold text-white font-mono mt-1 leading-snug">NetMod &amp; v2rayNG</div>
               </div>
             </div>
 
