@@ -1,7 +1,8 @@
 import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import QRCode from 'qrcode';
-import { buildRlsContext, requireAuth } from '@/lib/dal';
+import { buildRlsContext, requireAuth, adminSql } from '@/lib/dal';
+import { canonicalEmail, hashSignal, requestIp } from '@/lib/trial';
 import { withRlsTransaction } from '@/lib/db/rls';
 import { xui } from '@/lib/xui';
 import { resolvePackageProfile, buildVlessUri, PACKAGE_ROUTING_PROFILES } from '@/lib/v2ray-inbounds';
@@ -43,12 +44,19 @@ export async function POST(req: NextRequest) {
     // 2. Check if user already claimed a trial in the last 24 hours
     // Check in-memory adminStore first
     const existingStoreOrders = await adminStore.getOrders();
-    const activeStoreTrial = existingStoreOrders.find((o) => {
-      const isUser = o.customerEmail?.toLowerCase() === actor.email.toLowerCase();
-      const isTrial = o.paymentMethod === 'staff_grant' || (o.orderNumber && o.orderNumber.startsWith('FBZ-TRL-'));
-      const isRecent = new Date(o.createdAt).getTime() > Date.now() - 24 * 60 * 60 * 1000;
-      return isUser && isTrial && isRecent;
-    });
+    // One free trial per ACCOUNT, ever (staff grants do not count as trials).
+    const myTrials = existingStoreOrders.filter(
+      (o) => o.customerEmail?.toLowerCase() === actor.email.toLowerCase() && Boolean(o.orderNumber?.startsWith('FBZ-TRL-'))
+    );
+    const activeStoreTrial = myTrials.find(
+      (o) => new Date(o.createdAt).getTime() > Date.now() - 24 * 60 * 60 * 1000
+    );
+    if (!activeStoreTrial && myTrials.length > 0) {
+      return NextResponse.json(
+        { success: false, error: 'You have already used your free trial. Pick a plan to keep going.' },
+        { status: 403 }
+      );
+    }
 
     if (activeStoreTrial) {
       const item = activeStoreTrial.items?.[0];
@@ -101,14 +109,61 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // 3a. Anti-abuse. Only a VERIFIED email (Google sign-in) may claim a trial: password sign-ups
+    //     are not verified, so anyone could mint unlimited throwaway accounts.
+    if (adminSql) {
+      const rows = await adminSql`SELECT "emailVerified" AS verified FROM neon_auth."user" WHERE id::text = ${actor.id} LIMIT 1`;
+      if (!rows[0]?.verified) {
+        return NextResponse.json(
+          { success: false, error: 'Please continue with Google to claim your free trial (we need a verified email).' },
+          { status: 403 }
+        );
+      }
+    }
+
+    const claimIp = requestIp(req.headers);
+    const deviceId = typeof body.deviceId === 'string' ? body.deviceId.trim().slice(0, 80) : '';
+    const deviceFp = typeof body.fp === 'string' ? body.fp.trim().slice(0, 200) : '';
+    if (!deviceId || !deviceFp) {
+      return NextResponse.json(
+        { success: false, error: 'Device check failed. Please reload the page and try again.' },
+        { status: 400 }
+      );
+    }
+    const fpHash = hashSignal(deviceFp);
     // 3. Generate New 24-Hour Free Trial
     const randomSuffix = crypto.randomBytes(3).toString('hex').toUpperCase();
     const orderNumber = `FBZ-TRL-${randomSuffix}`;
+
+    // 3b. Atomically reserve the trial: one per account, email (gmail aliases collapsed), device,
+    //     and at most 3 per IP per 30 days (mobile networks share IPs, so not just 1).
+    const claim = await adminStore.tryClaimTrial(
+      {
+        userId: actor.id,
+        email: actor.email,
+        canonicalEmail: canonicalEmail(actor.email),
+        ip: claimIp,
+        deviceId,
+        fpHash,
+        uaHash: hashSignal((req.headers.get('user-agent') || '') + (req.headers.get('accept-language') || '')),
+        orderNumber,
+      },
+      { maxPerIp: 3, ipWindowDays: 30 }
+    );
+    if (!claim.ok) {
+      const msg =
+        claim.reason === 'DEVICE'
+          ? 'A free trial was already claimed from this device.'
+          : claim.reason === 'IP'
+          ? 'Too many free trials were claimed from this network. Contact support if this is a mistake.'
+          : 'You have already used your free trial. Pick a plan to keep going.';
+      return NextResponse.json({ success: false, error: msg }, { status: 403 });
+    }
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     let trialUuid: string = crypto.randomUUID();
 
     // Register live client in 3x-ui on the target inbound
-    // 10 GB limit, 24-hour duration, 2 Device / 2 IP limit (HWID)
+    // 10 GB limit, 24-hour duration, up to 2 devices (HWID) but only 1 IP at a time
     try {
       const cleanEmailTag = actor.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').slice(0, 10);
       const clientEmail = `${orderNumber}_${cleanEmailTag}`;
@@ -118,8 +173,9 @@ export async function POST(req: NextRequest) {
         inboundId: targetInboundId,
         totalGB: 10 * 1024 * 1024 * 1024, // 10 GB for 24h trial
         expiryDays: 1, // 24 hours
-        limitIp: 2, // 2 devices / 2 IPs HWID limit
-        comment: `24h Free Trial: ${packageTitle} (${actor.email})`,
+        limitIp: 1, // only ONE IP connected at a time
+        limitHwid: 2, // up to 2 different devices may be registered
+        comment: `24h Free Trial: ${packageTitle} (${actor.email}) ip=${claimIp}`,
       });
       if (liveClient.uuid) {
         trialUuid = liveClient.uuid;
@@ -127,6 +183,7 @@ export async function POST(req: NextRequest) {
     } catch (xuiErr) {
       // Never hand out a trial config that does not exist on the panel.
       console.error('3x-ui free trial provisioning failed:', xuiErr);
+      await adminStore.releaseTrialClaim(claim.claimId); // nothing was delivered, so give the trial back
       return NextResponse.json(
         { success: false, error: 'The trial server is busy right now. Please try again in a few minutes.' },
         { status: 502 }
@@ -168,7 +225,7 @@ export async function POST(req: NextRequest) {
       paymentMethod: 'staff_grant',
       paymentStatus: 'VERIFIED',
       fulfillmentStatus: 'DELIVERED',
-      reviewNotes: `24-Hour Free Trial for ${packageTitle} (SNI: ${targetSni}, Port: ${targetPort}, Quota: 10GB, LimitIP: 2)`,
+      reviewNotes: `24-Hour Free Trial for ${packageTitle} (SNI: ${targetSni}, Port: ${targetPort}, Quota: 10GB, 2 devices / 1 IP at a time) | IP: ${claimIp} | Device: ${fpHash.slice(0, 8)}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       items: [
@@ -183,7 +240,7 @@ export async function POST(req: NextRequest) {
           subtotalLKR: 0,
           dispensedKey: configUri,
           keyType: 'CONNECTION_CONFIG',
-          guideMarkdown: `Import this vless:// link into NetMod Syna (Windows/Android), v2rayNG, or Nekobox. Enable Tun Mode.\n\nSNI: ${targetSni}\nPort: ${targetPort}\nQuota: 10 GB (24 Hours)\nDevice Limit: 2 Devices / IPs`,
+          guideMarkdown: `Import this vless:// link into NetMod Syna (Windows/Android), v2rayNG, or Nekobox. Enable Tun Mode.\n\nSNI: ${targetSni}\nPort: ${targetPort}\nQuota: 10 GB (24 Hours)\nDevices: up to 2 (one connected at a time)`,
           warranty: '24 Hours (10 GB / 2 Devices)',
           status: 'DELIVERED',
         },

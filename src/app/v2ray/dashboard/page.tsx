@@ -148,6 +148,7 @@ export default function V2RayDashboardPage() {
 
   const [purchasedLines, setPurchasedLines] = useState<PurchasedV2RayLine[]>([]);
   const [linesLoaded, setLinesLoaded] = useState(false);
+  const [pendingOrders, setPendingOrders] = useState<{ orderNumber: string; title: string; status: string }[]>([]);
   const { data: session } = authClient.useSession();
   const [profile, setProfile] = useState<{ referralCode: string; referralLink: string; creditValueLKR: number } | null>(null);
   const [activeLineId, setActiveLineId] = useState<string>('');
@@ -348,6 +349,7 @@ export default function V2RayDashboardPage() {
       .then((data) => {
         const lines: PurchasedV2RayLine[] = data?.success && Array.isArray(data.lines) ? data.lines : [];
         setPurchasedLines(lines);
+        setPendingOrders(Array.isArray(data?.pendingOrders) ? data.pendingOrders : []);
         let target: PurchasedV2RayLine | undefined = lines[0];
         if (lineIdParam) target = lines.find((l) => l.id === lineIdParam) || target;
         else if (orderParam) {
@@ -700,6 +702,17 @@ export default function V2RayDashboardPage() {
           <p className="text-sm text-zinc-400 mt-2">
             Lines appear here after an order is approved, or when you claim a free trial.
           </p>
+          {pendingOrders.length > 0 && (
+            <div className="mt-5 text-left p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+              <div className="text-xs font-mono text-amber-300 mb-2">Your orders waiting for approval</div>
+              {pendingOrders.map((o) => (
+                <div key={o.orderNumber + o.title} className="text-xs text-zinc-300 flex justify-between gap-3">
+                  <span className="truncate">{o.orderNumber} - {o.title}</span>
+                  <span className="text-amber-300 shrink-0">{o.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/v2ray" className="px-5 py-2.5 rounded-xl bg-white text-black text-xs font-mono font-semibold">
               Browse V2Ray plans

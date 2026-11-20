@@ -15,6 +15,7 @@ export interface XuiClientData {
   totalGB: number;
   expiryTime: number;
   limitIp: number;
+  limitHwid?: number;
   enable: boolean;
   comment?: string;
   inboundIds: number[];
@@ -251,13 +252,13 @@ class XuiClient {
     };
 
     let postData: string | undefined = undefined;
+    if (method !== 'GET' && session.csrfToken) {
+      headers['X-CSRF-Token'] = session.csrfToken;
+    }
     if (data !== undefined && method !== 'GET') {
       postData = typeof data === 'string' ? data : JSON.stringify(data);
       headers['Content-Type'] = 'application/json';
       headers['Content-Length'] = Buffer.byteLength(postData).toString();
-      if (session.csrfToken) {
-        headers['X-CSRF-Token'] = session.csrfToken;
-      }
     }
 
     const res = await this.rawRequest(path, { method, headers }, postData);
@@ -304,7 +305,25 @@ class XuiClient {
   /**
    * Fetches an existing client profile by email/identifier
    */
-  public async getClient(email: string): Promise<XuiClientData | null> {
+  public async getClient(identifier: string): Promise<XuiClientData | null> {
+    const direct = await this.getClientByEmail(identifier);
+    if (direct) return direct;
+
+    // Not an email: the identifier may be a client UUID. Find its email via the client list.
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier)) {
+      const list = await this.apiRequest<{ success: boolean; obj: { email: string; uuid: string }[] }>(
+        '/panel/api/clients/list',
+        'GET'
+      );
+      const match = Array.isArray(list?.obj)
+        ? list.obj.find((c) => String(c.uuid).toLowerCase() === identifier.toLowerCase())
+        : undefined;
+      if (match?.email) return this.getClientByEmail(match.email);
+    }
+    return null;
+  }
+
+  private async getClientByEmail(email: string): Promise<XuiClientData | null> {
     try {
       const resp = await this.apiRequest<{
         success: boolean;
@@ -325,6 +344,7 @@ class XuiClient {
         totalGB: c.totalGB || 0,
         expiryTime: c.expiryTime || 0,
         limitIp: c.limitIp || 0,
+        limitHwid: c.limitHwid || 0,
         enable: c.enable !== false,
         comment: c.comment || '',
         inboundIds: resp.obj.inboundIds || [3],
@@ -351,6 +371,7 @@ class XuiClient {
     totalGB = 107374182400, // 100 GB default (in bytes)
     expiryDays = 30,
     limitIp = 2,
+    limitHwid,
     comment = 'Fibez Customer Connection',
   }: {
     email: string;
@@ -360,6 +381,8 @@ class XuiClient {
     totalGB?: number;
     expiryDays?: number;
     limitIp?: number;
+    /** Max distinct devices (hardware IDs) that may use this client. Omit for no HWID limit. */
+    limitHwid?: number;
     comment?: string;
   }): Promise<XuiClientData> {
     const clientUuid = uuid || crypto.randomUUID();
@@ -374,6 +397,7 @@ class XuiClient {
         totalGB,
         expiryTime,
         limitIp,
+        ...(limitHwid !== undefined ? { limitHwid } : {}),
         enable: true,
         comment,
       },
@@ -390,20 +414,13 @@ class XuiClient {
       throw new Error(`Failed to create client in 3x-ui: ${resp?.msg || 'Unknown error'}`);
     }
 
-    return {
-      email,
-      uuid: clientUuid,
-      subId: clientSubId,
-      totalGB,
-      expiryTime,
-      limitIp,
-      enable: true,
-      comment,
-      inboundIds: [inboundId],
-      usedTraffic: 0,
-      up: 0,
-      down: 0,
-    };
+    // The panel ignores the UUID we send and generates its own. A config built from our UUID
+    // would never connect, so read the client back and use the panel's real UUID.
+    const created = await this.getClientByEmail(email);
+    if (!created?.uuid) {
+      throw new Error('Client was created but could not be read back from the panel');
+    }
+    return created;
   }
 
   /**

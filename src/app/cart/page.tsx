@@ -257,49 +257,25 @@ export default function CartPage() {
       if (res.ok && data.success) {
         setIsSuccess(true);
 
-        // Record any purchased V2Ray packages into multi-line manager
-        try {
-          const vpnItems = cart.filter(
-            (item) =>
-              item.product?.category === 'vpn' ||
-              item.productId.includes('v2ray') ||
-              item.productId.includes('dialog') ||
-              item.productId.includes('slt') ||
-              item.productId.includes('airtel') ||
-              item.productId.includes('hutch') ||
-              item.productId.includes('mobitel') ||
-              (item.product?.title || '').toLowerCase().includes('v2ray')
-          );
-          if (vpnItems.length > 0) {
-            const newLines = vpnItems.map((item) =>
-              createPurchasedLineFromCartItem({
-                orderNumber: data.orderNumber || 'FBZ-ORDER',
-                productId: item.productId || item.product?.id || item.id,
-                title: item.product?.title || 'V2Ray High-Speed VPN',
-                variantTitle: item.durationLabel,
-                selectedIsp: item.selectedISP,
-              })
-            );
-            recordPurchasedLines(newLines);
-          }
-        } catch (lineErr) {
-          console.warn('Failed to register purchased V2Ray line:', lineErr);
-        }
-
+        // Lines are NEVER created on the client: they appear on the V2Ray dashboard only after
+        // staff approve the payment and the config is provisioned on the panel.
+        const hadVpn = cart.some(
+          (item) =>
+            item.product?.category === 'vpn' ||
+            (item.productId || '').includes('v2ray') ||
+            (item.product?.title || '').toLowerCase().includes('v2ray')
+        );
         clearCart();
         setTimeout(() => {
-          router.push(`/vault?order=${data.orderNumber}`);
+          router.push(hadVpn && session?.user ? '/v2ray/dashboard' : `/vault?order=${data.orderNumber}`);
         }, 1200);
       } else {
         alert(data.error || 'Failed to complete order. Please try again.');
       }
     } catch (err: any) {
       console.error('Checkout error:', err);
-      setIsSuccess(true);
-      clearCart();
-      setTimeout(() => {
-        router.push('/vault');
-      }, 1400);
+      // Do not pretend the order went through: keep the cart so the customer can retry.
+      alert('Could not reach the server. Your order was NOT placed. Please check your connection and try again.');
     } finally {
       setIsProcessing(false);
     }

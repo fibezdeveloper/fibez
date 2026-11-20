@@ -3,11 +3,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { adminStore } from '@/lib/admin-store';
 import { xui } from '@/lib/xui';
-import { resolvePackageProfile, buildVlessUri } from '@/lib/v2ray-inbounds';
+import { buildVlessUri } from '@/lib/v2ray-inbounds';
+import { resolveV2RayProvisioning } from '@/lib/pricing';
 import { PRODUCTS } from '@/lib/products';
 import { analyzeBankReceipt } from '@/lib/receipt-verifier';
 import { getWhatsAppDispatchUrl, buildWhatsAppDispatchMessage } from '@/lib/whatsapp';
 import { awardReferralCredits } from '@/lib/referrals';
+import { getObjectDownloadUrl, BUCKET_NAME } from '@/lib/storage';
+
+async function freshSlipUrl(url?: string | null): Promise<string | null | undefined> {
+  if (!url) return url;
+  try {
+    const u = new URL(url);
+    const idx = u.pathname.indexOf('/slips/');
+    if (idx < 0) return url;
+    const key = decodeURIComponent(u.pathname.slice(idx + 1)); // slips/<file>
+    return await getObjectDownloadUrl(key, BUCKET_NAME, 3600);
+  } catch {
+    return url;
+  }
+}
 
 export async function GET(req: NextRequest) {
   const guard = await requireRole(['admin', 'owner']);
@@ -37,7 +52,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Enrich orders with Bank Slip Verification Helper and WhatsApp Dispatch Link
-    const enrichedOrders = allOrders.map((o) => {
+    const enrichedOrders = await Promise.all(allOrders.map(async (o) => {
       const receiptAnalysis = o.receiptImageUrl
         ? analyzeBankReceipt({
             receiptUrl: o.receiptImageUrl,
@@ -58,10 +73,12 @@ export async function GET(req: NextRequest) {
 
       return {
         ...o,
+        // Slip links are time-limited; hand the admin a fresh one every time the list loads.
+        receiptImageUrl: await freshSlipUrl(o.receiptImageUrl),
         receiptAnalysis,
         whatsAppUrl,
       };
-    });
+    }));
 
     const pendingReviewCount = everyOrder.filter((o) => o.paymentStatus === 'PENDING_REVIEW').length;
     const verifiedOrders = everyOrder.filter((o) => o.paymentStatus === 'VERIFIED');
@@ -108,84 +125,117 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (action === 'APPROVE') {
-      let dispensedPayload = '';
-      const firstItem = order.items[0];
+      const itemKeys: Record<string, string> = {};
+      const panelClients: { email: string; uuid: string }[] = [];
+      const manualKeys: Record<string, string> =
+        body.manualKeys && typeof body.manualKeys === 'object' ? body.manualKeys : {};
+      const provisionExtra = {
+        overrides: await adminStore.getPackageOverrides(),
+        customPackages: await adminStore.getCustomPackages(),
+      };
+      const emailTag = order.customerEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').slice(0, 10);
 
-      if (firstItem) {
-        const prod = PRODUCTS.find((p) => p.id === firstItem.productId);
+      // If anything fails half-way, remove the panel clients we already created so nothing is orphaned.
+      const rollbackPanel = async () => {
+        for (const c of panelClients) await xui.deleteClient(c.email).catch(() => false);
+      };
+
+      for (let idx = 0; idx < order.items.length; idx++) {
+        const item = order.items[idx];
+        const prod = PRODUCTS.find((p) => p.id === item.productId);
         const isV2Ray =
-          firstItem.productId.startsWith('v2ray') ||
+          item.productId.startsWith('v2ray') ||
           (prod && prod.category === 'vpn') ||
-          firstItem.productTitle.toLowerCase().includes('vless') ||
-          firstItem.productTitle.toLowerCase().includes('v2ray');
+          item.productTitle.toLowerCase().includes('vless') ||
+          item.productTitle.toLowerCase().includes('v2ray');
+        const qty = Math.max(1, Math.min(20, Math.round(item.quantity || 1)));
+        const delivered: string[] = [];
 
         if (isV2Ray) {
-          const profile = resolvePackageProfile(firstItem.productId);
-
-          // 1-Click Renewal check: Check if existing UUID is present
-          const isRenewal = Boolean(order.renewOrderId || order.existingUuid || order.reviewNotes?.includes('RENEW:'));
-          let clientUuid: string = order.existingUuid || crypto.randomUUID();
+          const spec = resolveV2RayProvisioning(item.productId, provisionExtra);
+          const isRenewal =
+            idx === 0 && Boolean(order.renewOrderId || order.existingUuid || order.reviewNotes?.includes('RENEW:'));
 
           if (isRenewal && order.existingUuid) {
-            // RENEWAL: Keep existing UUID, reset traffic & extend 30 days
+            // Renewal: keep the existing client, reset its traffic.
             try {
-              const clientEmail = `${order.renewOrderId || order.orderNumber}_${order.customerEmail.split('@')[0].slice(0, 10)}`;
-              await xui.resetClientTraffic(clientEmail);
+              const existing = await xui.getClient(order.existingUuid);
+              if (existing) await xui.resetClientTraffic(existing.email);
             } catch (xErr) {
               console.warn('3x-ui renewal traffic reset note:', xErr);
             }
+            delivered.push(
+              buildVlessUri({
+                uuid: order.existingUuid,
+                host: spec.host || xui.getPublicHost(),
+                port: spec.port,
+                sni: spec.sni,
+                remark: `${spec.remarkName} (${order.orderNumber}-RENEW)`,
+              })
+            );
           } else {
-            // Fresh Provision in live 3x-ui
-            try {
-              const client = await xui.createClient({
-                email: `${order.orderNumber}_${order.customerEmail.split('@')[0].slice(0, 10)}`,
-                uuid: clientUuid,
-                inboundId: profile.inboundId,
-                totalGB: 100 * 1024 * 1024 * 1024,
-                expiryDays: 30,
-                limitIp: 2,
-                comment: `Order ${order.orderNumber} - ${order.customerName} (${order.customerEmail})`,
-              });
-              clientUuid = client.uuid;
-            } catch (xErr) {
-              // Never deliver a config that does not exist on the panel: keep the order pending.
-              console.error('3x-ui provisioning failed, order left pending:', xErr);
+            for (let n = 0; n < qty; n++) {
+              const clientEmail = `${order.orderNumber}-${idx + 1}${qty > 1 ? `-${n + 1}` : ''}_${emailTag}`;
+              try {
+                const client = await xui.createClient({
+                  email: clientEmail,
+                  inboundId: spec.inboundId,
+                  totalGB: spec.totalBytes,
+                  expiryDays: spec.expiryDays,
+                  limitIp: spec.limitIp,
+                  comment: `Order ${order.orderNumber} - ${order.customerName} (${order.customerEmail})`,
+                });
+                panelClients.push({ email: clientEmail, uuid: client.uuid });
+                delivered.push(
+                  buildVlessUri({
+                    uuid: client.uuid,
+                    host: spec.host || xui.getPublicHost(),
+                    port: spec.port,
+                    sni: spec.sni,
+                    remark: `${spec.remarkName} (${order.orderNumber})`,
+                  })
+                );
+              } catch (xErr) {
+                // Never deliver a config that does not exist on the panel: keep the order pending.
+                console.error('3x-ui provisioning failed, order left pending:', xErr);
+                await rollbackPanel();
+                return NextResponse.json(
+                  { error: 'Could not create the client on the V2Ray panel. The order was NOT approved; check the panel connection and retry.' },
+                  { status: 502 }
+                );
+              }
+            }
+          }
+        } else {
+          // Physical stock only: never invent keys. Admin can paste keys via manualKeys if needed.
+          const manual = String(manualKeys[item.id] || '')
+            .split('\n')
+            .map((s) => s.trim())
+            .filter(Boolean);
+          for (let n = 0; n < qty; n++) {
+            if (manual[n]) {
+              delivered.push(manual[n]);
+              continue;
+            }
+            const invItem = await adminStore.dispenseStockItem(item.productId, order.id, order.customerEmail);
+            if (!invItem) {
+              await rollbackPanel();
               return NextResponse.json(
-                { error: 'Could not create the client on the V2Ray panel. The order was NOT approved; check the panel connection and retry.' },
-                { status: 502 }
+                {
+                  error: `No stock available for "${item.productTitle}". Add stock in Inventory (or provide the key manually) and approve again. The order was NOT approved.`,
+                },
+                { status: 409 }
               );
             }
-          }
-
-          dispensedPayload = buildVlessUri({
-            uuid: clientUuid,
-            host: xui.getPublicHost(),
-            port: profile.port,
-            sni: profile.sni,
-            remark: `${profile.remarkName} (${order.orderNumber}${isRenewal ? '-RENEW' : ''})`,
-          });
-        } else {
-          // Try to dispense from inventory first
-          const invItem = await adminStore.dispenseStockItem(
-            firstItem.productId,
-            order.id,
-            order.customerEmail
-          );
-          if (invItem) {
-            dispensedPayload = invItem.keyPayload;
-          } else {
-            // Generate clean license/invite
-            if (firstItem.productId.includes('canva')) {
-              dispensedPayload = `https://www.canva.com/brand/join?token=fbz_vip_${crypto.randomBytes(8).toString('hex')}&team=fibez_pro`;
-            } else if (firstItem.productId.includes('capcut')) {
-              dispensedPayload = `Account: user_${order.customerEmail.split('@')[0]}@fibez.store | Pass: CapCutPro#${crypto.randomInt(1000, 9999)}`;
-            } else {
-              dispensedPayload = `LICENSE-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-            }
+            delivered.push(invItem.keyPayload);
           }
         }
+
+        itemKeys[item.id] = delivered.join('\n');
       }
 
+      const dispensedPayload = Object.values(itemKeys).join('\n');
+      const firstItem = order.items[0];
       // Check referral rewards: If this order used a referral code, award 10 Fibez store credits!
       const referralCodeToAward = order.referralCode || order.promoCode;
       let referralAwardResult = null;
@@ -202,7 +252,8 @@ export async function PATCH(req: NextRequest) {
         fulfillmentStatus: 'DELIVERED',
         reviewedBy: guard.user.email,
         reviewNotes: reviewNotes || 'Bank receipt verified and approved by admin.',
-        dispensedKey: dispensedPayload,
+        itemKeys,
+        metadata: { panelClients },
       });
 
       // Build WhatsApp Automated Dispatch URL
@@ -234,6 +285,11 @@ export async function PATCH(req: NextRequest) {
         referralAwarded: referralAwardResult?.success ? 10 : 0,
       });
     } else if (action === 'REJECT') {
+      // Rejecting (or revoking) an order that already got V2Ray lines removes them from the panel.
+      let revokedClients = 0;
+      for (const c of order.metadata?.panelClients || []) {
+        if (await xui.deleteClient(c.email)) revokedClients++;
+      }
       const updated = await adminStore.updateOrderStatus(orderNumber, {
         paymentStatus: 'FAILED',
         fulfillmentStatus: 'REVOKED',
@@ -243,7 +299,9 @@ export async function PATCH(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: `Order ${orderNumber} rejected.`,
+        message:
+          `Order ${orderNumber} rejected.` +
+          (revokedClients ? ` ${revokedClients} V2Ray line(s) removed from the panel.` : ''),
         order: updated,
       });
     }

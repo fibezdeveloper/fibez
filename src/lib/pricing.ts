@@ -1,5 +1,6 @@
 import { PRODUCTS, type ProductItem } from '@/lib/products';
-import { V2RAY_PLAN_TIERS, DURATION_DISCOUNTS } from '@/lib/v2ray-catalog';
+import { V2RAY_PLAN_TIERS, DURATION_DISCOUNTS, LIVE_V2RAY_PACKAGES } from '@/lib/v2ray-catalog';
+import { resolvePackageProfile } from '@/lib/v2ray-inbounds';
 
 /**
  * Server-side price resolution. The browser's cart prices are NEVER trusted:
@@ -79,4 +80,66 @@ export function resolveServerPrice(productId: string, variantLabel: string): Res
   }
 
   return null;
+}
+
+export interface V2RayProvisionSpec {
+  inboundId: number;
+  port: number;
+  sni: string;
+  remarkName: string;
+  /** null = use the panel's default public host */
+  host: string | null;
+  totalBytes: number; // 0 = unlimited
+  expiryDays: number;
+  limitIp: number;
+}
+
+/**
+ * What to create on the 3x-ui panel for a purchased V2Ray product id: the package's inbound /
+ * port / SNI, plus the plan's quota, device limit and the months that were actually paid for.
+ */
+export function resolveV2RayProvisioning(
+  productId: string,
+  /** Admin-panel edits (package overrides / custom packages) win over the built-in catalog. */
+  extra?: {
+    overrides?: Record<string, { inboundId?: number; inboundPort?: number; sni?: string; title?: string }>;
+    customPackages?: { id: string; title?: string; inboundId?: number; inboundPort?: number; sni?: string; serverType?: string }[];
+  }
+): V2RayProvisionSpec {
+  const GB = 1024 * 1024 * 1024;
+  let pkgKey = productId;
+  let planId: string | null = null;
+  let months = 1;
+  let lkIp = false;
+
+  const card = CARD_ID_RE.exec(productId);
+  const page = PAGE_ID_RE.exec(productId);
+  if (card) {
+    pkgKey = card[1];
+    planId = card[2];
+    months = Number(card[4]) || 1;
+    lkIp = card[3] === 'lk_ip';
+  } else if (page) {
+    pkgKey = page[1];
+    planId = page[2];
+    lkIp = page[3] === 'lk_ip';
+  }
+
+  const plan = planId ? V2RAY_PLAN_TIERS.find((t) => t.id === planId) : undefined;
+  const catalogPkg =
+    LIVE_V2RAY_PACKAGES.find((p) => p.id === pkgKey) || extra?.customPackages?.find((p) => p.id === pkgKey);
+  const ovr = extra?.overrides?.[pkgKey];
+  const profile = resolvePackageProfile(pkgKey);
+  lkIp = lkIp || catalogPkg?.serverType === 'LK_IP';
+
+  return {
+    inboundId: ovr?.inboundId ?? catalogPkg?.inboundId ?? profile.inboundId,
+    port: ovr?.inboundPort ?? catalogPkg?.inboundPort ?? profile.port,
+    sni: ovr?.sni ?? catalogPkg?.sni ?? profile.sni,
+    remarkName: catalogPkg ? `Fibez - ${ovr?.title || catalogPkg.title}` : profile.remarkName,
+    host: lkIp ? 'lk-rv2ray.fibez.store' : null,
+    totalBytes: plan ? plan.quotaGB * GB : 100 * GB,
+    expiryDays: 30 * months,
+    limitIp: plan?.deviceLimit ?? 2,
+  };
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { getDeviceSignals } from '@/lib/device-fp';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { authClient } from '@/lib/auth-client';
@@ -173,10 +174,13 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
     setIsLoading(true);
     setErrorMsg(null);
     try {
+      const { deviceId, fp } = await getDeviceSignals();
       const res = await fetch('/api/v2ray/free-trial', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          deviceId,
+          fp,
           packageId: selectedPkg.id,
           title: selectedPkg.title,
           isp: selectedPkg.isp,
@@ -448,11 +452,11 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
                 </span>
               </div>
               <Link
-                href="/vault"
+                href="/v2ray/dashboard"
                 onClick={onClose}
                 className="px-2.5 py-1 rounded-lg bg-emerald-400/20 hover:bg-emerald-400/30 text-emerald-200 text-[11px] font-mono transition-colors flex items-center gap-1 shrink-0 font-bold"
               >
-                <span>Open Vault</span>
+                <span>Open Dashboard</span>
                 <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
@@ -588,7 +592,7 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
 
               <div className="flex items-center gap-2">
                 <Link
-                  href="/vault"
+                  href="/v2ray/dashboard"
                   onClick={onClose}
                   className="px-4 py-2 rounded-xl bg-white text-black font-semibold text-xs hover:bg-zinc-200 transition-colors flex items-center gap-1.5"
                 >

@@ -28,7 +28,13 @@ export async function GET(req: NextRequest) {
     });
 
     const lines: PurchasedV2RayLine[] = [];
+    const pendingOrders: { orderNumber: string; title: string; status: string }[] = [];
+
     for (const ord of matchingOrders) {
+      const revoked = ord.fulfillmentStatus === 'REVOKED' || ord.paymentStatus === 'FAILED' || ord.paymentStatus === 'REFUNDED';
+      const isTrial = ord.orderNumber?.startsWith('FBZ-TRL-');
+      const trialExpired = isTrial && Date.now() - new Date(ord.createdAt).getTime() > 24 * 60 * 60 * 1000;
+
       for (const item of ord.items || []) {
         const isVpn =
           item.productId.includes('v2ray') ||
@@ -40,18 +46,36 @@ export async function GET(req: NextRequest) {
           item.productTitle.toLowerCase().includes('v2ray') ||
           item.productTitle.toLowerCase().includes('vless') ||
           Boolean(item.dispensedKey && item.dispensedKey.startsWith('vless://'));
+        if (!isVpn || revoked) continue;
 
-        // Only configs that were actually delivered (paid + approved). Pending orders have no line.
-        const delivered = Boolean(item.dispensedKey && item.dispensedKey.startsWith('vless://'));
-        if (isVpn && delivered) {
+        // One delivered config per line (multi-quantity items store several, one per row).
+        const keys = String(item.dispensedKey || '')
+          .split('\n')
+          .map((k) => k.trim())
+          .filter((k) => k.startsWith('vless://'));
+
+        if (keys.length === 0) {
+          // Paid but not approved yet: show it as pending, never as a (fake) config.
+          if (ord.paymentStatus === 'PENDING_REVIEW' || ord.paymentStatus === 'PENDING_PAYMENT') {
+            pendingOrders.push({
+              orderNumber: ord.orderNumber,
+              title: item.productTitle,
+              status: ord.paymentStatus === 'PENDING_REVIEW' ? 'Receipt under review' : 'Awaiting payment',
+            });
+          }
+          continue;
+        }
+
+        for (const key of keys) {
           const line = createPurchasedLineFromCartItem({
             orderNumber: ord.orderNumber,
             productId: item.productId,
             title: item.productTitle,
             variantTitle: item.variantTitle,
-            customUuid: (ord as any).metadata?.clientUuid,
-            dispensedKey: item.dispensedKey,
+            dispensedKey: key,
           });
+          if (trialExpired) line.status = 'EXPIRED';
+          else if (isTrial) line.status = 'TRIAL';
           lines.push(line);
         }
       }
@@ -60,8 +84,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       lines,
-    });
-  } catch (error: any) {
+      pendingOrders,
+    });  } catch (error: any) {
     console.error('Error fetching V2Ray lines:', error);
     return NextResponse.json({ success: false, error: 'Failed to load lines' }, { status: 500 });
   }

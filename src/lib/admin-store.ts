@@ -44,6 +44,8 @@ export interface AdminOrder {
   existingUuid?: string | null;
   referralCode?: string | null;
   referralCreditsAwarded?: number;
+  /** Server-side bookkeeping, e.g. the 3x-ui clients created for this order (so they can be revoked). */
+  metadata?: { panelClients?: { email: string; uuid: string }[]; [k: string]: unknown };
   receiptAnalysis?: any;
   createdAt: string;
   updatedAt: string;
@@ -94,6 +96,19 @@ export interface AdminPackageOverride {
   isCustom?: boolean;
 }
 
+export interface TrialClaim {
+  id: string;
+  userId: string;
+  email: string;
+  canonicalEmail: string;
+  ip: string;
+  deviceId: string;
+  fpHash: string;
+  uaHash: string;
+  orderNumber: string;
+  at: string;
+}
+
 export interface XuiPanelConfig {
   baseUrl: string;
   username: string;
@@ -114,6 +129,7 @@ interface AdminStoreState {
   customPackages?: any[];
   xuiConfig?: XuiPanelConfig;
   referrals?: Record<string, ReferralUserRecord>;
+  trialClaims?: TrialClaim[];
 }
 
 const DATA_FILE = path.join(process.cwd(), '.fibez-admin-data.json');
@@ -367,6 +383,7 @@ function normalizeState(raw: any): AdminStoreState {
     customPackages: Array.isArray(raw?.customPackages) ? raw.customPackages : undefined,
     xuiConfig: raw?.xuiConfig && typeof raw.xuiConfig === 'object' ? raw.xuiConfig : undefined,
     referrals: raw?.referrals && typeof raw.referrals === 'object' ? raw.referrals : undefined,
+    trialClaims: Array.isArray(raw?.trialClaims) ? raw.trialClaims : undefined,
   };
 }
 
@@ -488,6 +505,9 @@ class AdminStore {
       reviewNotes?: string;
       reviewedBy?: string;
       dispensedKey?: string;
+      /** Per-item delivered key/config, keyed by item id (multi-item orders). */
+      itemKeys?: Record<string, string>;
+      metadata?: AdminOrder['metadata'];
     }
   ): Promise<AdminOrder | null> {
     const query = orderIdOrNumber.trim().toUpperCase();
@@ -503,6 +523,16 @@ class AdminStore {
         order.items[0].dispensedKey = updates.dispensedKey;
         order.items[0].status = 'DELIVERED';
       }
+      if (updates.itemKeys) {
+        for (const item of order.items) {
+          const key = updates.itemKeys[item.id];
+          if (key) {
+            item.dispensedKey = key;
+            item.status = 'DELIVERED';
+          }
+        }
+      }
+      if (updates.metadata) order.metadata = { ...(order.metadata || {}), ...updates.metadata };
       order.updatedAt = new Date().toISOString();
       return order;
     });
@@ -707,6 +737,51 @@ class AdminStore {
     return this.mutate((s) => {
       if (!s.referrals) s.referrals = {};
       return fn(s.referrals);
+    });
+  }
+
+  // ---- Free-trial anti-abuse ---------------------------------------------------
+
+  public async getTrialClaims(): Promise<TrialClaim[]> {
+    const { state } = await this.read();
+    return state.trialClaims || [];
+  }
+
+  /**
+   * Atomically decide whether this person may take a free trial, and record the claim.
+   * One trial per account, per (canonical) email, per device. A single IP can hold a few
+   * claims (mobile networks share IPs) but not unlimited.
+   */
+  public async tryClaimTrial(
+    claim: Omit<TrialClaim, 'id' | 'at'>,
+    opts: { maxPerIp: number; ipWindowDays: number }
+  ): Promise<{ ok: true; claimId: string } | { ok: false; reason: 'ACCOUNT' | 'EMAIL' | 'DEVICE' | 'IP' }> {
+    return this.mutate((s) => {
+      const claims = s.trialClaims || (s.trialClaims = []);
+      if (claims.some((c) => c.userId === claim.userId)) return { ok: false as const, reason: 'ACCOUNT' as const };
+      if (claims.some((c) => c.canonicalEmail === claim.canonicalEmail)) return { ok: false as const, reason: 'EMAIL' as const };
+      if (
+        claims.some(
+          (c) => (claim.fpHash && c.fpHash === claim.fpHash) || (claim.deviceId && c.deviceId === claim.deviceId)
+        )
+      ) {
+        return { ok: false as const, reason: 'DEVICE' as const };
+      }
+      if (claim.ip && claim.ip !== 'unknown') {
+        const since = Date.now() - opts.ipWindowDays * 24 * 60 * 60 * 1000;
+        const sameIp = claims.filter((c) => c.ip === claim.ip && new Date(c.at).getTime() > since).length;
+        if (sameIp >= opts.maxPerIp) return { ok: false as const, reason: 'IP' as const };
+      }
+      const id = `trial_${crypto.randomUUID().slice(0, 10)}`;
+      claims.push({ ...claim, id, at: new Date().toISOString() });
+      return { ok: true as const, claimId: id };
+    });
+  }
+
+  /** Give the claim back (e.g. the panel was down, so no trial was actually delivered). */
+  public async releaseTrialClaim(claimId: string): Promise<void> {
+    await this.mutate((s) => {
+      s.trialClaims = (s.trialClaims || []).filter((c) => c.id !== claimId);
     });
   }
 
