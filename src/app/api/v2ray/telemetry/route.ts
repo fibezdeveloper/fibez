@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     // If still empty, check logged-in actor's orders/trials in adminStore
     let clientMetadata: any = null;
     if (!targetIdentifier && actor?.email) {
-      const orders = adminStore.getOrders();
+      const orders = await adminStore.getOrders();
       const userOrder = orders.find(
         (o) =>
           o.customerEmail.toLowerCase() === actor.email.toLowerCase() &&

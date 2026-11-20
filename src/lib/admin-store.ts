@@ -346,73 +346,138 @@ function getSeedCoupons(): AdminPromoCode[] {
   ];
 }
 
-class AdminStore {
-  private state: AdminStoreState = {
-    orders: [],
-    inventory: [],
-    coupons: []
-  };
-  private isLoaded = false;
+const STATE_ID = 'main';
 
-  private load() {
-    if (this.isLoaded) return;
+function emptyState(): AdminStoreState {
+  return { orders: [], inventory: [], coupons: [] };
+}
+
+function seededState(): AdminStoreState {
+  return { orders: getSeedOrders(), inventory: getSeedInventory(), coupons: getSeedCoupons() };
+}
+
+function normalizeState(raw: any): AdminStoreState {
+  return {
+    orders: Array.isArray(raw?.orders) ? raw.orders : [],
+    inventory: Array.isArray(raw?.inventory) ? raw.inventory : [],
+    coupons: Array.isArray(raw?.coupons) ? raw.coupons : [],
+    packages: raw?.packages && typeof raw.packages === 'object' ? raw.packages : undefined,
+    customPackages: Array.isArray(raw?.customPackages) ? raw.customPackages : undefined,
+    xuiConfig: raw?.xuiConfig && typeof raw.xuiConfig === 'object' ? raw.xuiConfig : undefined,
+  };
+}
+
+let tableReady = false;
+async function ensureTable() {
+  if (!adminSql || tableReady) return;
+  await adminSql`
+    CREATE TABLE IF NOT EXISTS public.admin_state (
+      id TEXT PRIMARY KEY,
+      data JSONB NOT NULL,
+      version INTEGER NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  // Holds customer data and stock keys: deny all non-owner roles (e.g. Data API anon/authenticated).
+  await adminSql`ALTER TABLE public.admin_state ENABLE ROW LEVEL SECURITY`;
+  tableReady = true;
+}
+
+/**
+ * Admin state (orders, stock, coupons, package overrides, panel config).
+ *
+ * - With DATABASE_URL: persisted in Postgres (`public.admin_state`, one JSONB row) so it
+ *   survives serverless cold starts and is shared by every instance. Every change uses
+ *   optimistic concurrency (version check + retry), so two simultaneous requests cannot
+ *   silently overwrite each other or dispense the same stock key twice.
+ * - Without DATABASE_URL (local dev): falls back to the gitignored .fibez-admin-data.json.
+ *
+ * All methods are async. Note: this is a single-document store, fine for a small shop;
+ * move orders/stock to real tables if volume grows.
+ */
+class AdminStore {
+  private async read(): Promise<{ state: AdminStoreState; version: number }> {
+    if (adminSql) {
+      await ensureTable();
+      for (let i = 0; i < 2; i++) {
+        const rows = await adminSql`SELECT data, version FROM public.admin_state WHERE id = ${STATE_ID}`;
+        if (rows.length > 0) {
+          return { state: normalizeState(rows[0].data), version: Number(rows[0].version) };
+        }
+        await adminSql`
+          INSERT INTO public.admin_state (id, data, version)
+          VALUES (${STATE_ID}, ${JSON.stringify(emptyState())}::jsonb, 0)
+          ON CONFLICT (id) DO NOTHING
+        `;
+      }
+      throw new Error('Could not initialise admin state');
+    }
+
+    // Local file fallback (development)
     try {
       if (fs.existsSync(DATA_FILE)) {
-        const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-        const parsed = JSON.parse(raw);
-        this.state = {
-          orders: Array.isArray(parsed.orders) ? parsed.orders : getSeedOrders(),
-          inventory: Array.isArray(parsed.inventory) ? parsed.inventory : getSeedInventory(),
-          coupons: Array.isArray(parsed.coupons) ? parsed.coupons : getSeedCoupons(),
-        };
-      } else {
-        this.state = {
-          orders: getSeedOrders(),
-          inventory: getSeedInventory(),
-          coupons: getSeedCoupons(),
-        };
-        this.save();
+        return { state: normalizeState(JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'))), version: 0 };
       }
     } catch (e) {
-      console.warn('AdminStore load fallback:', e);
-      this.state = {
-        orders: getSeedOrders(),
-        inventory: getSeedInventory(),
-        coupons: getSeedCoupons(),
-      };
+      console.warn('AdminStore file read fallback:', e);
     }
-    this.isLoaded = true;
+    const seeded = seededState();
+    this.writeFile(seeded);
+    return { state: seeded, version: 0 };
   }
 
-  private save() {
+  private writeFile(state: AdminStoreState) {
     try {
-      fs.writeFileSync(DATA_FILE, JSON.stringify(this.state, null, 2), 'utf-8');
+      fs.writeFileSync(DATA_FILE, JSON.stringify(state, null, 2), 'utf-8');
     } catch (e) {
-      console.warn('AdminStore save error:', e);
+      console.warn('AdminStore file save error:', e);
     }
   }
 
-  public getOrders(): AdminOrder[] {
-    this.load();
-    return [...this.state.orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  private async write(state: AdminStoreState, version: number): Promise<boolean> {
+    if (adminSql) {
+      const rows = await adminSql`
+        UPDATE public.admin_state
+        SET data = ${JSON.stringify(state)}::jsonb, version = version + 1, updated_at = NOW()
+        WHERE id = ${STATE_ID} AND version = ${version}
+        RETURNING version
+      `;
+      return rows.length > 0;
+    }
+    this.writeFile(state);
+    return true;
   }
 
-  public getOrder(orderIdOrNumber: string): AdminOrder | undefined {
-    this.load();
+  private async mutate<T>(fn: (state: AdminStoreState) => T): Promise<T> {
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const { state, version } = await this.read();
+      const result = fn(state);
+      if (await this.write(state, version)) return result;
+    }
+    throw new Error('Admin store is busy, please retry');
+  }
+
+  // ---- Orders -------------------------------------------------------------
+
+  public async getOrders(): Promise<AdminOrder[]> {
+    const { state } = await this.read();
+    return [...state.orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  public async getOrder(orderIdOrNumber: string): Promise<AdminOrder | undefined> {
+    const { state } = await this.read();
     const query = orderIdOrNumber.trim().toUpperCase();
-    return this.state.orders.find(
-      (o) => o.id === orderIdOrNumber || o.orderNumber.toUpperCase() === query
-    );
+    return state.orders.find((o) => o.id === orderIdOrNumber || o.orderNumber.toUpperCase() === query);
   }
 
-  public addOrder(order: AdminOrder): AdminOrder {
-    this.load();
-    this.state.orders.unshift(order);
-    this.save();
+  public async addOrder(order: AdminOrder): Promise<AdminOrder> {
+    await this.mutate((s) => {
+      s.orders.unshift(order);
+    });
     return order;
   }
 
-  public updateOrderStatus(
+  public async updateOrderStatus(
     orderIdOrNumber: string,
     updates: {
       paymentStatus?: AdminOrder['paymentStatus'];
@@ -421,107 +486,117 @@ class AdminStore {
       reviewedBy?: string;
       dispensedKey?: string;
     }
-  ): AdminOrder | null {
-    this.load();
-    const order = this.getOrder(orderIdOrNumber);
-    if (!order) return null;
+  ): Promise<AdminOrder | null> {
+    const query = orderIdOrNumber.trim().toUpperCase();
+    return this.mutate((s) => {
+      const order = s.orders.find((o) => o.id === orderIdOrNumber || o.orderNumber.toUpperCase() === query);
+      if (!order) return null;
 
-    if (updates.paymentStatus) order.paymentStatus = updates.paymentStatus;
-    if (updates.fulfillmentStatus) order.fulfillmentStatus = updates.fulfillmentStatus;
-    if (updates.reviewNotes !== undefined) order.reviewNotes = updates.reviewNotes;
-    if (updates.reviewedBy) order.reviewedBy = updates.reviewedBy;
-    if (updates.dispensedKey && order.items.length > 0) {
-      order.items[0].dispensedKey = updates.dispensedKey;
-      order.items[0].status = 'DELIVERED';
-    }
-    order.updatedAt = new Date().toISOString();
-    this.save();
-    return order;
+      if (updates.paymentStatus) order.paymentStatus = updates.paymentStatus;
+      if (updates.fulfillmentStatus) order.fulfillmentStatus = updates.fulfillmentStatus;
+      if (updates.reviewNotes !== undefined) order.reviewNotes = updates.reviewNotes;
+      if (updates.reviewedBy) order.reviewedBy = updates.reviewedBy;
+      if (updates.dispensedKey && order.items.length > 0) {
+        order.items[0].dispensedKey = updates.dispensedKey;
+        order.items[0].status = 'DELIVERED';
+      }
+      order.updatedAt = new Date().toISOString();
+      return order;
+    });
   }
 
-  public getInventory(): AdminInventoryItem[] {
-    this.load();
-    return [...this.state.inventory];
+  // ---- Inventory ----------------------------------------------------------
+
+  public async getInventory(): Promise<AdminInventoryItem[]> {
+    const { state } = await this.read();
+    return [...state.inventory];
   }
 
-  public addInventoryBatch(
+  public async addInventoryBatch(
     productId: string,
     productTitle: string,
     stockType: AdminInventoryItem['stockType'],
     rawKeys: string[],
     batchRef?: string
-  ): number {
-    this.load();
-    let count = 0;
+  ): Promise<number> {
     const batch = batchRef || `BATCH-${Date.now().toString().slice(-6)}`;
-
-    for (const key of rawKeys) {
-      const trimmed = key.trim();
-      if (!trimmed) continue;
-      this.state.inventory.unshift({
-        id: `inv_${crypto.randomUUID().slice(0, 8)}`,
-        productId,
-        productTitle,
-        stockType,
-        keyPayload: trimmed,
-        status: 'AVAILABLE',
-        batchReference: batch,
-        createdAt: new Date().toISOString()
-      });
-      count++;
-    }
-    this.save();
-    return count;
+    return this.mutate((s) => {
+      let count = 0;
+      for (const key of rawKeys) {
+        const trimmed = key.trim();
+        if (!trimmed) continue;
+        s.inventory.unshift({
+          id: `inv_${crypto.randomUUID().slice(0, 8)}`,
+          productId,
+          productTitle,
+          stockType,
+          keyPayload: trimmed,
+          status: 'AVAILABLE',
+          batchReference: batch,
+          createdAt: new Date().toISOString(),
+        });
+        count++;
+      }
+      return count;
+    });
   }
 
-  public dispenseStockItem(productId: string, orderId: string, email: string): AdminInventoryItem | null {
-    this.load();
-    const item = this.state.inventory.find(
-      (i) => (i.productId === productId || i.productId.includes(productId)) && i.status === 'AVAILABLE'
-    );
-    if (!item) return null;
-    item.status = 'DISPENSED';
-    item.dispensedOrderId = orderId;
-    item.dispensedToEmail = email;
-    this.save();
-    return item;
+  public async dispenseStockItem(
+    productId: string,
+    orderId: string,
+    email: string
+  ): Promise<AdminInventoryItem | null> {
+    return this.mutate((s) => {
+      const item = s.inventory.find(
+        (i) => (i.productId === productId || i.productId.includes(productId)) && i.status === 'AVAILABLE'
+      );
+      if (!item) return null;
+      item.status = 'DISPENSED';
+      item.dispensedOrderId = orderId;
+      item.dispensedToEmail = email;
+      return { ...item };
+    });
   }
 
-  public deleteInventoryItem(id: string): boolean {
-    this.load();
-    const prev = this.state.inventory.length;
-    this.state.inventory = this.state.inventory.filter((i) => i.id !== id);
-    this.save();
-    return this.state.inventory.length < prev;
+  public async deleteInventoryItem(id: string): Promise<boolean> {
+    return this.mutate((s) => {
+      const prev = s.inventory.length;
+      s.inventory = s.inventory.filter((i) => i.id !== id);
+      return s.inventory.length < prev;
+    });
   }
 
-  public clearAllInventory(): void {
-    this.load();
-    this.state.inventory = [];
-    this.save();
+  public async clearAllInventory(): Promise<void> {
+    await this.mutate((s) => {
+      s.inventory = [];
+    });
   }
 
-  public resetInventoryToSeed(): void {
-    this.load();
-    this.state.inventory = getSeedInventory();
-    this.save();
+  public async resetInventoryToSeed(): Promise<void> {
+    await this.mutate((s) => {
+      // Seed stock contains demo placeholder keys: never load them into a live database.
+      s.inventory = adminSql ? [] : getSeedInventory();
+    });
   }
 
-  public clearDispensedInventory(): number {
-    this.load();
-    const prev = this.state.inventory.length;
-    this.state.inventory = this.state.inventory.filter((i) => i.status !== 'DISPENSED');
-    this.save();
-    return prev - this.state.inventory.length;
+  public async clearDispensedInventory(): Promise<number> {
+    return this.mutate((s) => {
+      const prev = s.inventory.length;
+      s.inventory = s.inventory.filter((i) => i.status !== 'DISPENSED');
+      return prev - s.inventory.length;
+    });
   }
 
-  public getCoupons(): AdminPromoCode[] {
-    this.load();
-    return [...this.state.coupons];
+  // ---- Coupons ------------------------------------------------------------
+
+  public async getCoupons(): Promise<AdminPromoCode[]> {
+    const { state } = await this.read();
+    return [...state.coupons];
   }
 
-  public addCoupon(coupon: Omit<AdminPromoCode, 'id' | 'timesUsed' | 'createdAt'>): AdminPromoCode {
-    this.load();
+  public async addCoupon(
+    coupon: Omit<AdminPromoCode, 'id' | 'timesUsed' | 'createdAt'>
+  ): Promise<AdminPromoCode> {
     const newCoupon: AdminPromoCode = {
       ...coupon,
       id: `cpn_${crypto.randomUUID().slice(0, 8)}`,
@@ -529,116 +604,132 @@ class AdminStore {
       timesUsed: 0,
       createdAt: new Date().toISOString(),
     };
-    this.state.coupons.unshift(newCoupon);
-    this.save();
+    await this.mutate((s) => {
+      s.coupons.unshift(newCoupon);
+    });
     return newCoupon;
   }
 
-  public toggleCoupon(id: string): boolean {
-    this.load();
-    const cpn = this.state.coupons.find((c) => c.id === id);
-    if (!cpn) return false;
-    cpn.isActive = !cpn.isActive;
-    this.save();
-    return cpn.isActive;
+  public async toggleCoupon(id: string): Promise<boolean> {
+    return this.mutate((s) => {
+      const cpn = s.coupons.find((c) => c.id === id);
+      if (!cpn) return false;
+      cpn.isActive = !cpn.isActive;
+      return cpn.isActive;
+    });
   }
 
-  public deleteCoupon(id: string): boolean {
-    this.load();
-    const prev = this.state.coupons.length;
-    this.state.coupons = this.state.coupons.filter((c) => c.id !== id);
-    this.save();
-    return this.state.coupons.length < prev;
+  public async deleteCoupon(id: string): Promise<boolean> {
+    return this.mutate((s) => {
+      const prev = s.coupons.length;
+      s.coupons = s.coupons.filter((c) => c.id !== id);
+      return s.coupons.length < prev;
+    });
   }
 
-  public getPackageOverrides(): Record<string, AdminPackageOverride> {
-    this.load();
-    return this.state.packages || {};
+  // ---- Package overrides --------------------------------------------------
+
+  public async getPackageOverrides(): Promise<Record<string, AdminPackageOverride>> {
+    const { state } = await this.read();
+    return state.packages || {};
   }
 
-  public updatePackageOverride(id: string, updates: Partial<AdminPackageOverride>): AdminPackageOverride {
-    this.load();
-    if (!this.state.packages) this.state.packages = {};
-    const existing = this.state.packages[id] || { id, isActive: true };
-    this.state.packages[id] = { ...existing, ...updates };
-    this.save();
-    return this.state.packages[id];
+  public async updatePackageOverride(
+    id: string,
+    updates: Partial<AdminPackageOverride>
+  ): Promise<AdminPackageOverride> {
+    return this.mutate((s) => {
+      if (!s.packages) s.packages = {};
+      const existing = s.packages[id] || { id, isActive: true };
+      s.packages[id] = { ...existing, ...updates };
+      return s.packages[id];
+    });
   }
 
-  public togglePackageActive(id: string): boolean {
-    this.load();
-    if (!this.state.packages) this.state.packages = {};
-    const existing = this.state.packages[id] || { id, isActive: true };
-    existing.isActive = !existing.isActive;
-    this.state.packages[id] = existing;
-    this.save();
-    return existing.isActive;
+  public async togglePackageActive(id: string): Promise<boolean> {
+    return this.mutate((s) => {
+      if (!s.packages) s.packages = {};
+      const existing = s.packages[id] || { id, isActive: true };
+      existing.isActive = !existing.isActive;
+      s.packages[id] = existing;
+      return existing.isActive;
+    });
   }
 
-  public getCustomPackages(): any[] {
-    this.load();
-    return this.state.customPackages || [];
+  public async getCustomPackages(): Promise<any[]> {
+    const { state } = await this.read();
+    return state.customPackages || [];
   }
 
-  public addCustomPackage(pkg: any): any {
-    this.load();
-    if (!this.state.customPackages) this.state.customPackages = [];
-    const idx = this.state.customPackages.findIndex((p: any) => p.id === pkg.id);
-    if (idx >= 0) {
-      this.state.customPackages[idx] = { ...this.state.customPackages[idx], ...pkg };
-    } else {
-      this.state.customPackages.unshift(pkg);
-    }
-    this.save();
+  public async addCustomPackage(pkg: any): Promise<any> {
+    await this.mutate((s) => {
+      if (!s.customPackages) s.customPackages = [];
+      const idx = s.customPackages.findIndex((p: any) => p.id === pkg.id);
+      if (idx >= 0) {
+        s.customPackages[idx] = { ...s.customPackages[idx], ...pkg };
+      } else {
+        s.customPackages.unshift(pkg);
+      }
+    });
     return pkg;
   }
 
-  public deletePackage(id: string): boolean {
-    this.load();
-    if (this.state.customPackages) {
-      this.state.customPackages = this.state.customPackages.filter((p: any) => p.id !== id);
-    }
-    if (!this.state.packages) this.state.packages = {};
-    this.state.packages[id] = {
-      ...(this.state.packages[id] || { id }),
-      isActive: false,
+  public async deletePackage(id: string): Promise<boolean> {
+    return this.mutate((s) => {
+      if (s.customPackages) {
+        s.customPackages = s.customPackages.filter((p: any) => p.id !== id);
+      }
+      if (!s.packages) s.packages = {};
+      s.packages[id] = { ...(s.packages[id] || { id }), isActive: false };
+      return true;
+    });
+  }
+
+  public async resetPackages(): Promise<void> {
+    await this.mutate((s) => {
+      s.packages = {};
+      s.customPackages = [];
+    });
+  }
+
+  // ---- 3x-ui panel config -------------------------------------------------
+
+  public async getXuiConfig(): Promise<XuiPanelConfig> {
+    const { state } = await this.read();
+    const stored: XuiPanelConfig = state.xuiConfig || {
+      baseUrl: process.env.XUI_BASE_URL || 'https://rv2ray.fibez.store:6767',
+      username: '',
+      publicHost: process.env.XUI_PUBLIC_HOST || 'rv2ray.fibez.store',
+      autoSync: true,
+      syncIntervalSec: 30,
     };
-    this.save();
-    return true;
+    // Environment variables always win over anything persisted, so rotating XUI_* in the
+    // host's env takes effect immediately. The panel password is NEVER persisted.
+    return {
+      ...stored,
+      baseUrl: process.env.XUI_BASE_URL || stored.baseUrl,
+      username: process.env.XUI_USERNAME || stored.username,
+      password: process.env.XUI_PASSWORD || '',
+      publicHost: process.env.XUI_PUBLIC_HOST || stored.publicHost,
+    };
   }
 
-  public resetPackages(): void {
-    this.load();
-    this.state.packages = {};
-    this.state.customPackages = [];
-    this.save();
-  }
-
-  public getXuiConfig(): XuiPanelConfig {
-    this.load();
-    if (!this.state.xuiConfig) {
-      this.state.xuiConfig = {
-        baseUrl: process.env.XUI_BASE_URL || 'https://rv2ray.fibez.store:6767',
-        username: process.env.XUI_USERNAME || 'akain',
-        password: process.env.XUI_PASSWORD || 'kariwesi',
-        publicHost: process.env.XUI_PUBLIC_HOST || 'rv2ray.fibez.store',
-        autoSync: true,
-        syncIntervalSec: 30,
-        lastSyncedAt: new Date().toISOString(),
-        lastStatus: 'CONNECTED',
-        lastLatencyMs: 18,
+  public async updateXuiConfig(config: Partial<XuiPanelConfig>): Promise<XuiPanelConfig> {
+    await this.mutate((s) => {
+      const merged: XuiPanelConfig = {
+        ...(s.xuiConfig || {
+          baseUrl: process.env.XUI_BASE_URL || 'https://rv2ray.fibez.store:6767',
+          username: '',
+          publicHost: process.env.XUI_PUBLIC_HOST || 'rv2ray.fibez.store',
+          autoSync: true,
+          syncIntervalSec: 30,
+        }),
+        ...config,
       };
-      this.save();
-    }
-    return this.state.xuiConfig;
-  }
-
-  public updateXuiConfig(config: Partial<XuiPanelConfig>): XuiPanelConfig {
-    this.load();
-    const current = this.getXuiConfig();
-    this.state.xuiConfig = { ...current, ...config };
-    this.save();
-    return this.state.xuiConfig;
+      delete merged.password;
+      s.xuiConfig = merged;
+    });
+    return this.getXuiConfig();
   }
 }
 

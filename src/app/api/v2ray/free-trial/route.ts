@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Check if user already claimed a trial in the last 24 hours
     // Check in-memory adminStore first
-    const existingStoreOrders = adminStore.getOrders();
+    const existingStoreOrders = await adminStore.getOrders();
     const activeStoreTrial = existingStoreOrders.find((o) => {
       const isUser = o.customerEmail?.toLowerCase() === actor.email.toLowerCase();
       const isTrial = o.paymentMethod === 'staff_grant' || (o.orderNumber && o.orderNumber.startsWith('FBZ-TRL-'));
@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
         },
       ],
     };
-    adminStore.addOrder(newAdminOrder);
+    await adminStore.addOrder(newAdminOrder);
 
     // 5. Optional PostgreSQL Persistence if DATABASE_URL is configured
     if (process.env.DATABASE_URL) {

@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const orderParam = searchParams.get('order')?.trim().toUpperCase();
     const emailParam = searchParams.get('email')?.trim().toLowerCase();
 
-    const orders = adminStore.getOrders();
+    const orders = await adminStore.getOrders();
     const matchingOrders = orders.filter((o) => {
       if (orderParam && o.orderNumber?.toUpperCase() === orderParam) return true;
       if (recentOrderNumber && o.orderNumber?.toUpperCase() === recentOrderNumber.toUpperCase()) return true;

@@ -1,3 +1,4 @@
+import { requireRole } from '@/lib/dal';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { adminStore } from '@/lib/admin-store';
@@ -9,12 +10,16 @@ import { getWhatsAppDispatchUrl, buildWhatsAppDispatchMessage } from '@/lib/what
 import { awardReferralCredits } from '@/lib/referrals';
 
 export async function GET(req: NextRequest) {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status') || 'ALL';
     const search = (searchParams.get('search') || '').trim().toLowerCase();
 
-    let allOrders = adminStore.getOrders();
+    const everyOrder = await adminStore.getOrders();
+    let allOrders = everyOrder;
 
     if (status !== 'ALL') {
       allOrders = allOrders.filter((o) => o.paymentStatus === status);
@@ -38,6 +43,7 @@ export async function GET(req: NextRequest) {
             receiptUrl: o.receiptImageUrl,
             orderTotalLKR: o.totalAmountLKR,
             currentOrderId: o.id,
+            existingOrders: everyOrder,
           })
         : null;
 
@@ -57,22 +63,17 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    const pendingReviewCount = adminStore.getOrders().filter(
-      (o) => o.paymentStatus === 'PENDING_REVIEW'
-    ).length;
-
-    const totalRevenueLKR = adminStore
-      .getOrders()
-      .filter((o) => o.paymentStatus === 'VERIFIED')
-      .reduce((sum, o) => sum + (o.totalAmountLKR || 0), 0);
+    const pendingReviewCount = everyOrder.filter((o) => o.paymentStatus === 'PENDING_REVIEW').length;
+    const verifiedOrders = everyOrder.filter((o) => o.paymentStatus === 'VERIFIED');
+    const totalRevenueLKR = verifiedOrders.reduce((sum, o) => sum + (o.totalAmountLKR || 0), 0);
 
     return NextResponse.json({
       success: true,
       orders: enrichedOrders,
       metrics: {
-        totalOrders: adminStore.getOrders().length,
+        totalOrders: everyOrder.length,
         pendingReviewCount,
-        verifiedCount: adminStore.getOrders().filter((o) => o.paymentStatus === 'VERIFIED').length,
+        verifiedCount: verifiedOrders.length,
         totalRevenueLKR,
       },
     });
@@ -83,6 +84,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
     const body = await req.json().catch(() => ({}));
     const orderNumber = typeof body.orderNumber === 'string' ? body.orderNumber.trim() : '';
@@ -93,7 +97,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Order number is required' }, { status: 400 });
     }
 
-    const order = adminStore.getOrder(orderNumber);
+    const order = await adminStore.getOrder(orderNumber);
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
@@ -152,7 +156,7 @@ export async function PATCH(req: NextRequest) {
           });
         } else {
           // Try to dispense from inventory first
-          const invItem = adminStore.dispenseStockItem(
+          const invItem = await adminStore.dispenseStockItem(
             firstItem.productId,
             order.id,
             order.customerEmail
@@ -183,7 +187,7 @@ export async function PATCH(req: NextRequest) {
         });
       }
 
-      const updated = adminStore.updateOrderStatus(orderNumber, {
+      const updated = await adminStore.updateOrderStatus(orderNumber, {
         paymentStatus: 'VERIFIED',
         fulfillmentStatus: 'DELIVERED',
         reviewedBy: 'Akain (Administrator)',
@@ -220,7 +224,7 @@ export async function PATCH(req: NextRequest) {
         referralAwarded: referralAwardResult?.success ? 10 : 0,
       });
     } else if (action === 'REJECT') {
-      const updated = adminStore.updateOrderStatus(orderNumber, {
+      const updated = await adminStore.updateOrderStatus(orderNumber, {
         paymentStatus: 'FAILED',
         fulfillmentStatus: 'REVOKED',
         reviewedBy: 'Akain (Administrator)',

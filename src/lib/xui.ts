@@ -46,12 +46,17 @@ class XuiClient {
 
   constructor() {
     this.baseUrl = (process.env.XUI_BASE_URL || 'https://rv2ray.fibez.store:6767').replace(/\/$/, '');
-    this.username = process.env.XUI_USERNAME || 'akain';
-    this.password = process.env.XUI_PASSWORD || 'kariwesi';
+    this.username = process.env.XUI_USERNAME || '';
+    // No hardcoded fallback: the panel password must be supplied via XUI_PASSWORD.
+    this.password = process.env.XUI_PASSWORD || '';
     this.publicHost = process.env.XUI_PUBLIC_HOST || 'rv2ray.fibez.store';
+    // Verify the panel's TLS certificate. Only disable for local development against a
+    // self-signed panel by explicitly setting XUI_INSECURE_TLS=true (ignored in production).
+    const allowInsecure =
+      process.env.XUI_INSECURE_TLS === 'true' && process.env.NODE_ENV !== 'production';
     this.agent = new https.Agent({
       keepAlive: true,
-      rejectUnauthorized: false,
+      rejectUnauthorized: !allowInsecure,
     });
   }
 

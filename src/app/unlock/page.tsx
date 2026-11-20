@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { ShieldCheck, Lock, Unlock, Eye, EyeOff, Loader2, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 
 export default function UnlockPage() {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -16,17 +17,9 @@ export default function UnlockPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState<boolean | null>(null);
 
-  // Check current status on load
+  // Check current status on load (server-verified; the token cookie is HttpOnly)
   useEffect(() => {
-    const hasCookie = typeof document !== 'undefined' && document.cookie.includes('fibez_unlocked=true');
-    const hasStorage = typeof localStorage !== 'undefined' && localStorage.getItem('fibez_unlocked') === 'true';
-
-    if (hasCookie || hasStorage) {
-      setIsUnlocked(true);
-      return;
-    }
-
-    fetch('/api/unlock')
+    fetch('/api/unlock', { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
         setIsUnlocked(Boolean(data.unlocked));
@@ -38,8 +31,8 @@ export default function UnlockPage() {
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password.trim()) {
-      setError('Please enter the master unlock password.');
+    if (!username.trim() || !password) {
+      setError('Please enter your operator username and password.');
       return;
     }
 
@@ -51,25 +44,20 @@ export default function UnlockPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          password: password.trim(),
+          username: username.trim(),
+          password,
         }),
       });
 
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data.success) {
-        setError(data.error || 'Invalid master password. Access denied.');
+        setError(data.error || 'Invalid username or password. Access denied.');
         setIsLoading(false);
         return;
       }
 
-      // Set cookie and localStorage for 1 year
-      document.cookie = 'fibez_unlocked=true; path=/; max-age=31536000; SameSite=Lax';
-      try {
-        localStorage.setItem('fibez_unlocked', 'true');
-        window.dispatchEvent(new Event('fibez_unlocked'));
-      } catch {}
-
+      // The server has set the signed HttpOnly unlock cookie; nothing is stored client-side.
       setIsSuccess(true);
       setIsUnlocked(true);
 
@@ -88,10 +76,6 @@ export default function UnlockPage() {
     setIsLoading(true);
     try {
       await fetch('/api/unlock', { method: 'DELETE' });
-      document.cookie = 'fibez_unlocked=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      try {
-        localStorage.removeItem('fibez_unlocked');
-      } catch {}
       setIsUnlocked(false);
       setIsSuccess(false);
       window.location.href = '/';
@@ -183,16 +167,29 @@ export default function UnlockPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="unlock-password">Master Password</Label>
+              <Label htmlFor="unlock-username">Username</Label>
+              <Input
+                id="unlock-username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Operator username"
+                autoComplete="username"
+                autoFocus
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="unlock-password">Password</Label>
               <div className="relative">
                 <Input
                   id="unlock-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter master password..."
+                  placeholder="Enter password..."
                   autoComplete="current-password"
-                  autoFocus
                   disabled={isLoading}
                   className="pr-10"
                 />

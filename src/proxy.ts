@@ -1,27 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { UNLOCK_COOKIE, isLockExempt, isSiteLocked, verifyUnlockToken } from '@/lib/site-lock';
 
 const isNeonRemote =
   process.env.NEON_AUTH_BASE_URL &&
   !process.env.NEON_AUTH_BASE_URL.includes('localhost') &&
   !process.env.NEON_AUTH_BASE_URL.includes('127.0.0.1');
 
-export default async function middleware(req: NextRequest) {
-  // 1. Check local session cookie fallback
-  const fibezSession = req.cookies.get('fibez_session')?.value;
-  if (fibezSession) {
-    try {
-      const parsed = JSON.parse(Buffer.from(fibezSession, 'base64url').toString('utf-8'));
-      if (parsed?.user?.id) {
-        return NextResponse.next();
+export default async function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // 1. Pre-launch lock, enforced on the server before any page or API route runs.
+  //    Only an HMAC-signed, expiring, HttpOnly token minted by /api/unlock passes.
+  if (isSiteLocked() && !isLockExempt(pathname)) {
+    const unlocked = verifyUnlockToken(req.cookies.get(UNLOCK_COOKIE)?.value);
+    if (!unlocked) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json(
+          { error: 'Site is locked' },
+          { status: 401, headers: { 'Cache-Control': 'no-store' } }
+        );
       }
-    } catch {}
+      const lockUrl = req.nextUrl.clone();
+      lockUrl.pathname = '/lock';
+      lockUrl.search = '';
+      const res = NextResponse.redirect(lockUrl);
+      res.headers.set('Cache-Control', 'no-store');
+      return res;
+    }
   }
 
-  // 2. If remote Neon Auth is active, run auth.middleware
-  if (isNeonRemote) {
+  // 2. Neon Auth session refresh (route authorization is enforced per-route in src/lib/dal.ts).
+  if (isNeonRemote && !pathname.startsWith('/lock') && !pathname.startsWith('/unlock')) {
     try {
-      return (auth.middleware({
+      return await (auth.middleware({
         loginUrl: '/login',
         publicRoutes: [
           '/',
@@ -41,7 +53,6 @@ export default async function middleware(req: NextRequest) {
           '/refund',
           '/terms',
           '/tickets',
-          '/unlock',
           '/api',
           '/admin',
           '/dashboard',

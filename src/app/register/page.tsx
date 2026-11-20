@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { BackgroundBeams } from '@/components/ui/background-beams';
 import FibezLogo from '@/components/FibezLogo';
-import { extractAuthErrorMessage } from '@/lib/auth-client';
+import { authClient, extractAuthErrorMessage } from '@/lib/auth-client';
 import { Loader2, AlertCircle, CheckCircle2, ShieldCheck, ArrowRight } from 'lucide-react';
 
 function BottomGradient() {
@@ -61,8 +61,8 @@ function RegisterForm() {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
       return;
     }
 
@@ -71,20 +71,19 @@ function RegisterForm() {
     try {
       const fullName = `${firstName.trim()} ${lastName.trim()}`.trim() || email.split('@')[0];
 
-      const res = await fetch('/api/auth/sign-up/email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email.trim(),
-          password,
-          name: fullName,
-        }),
+      const { error: signUpError } = await authClient.signUp.email({
+        email: email.trim(),
+        password,
+        name: fullName,
       });
 
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to create account. Email may already be registered.');
+      if (signUpError) {
+        throw new Error(
+          extractAuthErrorMessage(
+            signUpError,
+            'Failed to create account. Email may already be registered.'
+          )
+        );
       }
 
       setIsSuccess(true);
@@ -103,23 +102,19 @@ function RegisterForm() {
     setError(null);
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : 'https://fibez.store';
-      const res = await fetch('/api/auth/sign-in/social', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          provider: 'google',
-          callbackURL: `${origin}${callbackUrl}`,
-        }),
+      const result = await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: `${origin}${callbackUrl}`,
+        errorCallbackURL: `${origin}/login?error=oauth`,
       });
-      const data = await res.json().catch(() => ({}));
-      if (data.url) {
-        window.location.href = data.url;
-        return;
+      if (result?.error) {
+        setError(
+          extractAuthErrorMessage(result.error, 'Google sign-up failed. Please use email and password.')
+        );
+        setIsLoading(false);
       }
-      setError('Google sign-up failed. Please use email and password.');
     } catch (err: unknown) {
       setError(extractAuthErrorMessage(err, 'Google authentication encountered an error.'));
-    } finally {
       setIsLoading(false);
     }
   };

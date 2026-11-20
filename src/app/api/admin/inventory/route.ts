@@ -1,3 +1,4 @@
+import { requireRole } from '@/lib/dal';
 import { NextRequest, NextResponse } from 'next/server';
 import { adminStore } from '@/lib/admin-store';
 import { PRODUCTS } from '@/lib/products';
@@ -40,8 +41,11 @@ function findCatalogProduct(productId: string, title?: string) {
 }
 
 export async function GET() {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
-    const rawItems = adminStore.getInventory();
+    const rawItems = await adminStore.getInventory();
 
     // Map items with catalog product details
     const items = rawItems.map((it) => {
@@ -116,6 +120,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
     const body = await req.json().catch(() => ({}));
     const productId = typeof body.productId === 'string' ? body.productId.trim() : '';
@@ -139,7 +146,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No valid keys or accounts found in payload' }, { status: 400 });
     }
 
-    const count = adminStore.addInventoryBatch(
+    const count = await adminStore.addInventoryBatch(
       productId,
       productTitle,
       stockType,
@@ -159,13 +166,16 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
     const body = await req.json().catch(() => ({}));
     const { id, action } = body;
 
     // Reset whole inventory to empty state
     if (action === 'clear_all') {
-      adminStore.clearAllInventory();
+      await adminStore.clearAllInventory();
       return NextResponse.json({
         success: true,
         message: 'All inventory stock in the vault has been completely wiped.',
@@ -174,7 +184,7 @@ export async function DELETE(req: NextRequest) {
 
     // Reset back to default catalog seeds
     if (action === 'reset_seed') {
-      adminStore.resetInventoryToSeed();
+      await adminStore.resetInventoryToSeed();
       return NextResponse.json({
         success: true,
         message: 'Inventory has been reset to default catalog seeds (Canva, CapCut, Steam).',
@@ -183,7 +193,7 @@ export async function DELETE(req: NextRequest) {
 
     // Clear only dispensed / redeemed items
     if (action === 'clear_dispensed') {
-      const removed = adminStore.clearDispensedInventory();
+      const removed = await adminStore.clearDispensedInventory();
       return NextResponse.json({
         success: true,
         message: `Removed ${removed} dispensed item(s) from vault history.`,
@@ -193,7 +203,7 @@ export async function DELETE(req: NextRequest) {
 
     // Delete single item by ID
     if (id) {
-      const ok = adminStore.deleteInventoryItem(id);
+      const ok = await adminStore.deleteInventoryItem(id);
       if (ok) {
         return NextResponse.json({
           success: true,

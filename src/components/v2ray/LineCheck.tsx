@@ -46,7 +46,6 @@ interface DiagnosticData {
 
 export default function LineCheck() {
   const [configInput, setConfigInput] = useState('');
-  const [includeDownloadTest, setIncludeDownloadTest] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<DiagnosticData | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -70,7 +69,7 @@ export default function LineCheck() {
     if (e) e.preventDefault();
     const query = configInput.trim();
     if (!query) {
-      setErrorMsg('Please paste a vless:// config string, or enter your Order Number.');
+      setErrorMsg('Please paste your vless:// config link.');
       return;
     }
 
@@ -83,7 +82,6 @@ export default function LineCheck() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           configString: query,
-          includeDownloadTest,
         }),
       });
 
@@ -166,15 +164,9 @@ export default function LineCheck() {
 
           {/* Options & Action Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-            <label className="flex items-center gap-2.5 cursor-pointer text-xs text-zinc-400 hover:text-zinc-300">
-              <input
-                type="checkbox"
-                checked={includeDownloadTest}
-                onChange={(e) => setIncludeDownloadTest(e.target.checked)}
-                className="rounded border-[#2c2c36] bg-[#16161b] text-white focus:ring-0 w-4 h-4"
-              />
-              <span>Include a download test · up to 15 MB payload</span>
-            </label>
+            <p className="text-xs text-zinc-500">
+              Checks that the node accepts connections, measured from the Fibez server.
+            </p>
 
             <button
               type="submit"

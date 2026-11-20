@@ -1,3 +1,4 @@
+import { requireRole } from '@/lib/dal';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { xui } from '@/lib/xui';
@@ -52,8 +53,11 @@ function formatInboundsList(inbounds: any[]) {
 }
 
 export async function GET() {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
-    const config = adminStore.getXuiConfig();
+    const config = await adminStore.getXuiConfig();
     xui.updateConfig({
       baseUrl: config.baseUrl,
       username: config.username,
@@ -66,7 +70,7 @@ export async function GET() {
     const latencyMs = Date.now() - startPing;
 
     // Update last sync in admin store
-    adminStore.updateXuiConfig({
+    await adminStore.updateXuiConfig({
       lastSyncedAt: new Date().toISOString(),
       lastStatus: 'CONNECTED',
       lastLatencyMs: latencyMs,
@@ -92,8 +96,8 @@ export async function GET() {
     });
   } catch (error: any) {
     console.error('Error in admin v2ray API:', error);
-    const config = adminStore.getXuiConfig();
-    adminStore.updateXuiConfig({
+    const config = await adminStore.getXuiConfig();
+    await adminStore.updateXuiConfig({
       lastStatus: 'ERROR',
     });
 
@@ -116,17 +120,27 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
     const body = await req.json().catch(() => ({}));
     const action = body.action;
 
     // 1. Connect & Auto-Sync 3x-ui Panel Credentials
     if (action === 'connect_xui') {
-      const current = adminStore.getXuiConfig();
-      const baseUrl = (body.baseUrl || current.baseUrl || 'https://rv2ray.fibez.store:6767').trim().replace(/\/$/, '');
-      const username = (body.username || current.username || 'akain').trim();
-      const password = (body.password ? body.password.trim() : (current.password || 'kariwesi'));
-      const publicHost = (body.publicHost || current.publicHost || 'rv2ray.fibez.store').trim();
+      if (guard.user.role !== 'owner') {
+        return NextResponse.json({ error: 'Only the owner can reconnect the 3x-ui panel' }, { status: 403 });
+      }
+
+      // The panel URL, username and password come ONLY from server config (env / stored config).
+      // Accepting them from the request would let a caller point the server (and its stored
+      // panel password) at an arbitrary host. Rotate credentials via XUI_* env vars.
+      const current = await adminStore.getXuiConfig();
+      const baseUrl = current.baseUrl.trim().replace(/\/$/, '');
+      const username = current.username.trim();
+      const password = current.password || '';
+      const publicHost = current.publicHost.trim();
       const autoSync = body.autoSync !== undefined ? Boolean(body.autoSync) : current.autoSync;
       const syncIntervalSec = Number(body.syncIntervalSec) || current.syncIntervalSec || 30;
 
@@ -139,7 +153,7 @@ export async function POST(req: NextRequest) {
 
       const test = await xui.testConnection();
       if (!test.success) {
-        adminStore.updateXuiConfig({
+        await adminStore.updateXuiConfig({
           baseUrl,
           username,
           password,
@@ -163,7 +177,7 @@ export async function POST(req: NextRequest) {
       const inbounds = await xui.listInbounds();
       const { inbounds: formattedInbounds, summary } = formatInboundsList(inbounds);
 
-      const saved = adminStore.updateXuiConfig({
+      const saved = await adminStore.updateXuiConfig({
         baseUrl,
         username,
         password,
@@ -196,7 +210,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Direct Sync All Action
     if (action === 'sync_all') {
-      const config = adminStore.getXuiConfig();
+      const config = await adminStore.getXuiConfig();
       xui.updateConfig({
         baseUrl: config.baseUrl,
         username: config.username,
@@ -208,7 +222,7 @@ export async function POST(req: NextRequest) {
       const inbounds = await xui.listInbounds();
       const latencyMs = Date.now() - startPing;
 
-      const saved = adminStore.updateXuiConfig({
+      const saved = await adminStore.updateXuiConfig({
         lastSyncedAt: new Date().toISOString(),
         lastStatus: 'CONNECTED',
         lastLatencyMs: latencyMs,

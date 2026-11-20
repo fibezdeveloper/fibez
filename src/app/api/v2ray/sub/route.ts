@@ -15,29 +15,43 @@ export async function GET(req: NextRequest) {
     // 1. Resolve package-specific routing (port, custom SNI, and customized remark name)
     const profile = resolvePackageProfile(pkg);
 
-    // 2. Attempt to resolve active client from 3x-ui if identifier is supplied
-    let clientUuid = uuidParam || 'dcf67a8b-74d7-404d-bd0d-30e88d69c6b3'; // Fallback verified UUID
-    let uploadBytes = 1240000000;
-    let downloadBytes = 32800000000;
-    let totalBytes = 107374182400; // 100 GB
-    let expiryEpoch = Math.floor(Date.now() / 1000) + 30 * 24 * 3600;
+    // 2. A real client identifier is REQUIRED. There is no shared/fallback UUID: handing one
+    //    out would give every visitor a working paid config.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidParam && !UUID_RE.test(uuidParam)) {
+      return new NextResponse('Invalid uuid', { status: 400 });
+    }
+    const lookupTarget = uuidParam || email;
+    if (!lookupTarget) {
+      return new NextResponse('A client uuid or email is required', { status: 400 });
+    }
 
-    const lookupTarget = uuidParam || (email !== 'fbz_sub_live_a89f24c98e' ? email : '');
-    if (lookupTarget) {
-      try {
-        const liveClient = await xui.getClient(lookupTarget);
-        if (liveClient) {
-          clientUuid = liveClient.uuid;
-          if (liveClient.totalGB > 0) totalBytes = liveClient.totalGB;
-          if (liveClient.expiryTime > 0) expiryEpoch = Math.floor(liveClient.expiryTime / 1000);
-          if (liveClient.usedTraffic !== undefined) {
-            downloadBytes = Math.floor(liveClient.usedTraffic * 0.85);
-            uploadBytes = Math.floor(liveClient.usedTraffic * 0.15);
-          }
-        }
-      } catch (err) {
-        console.warn('Could not query 3x-ui for client:', lookupTarget, err);
+    let clientUuid = uuidParam || '';
+    let usage: { upload: number; download: number; total: number; expire: number } | null = null;
+
+    try {
+      const liveClient = await xui.getClient(lookupTarget);
+      if (liveClient) {
+        clientUuid = liveClient.uuid;
+        const used = liveClient.usedTraffic ?? 0;
+        usage = {
+          upload: Math.floor(used * 0.15),
+          download: Math.floor(used * 0.85),
+          total: liveClient.totalGB > 0 ? liveClient.totalGB : 0,
+          expire: liveClient.expiryTime > 0 ? Math.floor(liveClient.expiryTime / 1000) : 0,
+        };
+      } else if (!uuidParam) {
+        return new NextResponse('Client not found', { status: 404 });
       }
+    } catch (err) {
+      console.warn('Could not query 3x-ui for client:', lookupTarget, err);
+      if (!uuidParam) {
+        return new NextResponse('Subscription service temporarily unavailable', { status: 503 });
+      }
+    }
+
+    if (!clientUuid) {
+      return new NextResponse('Client not found', { status: 404 });
     }
 
     // 2.5 Record device access telemetry from connecting client
@@ -83,9 +97,13 @@ export async function GET(req: NextRequest) {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'Profile-Update-Interval': '12',
-        'Subscription-Userinfo': `upload=${uploadBytes}; download=${downloadBytes}; total=${totalBytes}; expire=${expiryEpoch}`,
-        'Content-Disposition': `inline; filename="fibez_${clientApp}_${profile.packageId}.txt"`,
-        'Access-Control-Allow-Origin': '*',
+        // Only report usage numbers that came from the live panel; never invent them.
+        ...(usage
+          ? {
+              'Subscription-Userinfo': `upload=${usage.upload}; download=${usage.download}; total=${usage.total}; expire=${usage.expire}`,
+            }
+          : {}),
+        'Content-Disposition': `inline; filename="fibez_${clientApp.replace(/[^a-zA-Z0-9_-]/g, '')}_${profile.packageId}.txt"`,
         'Cache-Control': 'no-store, no-cache, must-revalidate',
       },
     });

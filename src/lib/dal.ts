@@ -1,6 +1,5 @@
 import * as crypto from 'crypto';
 import { connection, NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { unstable_rethrow } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { sql as adminSql } from '@/lib/db';
@@ -33,43 +32,21 @@ function getHmacSecret(): string {
 export async function getVerifiedSessionUser(): Promise<VerifiedSessionUser | null> {
   await connection();
   try {
-    // 1. Check local session cookie fallback
-    try {
-      const cookieStore = await cookies();
-      const fibezCookie = cookieStore.get('fibez_session')?.value;
-      if (fibezCookie) {
-        const parsed = JSON.parse(Buffer.from(fibezCookie, 'base64url').toString('utf-8'));
-        if (parsed?.user?.id && parsed?.user?.email) {
-          const email = String(parsed.user.email).trim().toLowerCase();
-          const isStaff =
-            email.includes('akain') ||
-            email.includes('admin') ||
-            parsed.user.role === 'owner' ||
-            parsed.user.role === 'admin';
-          return {
-            id: String(parsed.user.id),
-            email,
-            name: String(parsed.user.name || email.split('@')[0]),
-            role: isStaff ? 'owner' : ((parsed.user.role as ValidRole) || 'user'),
-          };
-        }
-      }
-    } catch {}
-
     const { data: sessionData } = await auth.getSession();
     const sessionUser = sessionData?.user;
     if (!sessionUser?.id) {
       return null;
     }
 
+    // Without the database we cannot resolve a trusted role: never elevate based on
+    // email text or anything client-controlled.
     if (!adminSql) {
       const email = String(sessionUser.email || '').trim().toLowerCase();
-      const isStaff = email.includes('akain') || email.includes('admin');
       return {
         id: String(sessionUser.id),
         email,
         name: String(sessionUser.name || email.split('@')[0]),
-        role: isStaff ? 'owner' : 'user',
+        role: 'user',
       };
     }
 

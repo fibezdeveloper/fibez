@@ -1,11 +1,15 @@
+import { requireRole } from '@/lib/dal';
 import { NextRequest, NextResponse } from 'next/server';
 import { adminStore } from '@/lib/admin-store';
 import { LIVE_V2RAY_PACKAGES, V2RAY_QUOTA_TIERS, normalizeIsp, V2RayPackageDef } from '@/lib/v2ray-catalog';
 
+// GET is intentionally public: the storefront (/v2ray) reads the package catalog from here.
+// It exposes only catalog data (titles, ISP, SNI, public prices), never orders or credentials.
+// Every write (POST / PATCH / DELETE) below still requires an admin or owner session.
 export async function GET() {
   try {
-    const overrides = adminStore.getPackageOverrides();
-    const customPackages = adminStore.getCustomPackages();
+    const overrides = await adminStore.getPackageOverrides();
+    const customPackages = await adminStore.getCustomPackages();
 
     // Custom packages appear first, followed by live stock packages
     const allDefs = [...customPackages, ...LIVE_V2RAY_PACKAGES];
@@ -59,12 +63,15 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
     const body = await req.json().catch(() => ({}));
 
     // Action: Reset packages to factory default catalog
     if (body.action === 'reset_defaults') {
-      adminStore.resetPackages();
+      await adminStore.resetPackages();
       return NextResponse.json({
         success: true,
         message: 'Packages reset to official factory catalog!',
@@ -108,7 +115,7 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    const saved = adminStore.addCustomPackage(newPkg);
+    const saved = await adminStore.addCustomPackage(newPkg);
 
     return NextResponse.json({
       success: true,
@@ -122,6 +129,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
     const body = await req.json().catch(() => ({}));
     const id = typeof body.id === 'string' ? body.id.trim() : '';
@@ -131,7 +141,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (body.action === 'toggle_active') {
-      const activeState = adminStore.togglePackageActive(id);
+      const activeState = await adminStore.togglePackageActive(id);
       return NextResponse.json({
         success: true,
         message: `Package visibility toggled to ${activeState ? 'ACTIVE' : 'HIDDEN'}`,
@@ -158,7 +168,7 @@ export async function PATCH(req: NextRequest) {
     if (body.targetMedium !== undefined) updates.targetMedium = body.targetMedium;
     if (body.serverType !== undefined) updates.serverType = body.serverType;
 
-    const updated = adminStore.updatePackageOverride(id, updates);
+    const updated = await adminStore.updatePackageOverride(id, updates);
 
     return NextResponse.json({
       success: true,
@@ -172,6 +182,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
@@ -180,7 +193,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Package ID is required' }, { status: 400 });
     }
 
-    adminStore.deletePackage(id);
+    await adminStore.deletePackage(id);
 
     return NextResponse.json({
       success: true,

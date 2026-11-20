@@ -1,4 +1,4 @@
-import { adminStore, AdminOrder } from '@/lib/admin-store';
+import type { AdminOrder } from '@/lib/admin-store';
 
 export interface ReceiptAnalysis {
   bankName: string;
@@ -22,8 +22,10 @@ export function analyzeBankReceipt(params: {
   filename?: string | null;
   orderTotalLKR: number;
   currentOrderId?: string;
+  /** Existing orders, used for duplicate-slip detection (caller loads them once). */
+  existingOrders?: AdminOrder[];
 }): ReceiptAnalysis {
-  const { receiptUrl, filename = '', orderTotalLKR, currentOrderId } = params;
+  const { receiptUrl, filename = '', orderTotalLKR, currentOrderId, existingOrders = [] } = params;
 
   const notes: string[] = [];
   const urlLower = (receiptUrl || '').toLowerCase();
@@ -86,12 +88,13 @@ export function analyzeBankReceipt(params: {
 
   // 3. Amount Matching Simulation
   // In a production OCR flow this parses the image, here we verify the match condition
+  // The slip image is NOT read (no OCR), so the amount is never actually verified.
   const detectedAmountLKR = orderTotalLKR;
   const amountMatches = true;
-  notes.push(`Slip amount matches order total: Rs. ${orderTotalLKR.toLocaleString()}`);
+  notes.push(`Amount not auto-verified: check the slip shows Rs. ${orderTotalLKR.toLocaleString()} before approving`);
 
   // 4. Duplicate Slip Detection across all orders
-  const allOrders = adminStore.getOrders();
+  const allOrders = existingOrders;
   let isDuplicate = false;
   let duplicateOrderNumber: string | undefined = undefined;
 

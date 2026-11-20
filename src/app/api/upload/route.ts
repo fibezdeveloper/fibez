@@ -13,8 +13,59 @@ const ALLOWED_MIME_EXT: Record<string, string[]> = {
   'application/pdf': ['.pdf'],
 };
 
+// Guests must be able to upload a payment slip at checkout, so this endpoint stays open,
+// but it is rate-limited per IP and verifies the real file signature (not just the
+// client-declared MIME type / extension).
+const UPLOAD_MAX_PER_WINDOW = 8;
+const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
+const uploadHits = new Map<string, { count: number; resetAt: number }>();
+
+function uploadRateLimited(ip: string): boolean {
+  const now = Date.now();
+  if (uploadHits.size > 5000) {
+    for (const [k, v] of uploadHits) if (v.resetAt <= now) uploadHits.delete(k);
+  }
+  const entry = uploadHits.get(ip);
+  if (!entry || entry.resetAt <= now) {
+    uploadHits.set(ip, { count: 1, resetAt: now + UPLOAD_WINDOW_MS });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > UPLOAD_MAX_PER_WINDOW;
+}
+
+function matchesSignature(mime: string, b: Buffer): boolean {
+  const startsWith = (...bytes: number[]) => bytes.every((v, i) => b[i] === v);
+  switch (mime) {
+    case 'image/jpeg':
+      return startsWith(0xff, 0xd8, 0xff);
+    case 'image/png':
+      return startsWith(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
+    case 'image/gif':
+      return b.subarray(0, 6).toString('ascii') === 'GIF87a' || b.subarray(0, 6).toString('ascii') === 'GIF89a';
+    case 'image/webp':
+      return b.subarray(0, 4).toString('ascii') === 'RIFF' && b.subarray(8, 12).toString('ascii') === 'WEBP';
+    case 'application/pdf':
+      return b.subarray(0, 5).toString('ascii') === '%PDF-';
+    default:
+      return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const ip =
+      request.headers.get('x-vercel-forwarded-for')?.split(',')[0].trim() ||
+      request.headers.get('x-real-ip')?.trim() ||
+      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+      'unknown';
+    if (uploadRateLimited(ip)) {
+      return NextResponse.json(
+        { error: 'Too many uploads. Please wait a few minutes and try again.' },
+        { status: 429 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const rawFolder = (formData.get('folder') as string) || 'slips';
@@ -50,6 +101,13 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    if (!matchesSignature(file.type, buffer)) {
+      return NextResponse.json(
+        { error: 'File contents do not match the declared file type' },
+        { status: 400 }
+      );
+    }
+
     let presignedViewUrl = '';
     let storageUrl = '';
 
@@ -61,8 +119,12 @@ export async function POST(request: NextRequest) {
         bucket: BUCKET_NAME,
       });
       presignedViewUrl = await getObjectDownloadUrl(key, BUCKET_NAME, 7 * 24 * 60 * 60);
-    } catch (s3Err: any) {
-      // Local filesystem fallback for dev & offline operation
+    } catch (s3Err: unknown) {
+      // Local filesystem fallback is for development only; never write public files in production.
+      if (process.env.NODE_ENV === 'production') {
+        console.error('Object storage upload failed:', s3Err);
+        return NextResponse.json({ error: 'Failed to upload file to storage' }, { status: 500 });
+      }
       const fs = await import('fs');
       const path = await import('path');
       const localUploadDir = path.join(process.cwd(), 'public', 'uploads', folder);

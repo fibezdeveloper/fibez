@@ -2,6 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getVerifiedSessionUser, adminSql } from '@/lib/dal';
 
+// Display-only profile extras (username / phone). NEVER used for authentication or roles.
+const PROFILE_COOKIE = 'fibez_profile';
+
+function readProfileExtras(raw: string | undefined): { username?: string; phone?: string } {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(Buffer.from(raw, 'base64url').toString('utf-8'));
+    return {
+      username: typeof parsed?.username === 'string' ? parsed.username.slice(0, 60) : undefined,
+      phone: typeof parsed?.phone === 'string' ? parsed.phone.slice(0, 40) : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
 export async function GET() {
   const user = await getVerifiedSessionUser();
 
@@ -9,28 +25,15 @@ export async function GET() {
     return NextResponse.json({ user: null }, { status: 401 });
   }
 
-  // Also check if we have extended metadata stored in the fibez_session cookie
-  let phone = '';
-  let username = user.name || user.email.split('@')[0];
-
-  try {
-    const cookieStore = await cookies();
-    const fibezCookie = cookieStore.get('fibez_session')?.value;
-    if (fibezCookie) {
-      const parsed = JSON.parse(Buffer.from(fibezCookie, 'base64url').toString('utf-8'));
-      if (parsed?.user) {
-        phone = parsed.user.phone || '';
-        username = parsed.user.username || username;
-      }
-    }
-  } catch {}
+  const cookieStore = await cookies();
+  const extras = readProfileExtras(cookieStore.get(PROFILE_COOKIE)?.value);
 
   return NextResponse.json(
     {
       user: {
         ...user,
-        username,
-        phone,
+        username: extras.username || user.name || user.email.split('@')[0],
+        phone: extras.phone || '',
       },
     },
     {
@@ -49,29 +52,24 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const name = typeof body.name === 'string' ? body.name.trim() : currentUser.name;
-    const username = typeof body.username === 'string' ? body.username.trim() : '';
-    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : currentUser.email;
-    const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
+    const name = typeof body.name === 'string' ? body.name.trim().slice(0, 120) : currentUser.name;
+    const username = typeof body.username === 'string' ? body.username.trim().slice(0, 60) : '';
+    const phone = typeof body.phone === 'string' ? body.phone.trim().slice(0, 40) : '';
     const newPassword = typeof body.newPassword === 'string' ? body.newPassword.trim() : '';
 
     if (!name) {
       return NextResponse.json({ error: 'Display name cannot be empty' }, { status: 400 });
     }
 
-    if (!email || !email.includes('@')) {
-      return NextResponse.json({ error: 'Valid email address is required' }, { status: 400 });
-    }
+    // Email is the key that links orders and vault items to an account, so it must never be
+    // changed here without verification (it would let a user claim someone else's orders).
+    const email = currentUser.email;
 
-    // If PostgreSQL database is online, update neon_auth."user"
     if (adminSql) {
       try {
         await adminSql`
           UPDATE neon_auth."user"
-          SET 
-            name = ${name},
-            email = ${email},
-            "updatedAt" = NOW()
+          SET name = ${name}, "updatedAt" = NOW()
           WHERE id::text = ${currentUser.id}
         `;
       } catch (dbErr: any) {
@@ -79,46 +77,43 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
+    const finalUsername = username || name.toLowerCase().replace(/\s+/g, '_');
+
     const updatedUser = {
       id: currentUser.id,
       email,
       name,
-      username: username || name.toLowerCase().replace(/\s+/g, '_'),
+      username: finalUsername,
       phone,
       role: currentUser.role,
       updatedAt: new Date().toISOString(),
     };
 
-    // Update the local fibez_session cookie with the new identity details
-    const sessionPayload = Buffer.from(
-      JSON.stringify({
-        user: updatedUser,
-        session: {
-          id: `sess_${currentUser.id.slice(0, 8)}`,
-          userId: currentUser.id,
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-      }),
-      'utf-8'
-    ).toString('base64url');
-
     const res = NextResponse.json({
       success: true,
       message: 'Account profile updated successfully!',
       user: updatedUser,
-      passwordChanged: Boolean(newPassword),
+      passwordChanged: false,
+      ...(newPassword
+        ? { note: 'Use the "Forgot password" flow to change your password.' }
+        : {}),
     });
 
-    res.cookies.set('fibez_session', sessionPayload, {
-      path: '/',
-      httpOnly: false,
-      sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60,
-    });
+    res.cookies.set(
+      PROFILE_COOKIE,
+      Buffer.from(JSON.stringify({ username: finalUsername, phone }), 'utf-8').toString('base64url'),
+      {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 30 * 24 * 60 * 60,
+      }
+    );
 
     return res;
   } catch (err: any) {
     console.error('Error updating user profile:', err);
-    return NextResponse.json({ error: err.message || 'Failed to update profile' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
   }
 }

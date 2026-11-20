@@ -1,3 +1,4 @@
+import { requireRole } from '@/lib/dal';
 import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { xui } from '@/lib/xui';
@@ -7,6 +8,9 @@ import { sql as adminSql } from '@/lib/db';
 import { adminStore } from '@/lib/admin-store';
 
 export async function POST(req: NextRequest) {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
     const body = await req.json().catch(() => ({}));
     const recipientEmail = typeof body.recipientEmail === 'string' ? body.recipientEmail.trim().toLowerCase() : '';
@@ -106,7 +110,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Persist order into adminStore
-    adminStore.addOrder({
+    await adminStore.addOrder({
       id: orderId,
       orderNumber,
       customerName: recipientName,

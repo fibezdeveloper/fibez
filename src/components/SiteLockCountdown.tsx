@@ -46,7 +46,9 @@ export function SiteLockCountdown() {
   useEffect(() => {
     setMounted(true);
     const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft());
+      const next = calculateTimeLeft();
+      setTimeLeft(next);
+      if (next.isLive) window.location.href = '/';
     }, 1000);
 
     return () => clearInterval(timer);

@@ -10,7 +10,7 @@ import { withRlsTransaction } from '@/lib/db/rls';
 import { adminStore, AdminOrder, AdminOrderItem } from '@/lib/admin-store';
 import { analyzeBankReceipt } from '@/lib/receipt-verifier';
 import { validateReferralCode, redeemUserCredits } from '@/lib/referrals';
-import { PRODUCTS } from '@/lib/products';
+import { resolveServerPrice } from '@/lib/pricing';
 
 const VALID_PAYMENT_METHODS = new Set(['bank_transfer', 'crypto', 'gateway', 'staff_grant']);
 
@@ -90,32 +90,57 @@ export async function POST(request: NextRequest) {
     // Calculate totals and resolve line items
     let rawTotalLKR = 0;
     let rawTotalUSD = 0;
-    const resolvedCartLines = cart.map((item, idx) => {
-      const prodId = String(item.productId || item.id || '').trim();
-      const productCatalog = PRODUCTS.find((p) => p.id === prodId);
-      const qty = Math.max(1, Math.min(20, Math.round(Number(item.quantity) || 1)));
-      const unitLkr = Number(item.priceLKR) || Number(productCatalog?.priceLKR) || 450;
-      const unitUsd = Number(item.priceUSD) || Number(productCatalog?.priceUSD) || 1.5;
-      const lineLkr = unitLkr * qty;
-      const lineUsd = Number((unitUsd * qty).toFixed(2));
+    // Prices, titles, guides and warranty come ONLY from the server catalog. Anything the
+    // browser sends for price/title/guide is ignored.
+    const resolvedCartLines: {
+      id: string;
+      productId: string;
+      productTitle: string;
+      variantTitle: string;
+      quantity: number;
+      unitPriceLKR: number;
+      unitPriceUSD: number;
+      subtotalLKR: number;
+      subtotalUSD: number;
+      guideMarkdown: string;
+      warranty: string;
+      isV2Ray: boolean;
+    }[] = [];
 
+    for (let idx = 0; idx < cart.length; idx++) {
+      const item = cart[idx] || {};
+      const prodId = String(item.productId || item.id || '').trim();
+      const variantLabel = typeof item.variantTitle === 'string' ? item.variantTitle.trim() : '';
+      const priced = resolveServerPrice(prodId, variantLabel);
+      if (!priced) {
+        return NextResponse.json(
+          { error: `Unknown or unavailable product in cart: ${prodId.slice(0, 80) || '(empty)'}` },
+          { status: 400 }
+        );
+      }
+
+      const qty = Math.max(1, Math.min(20, Math.round(Number(item.quantity) || 1)));
+      const lineLkr = priced.unitPriceLKR * qty;
+      const lineUsd = Number((priced.unitPriceUSD * qty).toFixed(2));
       rawTotalLKR += lineLkr;
       rawTotalUSD += lineUsd;
 
-      return {
+      const catalog = priced.catalogProduct;
+      resolvedCartLines.push({
         id: `item_${orderNumber.toLowerCase()}_${idx + 1}_${crypto.randomUUID().slice(0, 6)}`,
-        productId: prodId || 'v2ray-dialog-zoom',
-        productTitle: item.title || productCatalog?.title || 'Fibez Digital Product',
-        variantTitle: item.variantTitle || 'Standard Quota',
+        productId: prodId,
+        productTitle: priced.generatedTitle || catalog?.title || 'Fibez Digital Product',
+        variantTitle: variantLabel.slice(0, 120) || 'Standard',
         quantity: qty,
-        unitPriceLKR: unitLkr,
-        unitPriceUSD: unitUsd,
+        unitPriceLKR: priced.unitPriceLKR,
+        unitPriceUSD: priced.unitPriceUSD,
         subtotalLKR: lineLkr,
         subtotalUSD: lineUsd,
-        guideMarkdown: item.guideMarkdown || productCatalog?.guideMarkdown || 'Delivered to Key Vault upon approval.',
-        warranty: item.warranty || productCatalog?.warranty || '24-hour replacement guarantee',
-      };
-    });
+        guideMarkdown: catalog?.guideMarkdown || 'Delivered to Key Vault upon approval.',
+        warranty: catalog?.warranty || '24-hour replacement guarantee',
+        isV2Ray: priced.isV2Ray,
+      });
+    }
 
     // Handle Discounts: Promo Code, Referral Code, and Credits
     let discountLKR = 0;
@@ -161,6 +186,7 @@ export async function POST(request: NextRequest) {
         receiptUrl,
         orderTotalLKR: finalTotalLKR,
         currentOrderId: orderId,
+        existingOrders: await adminStore.getOrders(),
       });
       if (receiptAnalysis?.bankName) {
         detectedBankName = receiptAnalysis.bankName;
@@ -178,7 +204,7 @@ export async function POST(request: NextRequest) {
       unitPriceLKR: line.unitPriceLKR,
       subtotalLKR: line.subtotalLKR,
       dispensedKey: null,
-      keyType: line.productId.startsWith('v2ray') ? 'CONNECTION_CONFIG' : 'SERIAL_KEY',
+      keyType: line.isV2Ray ? 'CONNECTION_CONFIG' : 'SERIAL_KEY',
       guideMarkdown: line.guideMarkdown,
       warranty: line.warranty,
       status: 'PENDING',
@@ -211,7 +237,7 @@ export async function POST(request: NextRequest) {
       items: adminOrderItems,
     };
 
-    adminStore.addOrder(newAdminOrder);
+    await adminStore.addOrder(newAdminOrder);
 
     // Also attempt PostgreSQL RLS persistence if database is available
     try {
@@ -269,7 +295,7 @@ export async function POST(request: NextRequest) {
                 line.subtotalLKR,
                 line.subtotalUSD,
                 null,
-                line.productId.startsWith('v2ray') ? 'CONNECTION_CONFIG' : 'SERIAL_KEY',
+                line.isV2Ray ? 'CONNECTION_CONFIG' : 'SERIAL_KEY',
                 line.guideMarkdown,
                 line.warranty,
                 'PENDING_VERIFICATION',

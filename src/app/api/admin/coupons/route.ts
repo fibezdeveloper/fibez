@@ -1,9 +1,13 @@
+import { requireRole } from '@/lib/dal';
 import { NextRequest, NextResponse } from 'next/server';
 import { adminStore } from '@/lib/admin-store';
 
 export async function GET() {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
-    const coupons = adminStore.getCoupons();
+    const coupons = await adminStore.getCoupons();
     return NextResponse.json({ success: true, coupons });
   } catch (error: any) {
     console.error('Error fetching coupons:', error);
@@ -12,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
     const body = await req.json().catch(() => ({}));
     const code = typeof body.code === 'string' ? body.code.trim().toUpperCase() : '';
@@ -32,7 +39,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const created = adminStore.addCoupon({
+    const created = await adminStore.addCoupon({
       code,
       discountPercent,
       discountFixedLKR,
@@ -54,6 +61,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
@@ -64,14 +74,14 @@ export async function DELETE(req: NextRequest) {
     }
 
     if (toggle) {
-      const activeState = adminStore.toggleCoupon(id);
+      const activeState = await adminStore.toggleCoupon(id);
       return NextResponse.json({
         success: true,
         message: `Promo code status toggled to ${activeState ? 'ACTIVE' : 'PAUSED'}`,
       });
     }
 
-    const deleted = adminStore.deleteCoupon(id);
+    const deleted = await adminStore.deleteCoupon(id);
     return NextResponse.json({
       success: true,
       message: deleted ? 'Promo code deleted' : 'Promo code not found',

@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
 
     if (!itemsQuery || itemsQuery.length === 0) {
       // Fallback to adminStore when database is not configured or in dev
-      const allOrders = adminStore.getOrders();
+      const allOrders = await adminStore.getOrders();
       const userOrders = allOrders.filter((o) => {
         if (orderNumberParam) return o.orderNumber?.toUpperCase() === orderNumberParam;
         if (actor?.email && o.customerEmail?.toLowerCase() === actor.email.toLowerCase()) return true;
