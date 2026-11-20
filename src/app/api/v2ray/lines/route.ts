@@ -7,9 +7,16 @@ export async function GET(req: NextRequest) {
   try {
     const actor = await getVerifiedSessionUser();
     const recentOrderNumber = getRecentOrderNumberFromRequest(req);
+    // Only the caller's OWN lines: their account email, or the order they just placed
+    // (signed cookie). The old `?email=` / `?order=` params let anyone read any customer's
+    // VPN configs, so they are no longer honoured (staff excepted).
+    if (!actor && !recentOrderNumber) {
+      return NextResponse.json({ success: false, error: 'Authentication required', lines: [] }, { status: 401 });
+    }
     const { searchParams } = new URL(req.url);
-    const orderParam = searchParams.get('order')?.trim().toUpperCase();
-    const emailParam = searchParams.get('email')?.trim().toLowerCase();
+    const staff = actor?.role === 'admin' || actor?.role === 'owner';
+    const orderParam = staff ? searchParams.get('order')?.trim().toUpperCase() : undefined;
+    const emailParam = staff ? searchParams.get('email')?.trim().toLowerCase() : undefined;
 
     const orders = await adminStore.getOrders();
     const matchingOrders = orders.filter((o) => {

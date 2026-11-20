@@ -113,11 +113,16 @@ export async function GET(request: NextRequest) {
     if (!itemsQuery || itemsQuery.length === 0) {
       // Fallback to adminStore when database is not configured or in dev
       const allOrders = await adminStore.getOrders();
+      // Ownership is enforced here too: a signed-in user must never read someone else's order
+      // just by guessing its number.
       const userOrders = allOrders.filter((o) => {
+        const ownsOrder =
+          (isStaff && Boolean(orderNumberParam)) ||
+          Boolean(actor?.email && o.customerEmail?.toLowerCase() === actor.email.toLowerCase()) ||
+          Boolean(recentOrderNumber && o.orderNumber?.toUpperCase() === recentOrderNumber.toUpperCase());
+        if (!ownsOrder) return false;
         if (orderNumberParam) return o.orderNumber?.toUpperCase() === orderNumberParam;
-        if (actor?.email && o.customerEmail?.toLowerCase() === actor.email.toLowerCase()) return true;
-        if (recentOrderNumber && o.orderNumber?.toUpperCase() === recentOrderNumber.toUpperCase()) return true;
-        return false;
+        return true;
       });
       itemsQuery = userOrders.flatMap((o) =>
         (o.items || []).map((item) => ({

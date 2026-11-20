@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Please log in to view referral rewards' }, { status: 401 });
     }
 
-    const profile = getOrCreateReferralProfile(user.email, user.name);
+    const profile = await getOrCreateReferralProfile(user.email, user.name);
     const host = req.headers.get('host') || 'fibez.store';
     const proto = req.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
     const origin = `${proto}://${host}`;
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     if (action === 'validate') {
       const code = String(body.code || '').trim();
-      const result = validateReferralCode(code);
+      const result = await validateReferralCode(code);
       return NextResponse.json({
         success: result.valid,
         valid: result.valid,
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid credits amount' }, { status: 400 });
       }
 
-      const result = redeemUserCredits(user.email, credits);
+      const result = await redeemUserCredits(user.email, credits);
       if (!result.success) {
         return NextResponse.json({ error: 'Insufficient store credits' }, { status: 400 });
       }

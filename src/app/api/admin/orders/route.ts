@@ -102,6 +102,11 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    // Idempotency: approving twice would provision a second 3x-ui client / burn another stock key.
+    if (action === 'APPROVE' && order.paymentStatus === 'VERIFIED' && order.fulfillmentStatus === 'DELIVERED') {
+      return NextResponse.json({ error: 'Order is already approved and delivered' }, { status: 409 });
+    }
+
     if (action === 'APPROVE') {
       let dispensedPayload = '';
       const firstItem = order.items[0];
@@ -180,7 +185,7 @@ export async function PATCH(req: NextRequest) {
       const referralCodeToAward = order.referralCode || order.promoCode;
       let referralAwardResult = null;
       if (referralCodeToAward) {
-        referralAwardResult = awardReferralCredits({
+        referralAwardResult = await awardReferralCredits({
           referralCode: referralCodeToAward,
           orderNumber: order.orderNumber,
           buyerEmail: order.customerEmail,
@@ -190,7 +195,7 @@ export async function PATCH(req: NextRequest) {
       const updated = await adminStore.updateOrderStatus(orderNumber, {
         paymentStatus: 'VERIFIED',
         fulfillmentStatus: 'DELIVERED',
-        reviewedBy: 'Akain (Administrator)',
+        reviewedBy: guard.user.email,
         reviewNotes: reviewNotes || 'Bank receipt verified and approved by admin.',
         dispensedKey: dispensedPayload,
       });
@@ -227,7 +232,7 @@ export async function PATCH(req: NextRequest) {
       const updated = await adminStore.updateOrderStatus(orderNumber, {
         paymentStatus: 'FAILED',
         fulfillmentStatus: 'REVOKED',
-        reviewedBy: 'Akain (Administrator)',
+        reviewedBy: guard.user.email,
         reviewNotes: reviewNotes || 'Payment rejected. Receipt could not be validated.',
       });
 

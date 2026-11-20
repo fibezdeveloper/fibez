@@ -1,5 +1,4 @@
-import fs from 'fs';
-import path from 'path';
+import { adminStore } from '@/lib/admin-store';
 
 export interface ReferralUserRecord {
   userEmail: string;
@@ -21,114 +20,54 @@ export interface ReferralUserRecord {
   }[];
 }
 
-const REFERRALS_FILE = path.join(process.cwd(), '.fibez-referrals.json');
+// Referral data lives in the same Postgres-backed store as orders (see admin-store.ts) so it
+// persists on Vercel, and every change is an atomic read-modify-write: credits cannot be
+// double-spent by two simultaneous checkouts.
 
-function getSeedReferrals(): Record<string, ReferralUserRecord> {
-  return {
-    'akain@fibez.store': {
-      userEmail: 'akain@fibez.store',
-      userName: 'Akain (Owner)',
-      referralCode: 'AKAIN-89',
-      storeCredits: 20,
-      invitedCount: 3,
-      purchasedCount: 2,
-      totalEarnedCredits: 20,
-      history: [
-        {
-          id: 'ref_init_1',
-          type: 'FRIEND_PURCHASED',
-          friendEmail: 'dev.tester@gmail.com',
-          orderNumber: 'FBZ-558291',
-          creditsDelta: 10,
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-          description: 'Earned 10 Fibez Credits! Friend (dev.tester@gmail.com) completed Order FBZ-558291',
-        },
-        {
-          id: 'ref_init_2',
-          type: 'FRIEND_PURCHASED',
-          friendEmail: 'lankan.netmod@hotmail.com',
-          orderNumber: 'FBZ-619204',
-          creditsDelta: 10,
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-          description: 'Earned 10 Fibez Credits! Friend (lankan.netmod@hotmail.com) completed Order FBZ-619204',
-        }
-      ]
-    }
-  };
-}
-
-function loadReferrals(): Record<string, ReferralUserRecord> {
-  try {
-    if (fs.existsSync(REFERRALS_FILE)) {
-      const content = fs.readFileSync(REFERRALS_FILE, 'utf-8');
-      return JSON.parse(content);
-    } else {
-      const seeds = getSeedReferrals();
-      saveReferrals(seeds);
-      return seeds;
-    }
-  } catch (e) {
-    console.error('Error reading referrals file:', e);
-  }
-  return getSeedReferrals();
-}
-
-function saveReferrals(data: Record<string, ReferralUserRecord>) {
-  try {
-    fs.writeFileSync(REFERRALS_FILE, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (e) {
-    console.error('Error saving referrals file:', e);
-  }
-}
-
-/**
- * Gets or initializes the referral profile for a user
- */
-export function getOrCreateReferralProfile(userEmail: string, userName?: string): ReferralUserRecord {
+/** Gets or initializes the referral profile for a user. */
+export async function getOrCreateReferralProfile(
+  userEmail: string,
+  userName?: string
+): Promise<ReferralUserRecord> {
   const email = userEmail.trim().toLowerCase();
-  const db = loadReferrals();
 
-  if (db[email]) {
-    return db[email];
-  }
+  return adminStore.mutateReferrals((db) => {
+    if (db[email]) return db[email];
 
-  // Generate unique clean referral code: e.g. "AKAIN-89"
-  const prefix = (userName || email.split('@')[0])
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '')
-    .slice(0, 6) || 'FIBEZ';
-  const suffix = Math.floor(10 + Math.random() * 90);
-  let code = `${prefix}-${suffix}`;
+    const prefix =
+      (userName || email.split('@')[0])
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .slice(0, 6) || 'FIBEZ';
+    let code = `${prefix}-${Math.floor(10 + Math.random() * 90)}`;
 
-  // Ensure unique
-  const existingCodes = new Set(Object.values(db).map((u) => u.referralCode));
-  while (existingCodes.has(code)) {
-    code = `${prefix}-${Math.floor(100 + Math.random() * 900)}`;
-  }
+    const existingCodes = new Set(Object.values(db).map((u) => u.referralCode));
+    while (existingCodes.has(code)) {
+      code = `${prefix}-${Math.floor(100 + Math.random() * 900)}`;
+    }
 
-  const newRecord: ReferralUserRecord = {
-    userEmail: email,
-    userName: userName || email.split('@')[0],
-    referralCode: code,
-    storeCredits: 0,
-    invitedCount: 0,
-    purchasedCount: 0,
-    totalEarnedCredits: 0,
-    history: [],
-  };
-
-  db[email] = newRecord;
-  saveReferrals(db);
-  return newRecord;
+    const record: ReferralUserRecord = {
+      userEmail: email,
+      userName: userName || email.split('@')[0],
+      referralCode: code,
+      storeCredits: 0,
+      invitedCount: 0,
+      purchasedCount: 0,
+      totalEarnedCredits: 0,
+      history: [],
+    };
+    db[email] = record;
+    return record;
+  });
 }
 
-/**
- * Validates a referral code and looks up the referrer
- */
-export function validateReferralCode(code: string): { valid: boolean; discountLKR: number; referrerEmail?: string } {
+/** Validates a referral code and looks up the referrer. */
+export async function validateReferralCode(
+  code: string
+): Promise<{ valid: boolean; discountLKR: number; referrerEmail?: string }> {
   if (!code) return { valid: false, discountLKR: 0 };
   const cleanCode = code.trim().toUpperCase();
-  const db = loadReferrals();
+  const db = await adminStore.getReferrals();
 
   for (const record of Object.values(db)) {
     if (record.referralCode === cleanCode) {
@@ -139,42 +78,34 @@ export function validateReferralCode(code: string): { valid: boolean; discountLK
       };
     }
   }
-
   return { valid: false, discountLKR: 0 };
 }
 
-/**
- * Awards 10 Fibez Store Credits to the referring user when an order is verified
- */
-export function awardReferralCredits(params: {
+/** Awards 10 Fibez store credits to the referrer when an order is verified. */
+export async function awardReferralCredits(params: {
   referralCode: string;
   orderNumber: string;
   buyerEmail: string;
-}): { success: boolean; creditsAwarded: number; referrerEmail?: string } {
+}): Promise<{ success: boolean; creditsAwarded: number; referrerEmail?: string }> {
   const { referralCode, orderNumber, buyerEmail } = params;
   if (!referralCode) return { success: false, creditsAwarded: 0 };
-
   const cleanCode = referralCode.trim().toUpperCase();
-  const db = loadReferrals();
 
-  for (const record of Object.values(db)) {
-    if (record.referralCode === cleanCode) {
-      // Prevent self-referral
+  return adminStore.mutateReferrals((db) => {
+    for (const record of Object.values(db)) {
+      if (record.referralCode !== cleanCode) continue;
+
       if (record.userEmail.toLowerCase() === buyerEmail.toLowerCase()) {
-        return { success: false, creditsAwarded: 0 };
+        return { success: false, creditsAwarded: 0 }; // no self-referral
       }
-
-      // Check if already awarded for this order
-      const alreadyAwarded = record.history.some((h) => h.orderNumber === orderNumber);
-      if (alreadyAwarded) {
+      if (record.history.some((h) => h.orderNumber === orderNumber)) {
         return { success: true, creditsAwarded: 0, referrerEmail: record.userEmail };
       }
 
-      const creditsToAward = 10; // Exactly 10 Fibez store credits!
+      const creditsToAward = 10;
       record.storeCredits += creditsToAward;
       record.purchasedCount += 1;
       record.totalEarnedCredits += creditsToAward;
-
       record.history.unshift({
         id: `ref_award_${Date.now()}`,
         type: 'FRIEND_PURCHASED',
@@ -184,37 +115,35 @@ export function awardReferralCredits(params: {
         timestamp: new Date().toISOString(),
         description: `Earned 10 Fibez Credits! Friend (${buyerEmail}) completed Order ${orderNumber}`,
       });
-
-      saveReferrals(db);
       return { success: true, creditsAwarded: creditsToAward, referrerEmail: record.userEmail };
     }
-  }
-
-  return { success: false, creditsAwarded: 0 };
+    return { success: false, creditsAwarded: 0 };
+  });
 }
 
-/**
- * Redeems store credits for a discount at checkout
- */
-export function redeemUserCredits(userEmail: string, creditsToUse: number): { success: boolean; discountLKR: number } {
+/** Redeems store credits for a discount at checkout (atomic check + debit). */
+export async function redeemUserCredits(
+  userEmail: string,
+  creditsToUse: number
+): Promise<{ success: boolean; discountLKR: number }> {
   const email = userEmail.trim().toLowerCase();
-  const db = loadReferrals();
-  const record = db[email];
+  const credits = Math.floor(creditsToUse);
+  if (!Number.isFinite(credits) || credits <= 0) return { success: false, discountLKR: 0 };
 
-  if (!record || record.storeCredits < creditsToUse) {
-    return { success: false, discountLKR: 0 };
-  }
-
-  const discountLKR = creditsToUse * 10; // 1 credit = 10 LKR
-  record.storeCredits -= creditsToUse;
-  record.history.unshift({
-    id: `ref_redeem_${Date.now()}`,
-    type: 'CREDITS_REDEEMED',
-    creditsDelta: -creditsToUse,
-    timestamp: new Date().toISOString(),
-    description: `Redeemed ${creditsToUse} Credits for Rs. ${discountLKR} discount at checkout`,
+  return adminStore.mutateReferrals((db) => {
+    const record = db[email];
+    if (!record || record.storeCredits < credits) {
+      return { success: false, discountLKR: 0 };
+    }
+    const discountLKR = credits * 10; // 1 credit = 10 LKR
+    record.storeCredits -= credits;
+    record.history.unshift({
+      id: `ref_redeem_${Date.now()}`,
+      type: 'CREDITS_REDEEMED',
+      creditsDelta: -credits,
+      timestamp: new Date().toISOString(),
+      description: `Redeemed ${credits} Credits for Rs. ${discountLKR} discount at checkout`,
+    });
+    return { success: true, discountLKR };
   });
-
-  saveReferrals(db);
-  return { success: true, discountLKR };
 }

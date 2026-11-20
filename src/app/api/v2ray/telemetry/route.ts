@@ -10,6 +10,10 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const actor = await getVerifiedSessionUser();
+    if (!actor) {
+      return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+    }
+    const isStaff = actor.role === 'admin' || actor.role === 'owner';
 
     // 1. Resolve Target Identifier (UUID, Email, or VLESS URI)
     let targetIdentifier = searchParams.get('uuid') || searchParams.get('email') || searchParams.get('user') || '';
@@ -19,6 +23,25 @@ export async function GET(req: NextRequest) {
       const parsed = parseVlessUri(vlessParam);
       if (parsed?.uuid) {
         targetIdentifier = parsed.uuid;
+      }
+    }
+
+    // A non-staff user may only query their OWN lines (matched against their own orders).
+    if (targetIdentifier && !isStaff) {
+      const myOrders = (await adminStore.getOrders()).filter(
+        (o) => o.customerEmail.toLowerCase() === actor.email.toLowerCase()
+      );
+      const wanted = targetIdentifier.trim().toLowerCase();
+      const owned = myOrders.some((o) => {
+        if (wanted.startsWith(o.orderNumber.toLowerCase())) return true;
+        if (String((o as any).metadata?.clientUuid || '').toLowerCase() === wanted) return true;
+        return o.items.some((i) => {
+          const u = i.dispensedKey ? parseVlessUri(i.dispensedKey)?.uuid : undefined;
+          return Boolean(u && u.toLowerCase() === wanted);
+        });
+      });
+      if (!owned) {
+        return NextResponse.json({ success: false, error: 'Line not found on your account' }, { status: 403 });
       }
     }
 

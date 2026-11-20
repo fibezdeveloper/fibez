@@ -27,8 +27,54 @@ interface CheckoutItemInput {
   warranty?: string;
 }
 
+function isAllowedReceiptUrl(value: string): boolean {
+  if (value.length > 2500) return false;
+  // Dev-only local upload fallback
+  if (/^\/uploads\/slips\/[A-Za-z0-9._-]+$/.test(value)) return process.env.NODE_ENV !== 'production';
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') return false;
+    const host = url.hostname.toLowerCase();
+    const endpoint = process.env.AWS_ENDPOINT_URL_S3;
+    const endpointHost = endpoint ? new URL(endpoint).hostname.toLowerCase() : '';
+    return (
+      (endpointHost !== '' && (host === endpointHost || host.endsWith(`.${endpointHost}`))) ||
+      host.endsWith('.amazonaws.com')
+    );
+  } catch {
+    return false;
+  }
+}
+
+const checkoutHits = new Map<string, { count: number; resetAt: number }>();
+function checkoutRateLimited(ip: string): boolean {
+  const now = Date.now();
+  if (checkoutHits.size > 5000) {
+    for (const [k, v] of checkoutHits) if (v.resetAt <= now) checkoutHits.delete(k);
+  }
+  const entry = checkoutHits.get(ip);
+  if (!entry || entry.resetAt <= now) {
+    checkoutHits.set(ip, { count: 1, resetAt: now + 10 * 60 * 1000 });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > 10;
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const ip =
+      request.headers.get('x-vercel-forwarded-for')?.split(',')[0].trim() ||
+      request.headers.get('x-real-ip')?.trim() ||
+      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+      'unknown';
+    if (checkoutRateLimited(ip)) {
+      return NextResponse.json(
+        { error: 'Too many orders from this connection. Please wait a few minutes.' },
+        { status: 429 }
+      );
+    }
+
     const actor = await getVerifiedSessionUser();
 
     const body = await request.json().catch(() => ({}));
@@ -68,8 +114,14 @@ export async function POST(request: NextRequest) {
       typeof body.creditsRedeemed === 'number' && body.creditsRedeemed > 0
         ? Math.floor(body.creditsRedeemed)
         : 0;
-    const receiptUrl =
+    const rawReceiptUrl =
       typeof body.receiptUrl === 'string' && body.receiptUrl.trim() ? body.receiptUrl.trim() : null;
+    // The slip URL is later rendered in the admin console (img / iframe), so it must be a link to
+    // OUR storage only. Anything else (javascript:, data:, foreign hosts) is rejected.
+    if (rawReceiptUrl && !isAllowedReceiptUrl(rawReceiptUrl)) {
+      return NextResponse.json({ error: 'Invalid payment slip link. Please re-upload your slip.' }, { status: 400 });
+    }
+    const receiptUrl = rawReceiptUrl;
 
     if (!customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
       return NextResponse.json({ error: 'Valid customer email is required' }, { status: 400 });
@@ -148,8 +200,9 @@ export async function POST(request: NextRequest) {
 
     // 1. Referral discount check
     if (referralCode) {
-      const refCheck = validateReferralCode(referralCode);
-      if (refCheck.valid) {
+      const refCheck = await validateReferralCode(referralCode);
+      // A referral code cannot be used by its own owner.
+      if (refCheck.valid && refCheck.referrerEmail?.toLowerCase() !== customerEmail.toLowerCase()) {
         discountLKR += refCheck.discountLKR; // e.g. Rs. 50 off
       }
     }
@@ -167,8 +220,10 @@ export async function POST(request: NextRequest) {
 
     // 3. Store Credits redeemed (1 credit = 10 LKR)
     let creditsDiscountLKR = 0;
-    if (creditsRedeemed > 0) {
-      const redeemResult = redeemUserCredits(customerEmail, creditsRedeemed);
+    // Credits belong to an ACCOUNT: only a verified signed-in user may spend their own.
+    // (Guests could previously pass any email and spend that person's credits.)
+    if (creditsRedeemed > 0 && actor) {
+      const redeemResult = await redeemUserCredits(actor.email, creditsRedeemed);
       if (redeemResult.success) {
         creditsDiscountLKR = redeemResult.discountLKR;
         discountLKR += creditsDiscountLKR;

@@ -32,10 +32,12 @@ export async function POST(req: NextRequest) {
     let profile = PACKAGE_ROUTING_PROFILES[rawPackageId] || resolvePackageProfile(rawPackageId || rawIsp);
 
     // Apply explicit package overrides if supplied by client
-    const targetInboundId = typeof body.inboundId === 'number' && body.inboundId > 0 ? body.inboundId : profile.inboundId;
-    const targetPort = typeof body.port === 'number' && body.port > 0 ? body.port : profile.port;
-    const targetSni = typeof body.sni === 'string' && body.sni.trim() ? body.sni.trim() : profile.sni;
-    const packageTitle = typeof body.title === 'string' && body.title.trim() ? body.title.trim() : profile.title;
+    // Inbound / port / SNI come ONLY from the server-side package profile. Honouring values
+    // from the request let a trial user create a client on any (e.g. dedicated) inbound.
+    const targetInboundId = profile.inboundId;
+    const targetPort = profile.port;
+    const targetSni = profile.sni;
+    const packageTitle = typeof body.title === 'string' && body.title.trim() ? body.title.trim().slice(0, 120) : profile.title;
     const remarkName = profile.remarkName || packageTitle;
 
     // 2. Check if user already claimed a trial in the last 24 hours

@@ -103,14 +103,18 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // Reviews require a signed-in account (anonymous posting = spam / fake reviews).
     const actor = await getVerifiedSessionUser();
+    if (!actor) {
+      return NextResponse.json({ error: 'Please sign in to post a review' }, { status: 401 });
+    }
 
     const body = await req.json().catch(() => ({}));
     const productId = typeof body.productId === 'string' ? body.productId.trim() : '';
     const userName =
       typeof body.userName === 'string' && body.userName.trim()
         ? body.userName.trim().slice(0, 100)
-        : actor?.name || '';
+        : actor.name || '';
     const headline = typeof body.headline === 'string' ? body.headline.trim().slice(0, 160) : '';
     const comment = typeof body.comment === 'string' ? body.comment.trim().slice(0, 2000) : '';
     const rating = Number(body.rating);
@@ -177,6 +181,9 @@ export async function PATCH(req: NextRequest) {
 
     if (action === 'helpful') {
       const actor = await getVerifiedSessionUser();
+      if (!actor) {
+        return NextResponse.json({ error: 'Please sign in to vote' }, { status: 401 });
+      }
       const updated = await withRlsTransaction(buildRlsContext(actor), async (client) => {
         const res = await client.query(
           `SELECT public.increment_review_helpful($1) AS updated`,

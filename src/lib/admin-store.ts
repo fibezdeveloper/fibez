@@ -3,6 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { sql as adminSql } from '@/lib/db';
 import { PRODUCTS } from '@/lib/products';
+import type { ReferralUserRecord } from '@/lib/referrals';
 
 export interface AdminOrderItem {
   id: string;
@@ -112,6 +113,7 @@ interface AdminStoreState {
   packages?: Record<string, AdminPackageOverride>;
   customPackages?: any[];
   xuiConfig?: XuiPanelConfig;
+  referrals?: Record<string, ReferralUserRecord>;
 }
 
 const DATA_FILE = path.join(process.cwd(), '.fibez-admin-data.json');
@@ -364,6 +366,7 @@ function normalizeState(raw: any): AdminStoreState {
     packages: raw?.packages && typeof raw.packages === 'object' ? raw.packages : undefined,
     customPackages: Array.isArray(raw?.customPackages) ? raw.customPackages : undefined,
     xuiConfig: raw?.xuiConfig && typeof raw.xuiConfig === 'object' ? raw.xuiConfig : undefined,
+    referrals: raw?.referrals && typeof raw.referrals === 'object' ? raw.referrals : undefined,
   };
 }
 
@@ -689,6 +692,21 @@ class AdminStore {
     await this.mutate((s) => {
       s.packages = {};
       s.customPackages = [];
+    });
+  }
+
+  // ---- Referrals ------------------------------------------------------------
+
+  public async getReferrals(): Promise<Record<string, ReferralUserRecord>> {
+    const { state } = await this.read();
+    return state.referrals || {};
+  }
+
+  /** Atomic read-modify-write of the referral table (credits can never be double-spent). */
+  public async mutateReferrals<T>(fn: (db: Record<string, ReferralUserRecord>) => T): Promise<T> {
+    return this.mutate((s) => {
+      if (!s.referrals) s.referrals = {};
+      return fn(s.referrals);
     });
   }
 
