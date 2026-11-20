@@ -5,7 +5,6 @@ import DashboardClient from '@/components/DashboardClient';
 
 async function DashboardGate() {
   const currentUser = await getVerifiedSessionUser();
-  console.log('DEBUG DashboardGate currentUser:', currentUser);
 
   if (!currentUser) {
     redirect('/login?callbackUrl=/dashboard');
