@@ -151,7 +151,7 @@ function LoginContent() {
 
       setIsSuccess(true);
       setTimeout(() => {
-        router.push(callbackUrl);
+        window.location.assign(callbackUrl);
       }, 600);
     } catch (err: unknown) {
       setError(extractAuthErrorMessage(err, 'Authentication failed. Please try again.'));
@@ -502,17 +502,6 @@ function LoginContent() {
                   </button>
                 </span>
               )}
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-[#1a1b21]/70 space-y-2.5">
-              <div className="text-center">
-                <Link
-                  href="/admin"
-                  className="text-[11px] font-mono text-zinc-400 hover:text-white transition-colors"
-                >
-                  Direct Master Admin Console →
-                </Link>
-              </div>
             </div>
           </div>
         )}

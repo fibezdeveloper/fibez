@@ -88,7 +88,7 @@ function RegisterForm() {
 
       setIsSuccess(true);
       setTimeout(() => {
-        router.push(callbackUrl);
+        window.location.assign(callbackUrl);
       }, 700);
     } catch (err: unknown) {
       setError(extractAuthErrorMessage(err, 'Failed to create account. Please try again.'));

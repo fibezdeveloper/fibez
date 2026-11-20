@@ -10,6 +10,13 @@ const isNeonRemote =
 export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Already unlocked? The countdown page has nothing to show: go to the storefront.
+  if (pathname === '/lock' && isSiteLocked() && verifyUnlockToken(req.cookies.get(UNLOCK_COOKIE)?.value)) {
+    const res = NextResponse.redirect(new URL('/', req.url));
+    res.headers.set('Cache-Control', 'no-store');
+    return res;
+  }
+
   // 1. Pre-launch lock, enforced on the server before any page or API route runs.
   //    Only an HMAC-signed, expiring, HttpOnly token minted by /api/unlock passes.
   if (isSiteLocked() && !isLockExempt(pathname)) {

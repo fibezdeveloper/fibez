@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Operator Clearance & Unlock | Fibez',
+  title: 'Operator Clearance & Unlock',
   description: 'Authorized clearance authentication gateway for Fibez storefront and V2Ray telemetry network.',
   robots: {
     index: false,

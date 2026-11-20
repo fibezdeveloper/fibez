@@ -135,9 +135,12 @@ export async function POST(req: NextRequest) {
   response.cookies.set(UNLOCK_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    // Lax (not Strict): Strict drops the cookie on cross-site return trips (Google / Neon
+    // sign-in redirects, links from WhatsApp etc.) and the site would look locked again.
+    sameSite: 'lax',
     path: '/',
-    maxAge: UNLOCK_TTL_SECONDS,
+    // No maxAge: a session cookie, gone when the browser closes. The signed token also
+    // expires server-side after UNLOCK_TTL_SECONDS.
   });
   return response;
 }
@@ -148,7 +151,7 @@ export async function DELETE() {
   response.cookies.set(UNLOCK_COOKIE, '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
     maxAge: 0,
   });

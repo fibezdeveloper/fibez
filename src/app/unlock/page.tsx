@@ -104,7 +104,12 @@ export default function UnlockPage() {
         {/* Glow accent */}
         <div className="absolute -top-px left-1/2 -translate-x-1/2 w-48 h-px bg-gradient-to-r from-transparent via-[#3ad389] to-transparent" />
 
-        {isUnlocked ? (
+        {isUnlocked === null ? (
+          <div className="flex flex-col items-center text-center py-10 space-y-3">
+            <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
+            <p className="text-xs font-mono text-zinc-500">Checking clearance...</p>
+          </div>
+        ) : isUnlocked ? (
           <div className="flex flex-col items-center text-center py-4 space-y-4">
             <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-[#3ad389]">
               <Unlock className="w-7 h-7" />
@@ -113,7 +118,7 @@ export default function UnlockPage() {
             <div>
               <h2 className="text-xl font-bold text-white">Platform Unlocked</h2>
               <p className="text-xs text-zinc-400 mt-1 max-w-xs">
-                Operator clearance is currently active on this browser.
+                Operator clearance is active on this browser. It expires automatically after 4 hours or when you close the browser.
               </p>
             </div>
 
@@ -148,7 +153,7 @@ export default function UnlockPage() {
               </div>
               <div>
                 <h2 className="text-base font-semibold text-white">Storefront Unlock</h2>
-                <p className="text-xs text-zinc-400">Enter master password to access pre-release</p>
+                <p className="text-xs text-zinc-400">Operator sign-in for pre-release access</p>
               </div>
             </div>
 
@@ -235,7 +240,7 @@ export default function UnlockPage() {
 
       {/* Security notice */}
       <p className="relative z-10 text-[11px] font-mono text-zinc-600 mt-6 text-center">
-        Zero-trust clearance • IP rate-limited • Encrypted session token
+        IP rate-limited • Signed session token • Auto-expires
       </p>
     </div>
   );
