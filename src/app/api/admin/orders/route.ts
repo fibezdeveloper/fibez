@@ -148,7 +148,12 @@ export async function PATCH(req: NextRequest) {
               });
               clientUuid = client.uuid;
             } catch (xErr) {
-              console.warn('3x-ui auto-provision fallback:', xErr);
+              // Never deliver a config that does not exist on the panel: keep the order pending.
+              console.error('3x-ui provisioning failed, order left pending:', xErr);
+              return NextResponse.json(
+                { error: 'Could not create the client on the V2Ray panel. The order was NOT approved; check the panel connection and retry.' },
+                { status: 502 }
+              );
             }
           }
 

@@ -289,6 +289,13 @@ export default function AdminPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [myRole, setMyRole] = useState<'user' | 'admin' | 'owner' | null>(null);
+  useEffect(() => {
+    fetch('/api/me', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => setMyRole(d?.user?.role ?? null))
+      .catch(() => setMyRole(null));
+  }, []);
 
   // V2Ray Packages Catalog State
   const [adminPackages, setAdminPackages] = useState<any[]>([]);
@@ -374,8 +381,8 @@ export default function AdminPage() {
 
   // 3x-ui Panel Connection & Auto-Sync State
   const [isConnectXuiOpen, setIsConnectXuiOpen] = useState(false);
-  const [xuiBaseUrlInput, setXuiBaseUrlInput] = useState('https://rv2ray.fibez.store:6767');
-  const [xuiUsernameInput, setXuiUsernameInput] = useState('akain');
+  const [xuiBaseUrlInput, setXuiBaseUrlInput] = useState('');
+  const [xuiUsernameInput, setXuiUsernameInput] = useState('');
   const [xuiPasswordInput, setXuiPasswordInput] = useState('');
   const [xuiPublicHostInput, setXuiPublicHostInput] = useState('rv2ray.fibez.store');
   const [xuiAutoSyncEnabled, setXuiAutoSyncEnabled] = useState(true);
@@ -528,7 +535,7 @@ export default function AdminPage() {
         if (v2rayRes.summary) setV2raySummary(v2rayRes.summary);
         if (v2rayRes.publicHost) setV2rayPublicHost(v2rayRes.publicHost);
         if (v2rayRes.xuiConfig) {
-          setXuiBaseUrlInput(v2rayRes.xuiConfig.baseUrl || 'https://rv2ray.fibez.store:6767');
+          setXuiBaseUrlInput(v2rayRes.xuiConfig.baseUrl || '');
           setXuiUsernameInput(v2rayRes.xuiConfig.username || 'akain');
           setXuiPublicHostInput(v2rayRes.xuiConfig.publicHost || 'rv2ray.fibez.store');
           setXuiAutoSyncEnabled(v2rayRes.xuiConfig.autoSync ?? true);
@@ -1626,7 +1633,9 @@ export default function AdminPage() {
             { id: 'grant', label: 'Grant VIP', icon: Gift, badge: 'VIP', badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold', color: 'text-[#3ad389]' },
             { id: 'tickets', label: 'Support', icon: LifeBuoy, badge: null, color: 'text-cyan-400' },
             { id: 'coupons', label: 'Coupons', icon: TicketPercent, badge: null, color: 'text-rose-400' },
-          ].map((tab) => {
+          ]
+            .filter((tab) => tab.id !== 'grant' || myRole === 'owner')
+            .map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
@@ -3355,7 +3364,7 @@ export default function AdminPage() {
                         type="text"
                         value={xuiBaseUrlInput}
                         onChange={(e) => setXuiBaseUrlInput(e.target.value)}
-                        placeholder="https://rv2ray.fibez.store:6767"
+                        placeholder="https://your-panel-host:port"
                         required
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[#141418] border border-[#24242c] text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-[#3ad389] transition-colors"
                       />

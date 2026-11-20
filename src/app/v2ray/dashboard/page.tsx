@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import QRCode from 'qrcode';
+import { authClient } from '@/lib/auth-client';
 import { buildVlessUri, parseVlessUri } from '@/lib/v2ray-inbounds';
 import { AnimatedButton } from '@/components/ui/AnimatedButton';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
@@ -102,143 +103,8 @@ export interface SpeedtestReview {
   verified: boolean;
 }
 
-const INITIAL_REVIEWS: SpeedtestReview[] = [
-  {
-    id: 'rev-1',
-    clientName: 'Kavinda_SL',
-    isp: 'Dialog 4G LTE',
-    ispCategory: 'Dialog',
-    packageTitle: 'Dialog Zoom Unlimited',
-    downloadMbps: 84.2,
-    uploadMbps: 22.4,
-    pingMs: 19,
-    rating: 5,
-    comment: 'Zoom bypass works flawlessly on NetMod Syna. Solid speeds in Kandy, zero disconnects even during peak evening hours.',
-    date: 'Yesterday at 9:42 PM',
-    imageSrc: '/speedtests/speedtest-1.jpeg',
-    verified: true,
-  },
-  {
-    id: 'rev-2',
-    clientName: 'Nipuna_Tech',
-    isp: 'SLT Mobitel Fiber',
-    ispCategory: 'SLT',
-    packageTitle: 'SLT YouTube Unlimited',
-    downloadMbps: 282.5,
-    uploadMbps: 95.8,
-    pingMs: 15,
-    rating: 5,
-    comment: 'SLT YouTube unlimited bypass hitting 280+ Mbps on fiber line. Absolutely insane value and 4K 60fps loads instantly.',
-    date: 'Nov 11, 2026',
-    imageSrc: '/speedtests/speedtest-2.jpeg',
-    verified: true,
-  },
-  {
-    id: 'rev-3',
-    clientName: 'Ravindu_M',
-    isp: 'Mobitel 4G',
-    ispCategory: 'Mobitel',
-    packageTitle: 'Mobitel Gaming Profile',
-    downloadMbps: 68.4,
-    uploadMbps: 18.2,
-    pingMs: 18,
-    rating: 5,
-    comment: 'Apple iCloud SNI masquerade gives zero throttling on Mobitel. Lowest jitter I have experienced on mobile data.',
-    date: 'Nov 10, 2026',
-    imageSrc: '/speedtests/speedtest-3.jpeg',
-    verified: true,
-  },
-  {
-    id: 'rev-4',
-    clientName: 'Dhanushka_99',
-    isp: 'Dialog Broadband',
-    ispCategory: 'Dialog',
-    packageTitle: 'Dialog Zoom Unlimited',
-    downloadMbps: 92.1,
-    uploadMbps: 24.5,
-    pingMs: 21,
-    rating: 5,
-    comment: 'Configured directly on my B310 4G router using Tun mode. Whole family is streaming without hiccups.',
-    date: 'Nov 10, 2026',
-    imageSrc: '/speedtests/speedtest-4.jpeg',
-    verified: true,
-  },
-  {
-    id: 'rev-5',
-    clientName: 'Shashika_Colombo',
-    isp: 'SLT Mobitel Fiber',
-    ispCategory: 'SLT',
-    packageTitle: 'SLT Fiber Pro',
-    downloadMbps: 195.8,
-    uploadMbps: 88.0,
-    pingMs: 16,
-    rating: 5,
-    comment: 'Singapore Equinix SG3 node has zero packet drops. Netflix 4K HDR streams without any initial buffering.',
-    date: 'Nov 09, 2026',
-    imageSrc: '/speedtests/speedtest-5.jpeg',
-    verified: true,
-  },
-  {
-    id: 'rev-6',
-    clientName: 'Akeel_G',
-    isp: 'Airtel 4G',
-    ispCategory: 'Airtel',
-    packageTitle: 'Airtel Unlimited TikTok Pack',
-    downloadMbps: 54.3,
-    uploadMbps: 16.5,
-    pingMs: 23,
-    rating: 5,
-    comment: 'Airtel 297 pack converted to universal high speed. v2rayNG imports in one click and auto connects.',
-    date: 'Nov 08, 2026',
-    imageSrc: '/speedtests/speedtest-6.jpeg',
-    verified: true,
-  },
-  {
-    id: 'rev-7',
-    clientName: 'Tharindu_5G',
-    isp: 'Dialog 5G Trial',
-    ispCategory: 'Dialog',
-    packageTitle: 'Singapore VIP Direct',
-    downloadMbps: 412.0,
-    uploadMbps: 110.2,
-    pingMs: 12,
-    rating: 5,
-    comment: 'Tested near Colombo 03 5G trial node. 412 Mbps down, the 10 Gbps server uplink is genuinely fast.',
-    date: 'Nov 08, 2026',
-    imageSrc: '/speedtests/speedtest-7.jpeg',
-    verified: true,
-  },
-  {
-    id: 'rev-8',
-    clientName: 'GamingZone_LK',
-    isp: 'SLT Mobitel Fiber',
-    ispCategory: 'SLT',
-    packageTitle: 'Singapore VIP Direct',
-    downloadMbps: 240.2,
-    uploadMbps: 104.5,
-    pingMs: 14,
-    rating: 5,
-    comment: 'Valorant and CS2 ping dropped from 78ms to 14ms routing through Singapore direct. Best routing for competitive gaming.',
-    date: 'Nov 07, 2026',
-    imageSrc: '/speedtests/speedtest-8.jpeg',
-    verified: true,
-  },
-  {
-    id: 'rev-9',
-    clientName: 'Hashan_Perera',
-    isp: 'Hutch 4G',
-    ispCategory: 'Hutch',
-    packageTitle: 'Hutch Work & Learn',
-    downloadMbps: 45.6,
-    uploadMbps: 14.1,
-    pingMs: 26,
-    rating: 5,
-    comment: 'Very stable for daily work meetings and downloads. Good coverage with NetMod Syna.',
-    date: 'Nov 06, 2026',
-    imageSrc: '/speedtests/speedtest-9.jpeg',
-    verified: true,
-  },
-];
+// No seeded/fake community reviews: only real submissions are ever shown.
+const INITIAL_REVIEWS: SpeedtestReview[] = [];
 
 // All infrastructure is based on 3x-ui Singapore Equinix Tier-1 & Sri Lanka IP Gateways.
 // Dynamically built from all 24 carrier-optimized ISP packages in the Fibez Catalog:
@@ -255,7 +121,7 @@ const ALL_PACKAGES: V2RayPackage[] = LIVE_V2RAY_PACKAGES.map((pkg) => {
     port: pkg.inboundPort || 443,
     badge: pkg.badge,
     configUri: buildVlessUri({
-      uuid: 'dcf67a8b-74d7-404d-bd0d-30e88d69c6b3',
+      uuid: '00000000-0000-0000-0000-000000000000', // placeholder: catalog cards never carry a working credential
       host,
       port: pkg.inboundPort || 443,
       sni: pkg.sni,
@@ -266,56 +132,26 @@ const ALL_PACKAGES: V2RayPackage[] = LIVE_V2RAY_PACKAGES.map((pkg) => {
 
 const PACKAGES: V2RayPackage[] = ALL_PACKAGES;
 
-const INITIAL_DEVICES: ConnectedDevice[] = [
-  {
-    id: 'dev-1',
-    name: 'Windows 11 Workstation',
-    type: 'pc',
-    clientApp: 'NetMod Syna v1.9.4 (TUN Mode)',
-    ip: '112.134.88.24',
-    isp: 'Dialog Axiata 4G/5G',
-    dataUsedGB: 28.4,
-    currentDownloadMbps: 34.8,
-    currentUploadMbps: 8.2,
-    status: 'active',
-    lastSeen: 'Active now',
-  },
-  {
-    id: 'dev-2',
-    name: 'Samsung Galaxy S24 Ultra',
-    type: 'phone',
-    clientApp: 'v2rayNG v1.8.19',
-    ip: '175.157.42.10',
-    isp: 'SLT Fiber',
-    dataUsedGB: 14.6,
-    currentDownloadMbps: 20.0,
-    currentUploadMbps: 6.0,
-    status: 'active',
-    lastSeen: 'Active now',
-  },
-  {
-    id: 'dev-3',
-    name: 'iPhone 15 Pro Max',
-    type: 'phone',
-    clientApp: 'Streisand iOS',
-    ip: '192.248.33.19',
-    isp: 'Mobitel 4G',
-    dataUsedGB: 5.2,
-    currentDownloadMbps: 0.0,
-    currentUploadMbps: 0.0,
-    status: 'idle',
-    lastSeen: '18 mins ago',
-  },
-];
+// Devices come only from live telemetry; nothing is pre-filled.
+const INITIAL_DEVICES: ConnectedDevice[] = [];
+
+const EMPTY_LINE: PurchasedV2RayLine = {
+  id: 'none', orderNumber: '', packageId: '', title: 'No active line', isp: '', ispTag: '', sni: '', port: 443,
+  serverType: 'STANDARD', location: '', quotaLabel: '', quotaGB: 0, validityDays: 0, vlessUri: '', uuid: '',
+  purchasedAt: new Date(0).toISOString(), status: 'EXPIRED',
+};
 
 export default function V2RayDashboardPage() {
   useEffect(() => {
     document.title = "Fibez V2Ray Dash";
   }, []);
 
-  const [purchasedLines, setPurchasedLines] = useState<PurchasedV2RayLine[]>(DEFAULT_PURCHASED_LINES);
-  const [activeLineId, setActiveLineId] = useState<string>(DEFAULT_PURCHASED_LINES[0].id);
-  const [selectedPackageId, setSelectedPackageId] = useState<string>(DEFAULT_PURCHASED_LINES[0].packageId);
+  const [purchasedLines, setPurchasedLines] = useState<PurchasedV2RayLine[]>([]);
+  const [linesLoaded, setLinesLoaded] = useState(false);
+  const { data: session } = authClient.useSession();
+  const [profile, setProfile] = useState<{ referralCode: string; referralLink: string; creditValueLKR: number } | null>(null);
+  const [activeLineId, setActiveLineId] = useState<string>('');
+  const [selectedPackageId, setSelectedPackageId] = useState<string>('');
   const [selectedClient, setSelectedClient] = useState<'netmod' | 'v2box'>('netmod');
   const [activeTab, setActiveTab] = useState<'config' | 'usage' | 'reviews'>('config');
 
@@ -496,103 +332,50 @@ export default function V2RayDashboardPage() {
     fetchTelemetryForClient();
   };
 
-  // Check URL query parameters and localStorage on mount
+  // Load THIS account's lines from the server (never from localStorage / demo data)
   useEffect(() => {
     setMountedTime(Date.now());
-    if (typeof window !== 'undefined') {
-      const savedLines = loadPurchasedLines();
-      setPurchasedLines(savedLines);
-
-      const params = new URLSearchParams(window.location.search);
-      const vlessParam = params.get('vless');
-      const uuidParam = params.get('uuid');
-      const pkgParam = params.get('pkg');
-      const orderParam = params.get('order');
-      const lineIdParam = params.get('lineId');
-
-      let targetLine = savedLines[0];
-
-      if (lineIdParam) {
-        const found = savedLines.find((l) => l.id === lineIdParam);
-        if (found) targetLine = found;
-      } else if (orderParam) {
-        const found = savedLines.find((l) => l.orderNumber?.toUpperCase() === orderParam.toUpperCase());
-        if (found) {
-          targetLine = found;
-        } else {
-          // Attempt to fetch fresh lines from server
-          fetch(`/api/v2ray/lines?order=${encodeURIComponent(orderParam)}`)
-            .then((r) => r.json())
-            .then((data) => {
-              if (data.success && Array.isArray(data.lines) && data.lines.length > 0) {
-                recordPurchasedLines(data.lines);
-                const updated = loadPurchasedLines();
-                setPurchasedLines(updated);
-                setActiveLineId(data.lines[0].id);
-                setSelectedPackageId(data.lines[0].packageId);
-              }
-            })
-            .catch(() => {});
-        }
-      } else if (pkgParam) {
-        const clean = pkgParam.replace(/^v2ray-/, '');
-        const found = savedLines.find(
-          (l) => l.packageId === clean || l.packageId === pkgParam || clean.includes(l.packageId)
-        );
-        if (found) {
-          targetLine = found;
-        } else {
-          const catalogPkg = findCatalogPackage(pkgParam);
-          if (catalogPkg) {
-            const newLine = createPurchasedLineFromCartItem({
-              orderNumber: `FBZ-${Math.floor(10000 + Math.random() * 90000)}`,
-              productId: catalogPkg.id,
-              title: catalogPkg.title,
-              variantTitle: '100 GB (30 Days)',
-              selectedIsp: catalogPkg.isp,
-            });
-            recordPurchasedLines([newLine]);
-            const updated = loadPurchasedLines();
-            setPurchasedLines(updated);
-            targetLine = newLine;
-          }
-        }
-      } else {
-        const savedActiveId = localStorage.getItem(V2RAY_ACTIVE_LINE_STORAGE_KEY);
-        if (savedActiveId && savedLines.some((l) => l.id === savedActiveId)) {
-          const found = savedLines.find((l) => l.id === savedActiveId);
-          if (found) targetLine = found;
-        }
-      }
-
-      if (targetLine) {
-        setActiveLineId(targetLine.id);
-        setSelectedPackageId(targetLine.packageId);
-      }
-
-      if (vlessParam) {
-        applyVlessCredential(vlessParam);
-      } else if (uuidParam) {
-        setCustomClientUuid(uuidParam);
-        fetchTelemetryForClient(uuidParam);
-      } else {
-        const saved = localStorage.getItem('fibez_active_vless');
-        if (saved) {
-          applyVlessCredential(saved);
-        } else if (targetLine?.uuid) {
-          fetchTelemetryForClient(targetLine.uuid);
-        } else {
-          fetchTelemetryForClient();
-        }
-      }
-
-      const tabParam = params.get('tab');
-      if (tabParam === 'reviews' || tabParam === 'usage' || tabParam === 'config') {
-        setActiveTab(tabParam as 'config' | 'usage' | 'reviews');
-      }
+    const params = new URLSearchParams(window.location.search);
+    const lineIdParam = params.get('lineId');
+    const orderParam = params.get('order');
+    const tabParam = params.get('tab');
+    if (tabParam === 'reviews' || tabParam === 'usage' || tabParam === 'config') {
+      setActiveTab(tabParam as 'config' | 'usage' | 'reviews');
     }
-  }, []);
 
+    fetch('/api/v2ray/lines', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((data) => {
+        const lines: PurchasedV2RayLine[] = data?.success && Array.isArray(data.lines) ? data.lines : [];
+        setPurchasedLines(lines);
+        let target: PurchasedV2RayLine | undefined = lines[0];
+        if (lineIdParam) target = lines.find((l) => l.id === lineIdParam) || target;
+        else if (orderParam) {
+          target = lines.find((l) => l.orderNumber?.toUpperCase() === orderParam.toUpperCase()) || target;
+        }
+        if (target) {
+          setActiveLineId(target.id);
+          setSelectedPackageId(target.packageId);
+          setCustomClientUuid(target.uuid);
+          fetchTelemetryForClient(target.uuid);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLinesLoaded(true));
+
+    fetch('/api/referrals', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.success && d.profile) {
+          setProfile({
+            referralCode: d.profile.referralCode,
+            referralLink: d.profile.referralLink,
+            creditValueLKR: Number(d.profile.creditValueLKR) || 0,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
   // Handler to switch between user's purchased lines
   const handleSelectLine = (lineId: string) => {
     setActiveLineId(lineId);
@@ -611,12 +394,12 @@ export default function V2RayDashboardPage() {
   // Active purchased line object with all metadata
   const activePurchasedLine: PurchasedV2RayLine = useMemo(() => {
     const found = purchasedLines.find((l) => l.id === activeLineId);
-    return found || purchasedLines[0] || DEFAULT_PURCHASED_LINES[0];
+    return found || purchasedLines[0] || EMPTY_LINE;
   }, [purchasedLines, activeLineId]);
 
   // Active selected package dynamically customized with real client credentials
   const selectedPackage = useMemo(() => {
-    const activeUuid = customClientUuid || activePurchasedLine.uuid || 'dcf67a8b-74d7-404d-bd0d-30e88d69c6b3';
+    const activeUuid = customClientUuid || activePurchasedLine.uuid || '';
     const isLkIp = activePurchasedLine.serverType === 'LK_IP';
     const effectiveHost = isLkIp ? 'lk-rv2ray.fibez.store' : (liveServerHost || 'rv2ray.fibez.store');
 
@@ -704,15 +487,14 @@ export default function V2RayDashboardPage() {
 
   // Dynamic subscription URL tailored to the user's purchased package
   // Dynamic subscription URL tailored to the user's purchased package and connected credentials
-  const subToken = 'fbz_sub_live_a89f24c98e';
   const subBaseUrl = useMemo(() => {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://fibez.store';
-    const uuidQuery = customClientUuid ? `&uuid=${encodeURIComponent(customClientUuid)}` : '';
-    return `${origin}/api/v2ray/sub?token=${subToken}&pkg=${selectedPackage.id}${uuidQuery}`;
-  }, [selectedPackage.id, customClientUuid]);
-
+    const lineUuid = customClientUuid || activePurchasedLine.uuid;
+    if (!lineUuid) return '';
+    return `${origin}/api/v2ray/sub?pkg=${encodeURIComponent(selectedPackage.id)}&uuid=${encodeURIComponent(lineUuid)}`;
+  }, [selectedPackage.id, customClientUuid, activePurchasedLine.uuid]);
   const subscriptionLink = useMemo(() => {
-    return `${subBaseUrl}&client=${selectedClient}&format=base64`;
+    return subBaseUrl ? `${subBaseUrl}&client=${selectedClient}&format=base64` : '';
   }, [selectedClient, subBaseUrl]);
 
   // Copy helper
@@ -897,6 +679,39 @@ export default function V2RayDashboardPage() {
     return reviews.filter((r) => r.ispCategory === reviewIspFilter);
   }, [reviews, reviewIspFilter]);
 
+  const displayName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Account';
+  const referralUrl = profile
+    ? `${typeof window !== 'undefined' ? window.location.origin : 'https://fibez.store'}/register?ref=${profile.referralCode}`
+    : '';
+
+  if (!linesLoaded) {
+    return (
+      <div className="min-h-screen bg-black text-zinc-400 pt-32 text-center font-mono text-xs">
+        Loading your lines...
+      </div>
+    );
+  }
+
+  if (purchasedLines.length === 0) {
+    return (
+      <div className="min-h-screen bg-black text-[#ededed] pt-32 pb-24 px-4">
+        <div className="max-w-xl mx-auto text-center p-8 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23]">
+          <h1 className="text-xl font-bold text-white">No V2Ray lines on {session?.user?.email || 'this account'} yet</h1>
+          <p className="text-sm text-zinc-400 mt-2">
+            Lines appear here after an order is approved, or when you claim a free trial.
+          </p>
+          <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/v2ray" className="px-5 py-2.5 rounded-xl bg-white text-black text-xs font-mono font-semibold">
+              Browse V2Ray plans
+            </Link>
+            <Link href="/dashboard" className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-mono">
+              Account dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-[#000000] text-[#ededed] pt-24 pb-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -1007,18 +822,18 @@ export default function V2RayDashboardPage() {
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="px-2.5 py-0.5 rounded-full bg-[#3ad389]/10 border border-[#3ad389]/20 text-[11px] font-mono font-semibold text-[#3ad389]">
-                    Member #1041
+                    Fibez Account
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-[#16161b] border border-[#252530] text-[10px] font-mono text-zinc-400">
-                    UID: 77602
+                    ID: {String(session?.user?.id || '').slice(0, 8)}
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400">
                     Verified Customer
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <h2 className="text-xl font-bold text-white tracking-tight">damnon</h2>
-                  <span className="text-xs font-mono text-zinc-500">/ bro</span>
+                  <h2 className="text-xl font-bold text-white tracking-tight">{displayName}</h2>
+                  <span className="text-xs font-mono text-zinc-500">/ {session?.user?.email}</span>
                 </div>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   Pre-funded billing account &middot; Commercial Bank Direct Settlement
@@ -1034,9 +849,9 @@ export default function V2RayDashboardPage() {
                   <Wallet className="w-5 h-5 text-[#3ad389]" />
                 </div>
                 <div>
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Wallet Balance</div>
+                  <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Store Credit</div>
                   <div className="text-xl font-bold font-mono text-white mt-0.5 flex items-baseline gap-1.5">
-                    <span>Rs 0.00</span>
+                    <span>Rs {(profile?.creditValueLKR ?? 0).toFixed(2)}</span>
                     <span className="text-[11px] font-normal text-zinc-400">LKR</span>
                   </div>
                 </div>
@@ -1081,11 +896,11 @@ export default function V2RayDashboardPage() {
 
             <div className="flex items-center gap-2">
               <div className="px-3 py-1.5 rounded-lg bg-[#070709] border border-[#202028] font-mono text-[11px] text-zinc-300 select-all truncate max-w-[280px] sm:max-w-none">
-                https://fibez.store/register?ref=7SEOBCQL
+                {referralUrl || 'Loading your referral link...'}
               </div>
               <button
                 type="button"
-                onClick={() => copyToClipboard('https://fibez.store/register?ref=7SEOBCQL', 'referral-link')}
+                onClick={() => referralUrl && copyToClipboard(referralUrl, 'referral-link')}
                 className="px-3 py-1.5 rounded-lg bg-[#18181f] hover:bg-[#23232c] border border-[#282833] text-zinc-200 hover:text-white font-mono text-[11px] flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
               >
                 {copiedKey === 'referral-link' ? (

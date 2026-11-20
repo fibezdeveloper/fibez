@@ -36,7 +36,7 @@ function LabelInputContainer({
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/vault';
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');

@@ -150,7 +150,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Failed to retrieve telemetry',
+        error: 'Failed to retrieve telemetry', // never echo panel/internal error text to clients
       },
       { status: 500 }
     );

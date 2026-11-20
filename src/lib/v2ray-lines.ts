@@ -1,5 +1,5 @@
 import { LIVE_V2RAY_PACKAGES, V2RayPackageDef, normalizeIsp } from '@/lib/v2ray-catalog';
-import { buildVlessUri } from '@/lib/v2ray-inbounds';
+import { buildVlessUri, parseVlessUri } from '@/lib/v2ray-inbounds';
 
 export interface PurchasedV2RayLine {
   id: string;
@@ -23,48 +23,8 @@ export interface PurchasedV2RayLine {
   notes?: string;
 }
 
-export const DEFAULT_PURCHASED_LINES: PurchasedV2RayLine[] = [
-  {
-    id: 'line-dialog-zoom-demo',
-    orderNumber: 'FBZ-89241',
-    packageId: 'dialog-zoom-router',
-    title: 'Dialog Zoom & Router Unlimited',
-    isp: 'Dialog Axiata 4G/5G',
-    ispTag: 'Dialog',
-    sni: 'zoom.us',
-    port: 443,
-    inboundId: 3,
-    serverType: 'STANDARD',
-    location: 'Singapore Equinix SG3',
-    quotaLabel: 'Unlimited (30d)',
-    quotaGB: 100,
-    validityDays: 28,
-    uuid: 'dcf67a8b-74d7-404d-bd0d-30e88d69c6b3',
-    vlessUri: 'vless://dcf67a8b-74d7-404d-bd0d-30e88d69c6b3@rv2ray.fibez.store:443?type=tcp&security=tls&sni=zoom.us&fp=chrome#Dialog%20Zoom%20%26%20Router%20Unlimited',
-    purchasedAt: new Date(1732060800000 - 2 * 24 * 3600 * 1000).toISOString(),
-    status: 'ACTIVE',
-  },
-  {
-    id: 'line-slt-netflix-demo',
-    orderNumber: 'FBZ-74192',
-    packageId: 'slt-netflix',
-    title: 'SLT Fiber Netflix & Streaming Unlimited',
-    isp: 'SLT Mobitel Fiber',
-    ispTag: 'SLT Fiber',
-    sni: 'netflix.com',
-    port: 444,
-    inboundId: 2,
-    serverType: 'STANDARD',
-    location: 'Singapore Equinix SG3',
-    quotaLabel: '200 GB (30d)',
-    quotaGB: 200,
-    validityDays: 30,
-    uuid: 'a89f24c9-8e2b-47e1-8890-41fa940e719b',
-    vlessUri: 'vless://a89f24c9-8e2b-47e1-8890-41fa940e719b@rv2ray.fibez.store:444?type=tcp&security=tls&sni=netflix.com&fp=chrome#SLT%20Fiber%20Netflix%20Unlimited',
-    purchasedAt: new Date(1732060800000 - 1 * 24 * 3600 * 1000).toISOString(),
-    status: 'ACTIVE',
-  },
-];
+// No demo lines: a line only exists if it was really delivered to the signed-in account.
+export const DEFAULT_PURCHASED_LINES: PurchasedV2RayLine[] = [];
 
 export const V2RAY_LINES_STORAGE_KEY = 'fibez_v2ray_lines';
 export const V2RAY_ACTIVE_LINE_STORAGE_KEY = 'fibez_active_line_id';
@@ -117,7 +77,9 @@ export function createPurchasedLineFromCartItem(params: {
   const { orderNumber, productId, title, variantTitle, selectedIsp, customUuid, dispensedKey } = params;
   const catalogPkg = findCatalogPackage(productId, title);
 
-  const uuid = customUuid || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'dcf67a8b-74d7-404d-bd0d-30e88d69c6b3');
+  // The uuid must match the delivered config, otherwise telemetry/ownership checks would fail.
+  const deliveredUuid = dispensedKey && dispensedKey.startsWith('vless://') ? parseVlessUri(dispensedKey)?.uuid : undefined;
+  const uuid = customUuid || deliveredUuid || crypto.randomUUID();
   const safeIsp = catalogPkg ? normalizeIsp(catalogPkg.isp) : normalizeIsp(selectedIsp || 'Dialog');
   const isLkIp = Boolean(
     catalogPkg?.serverType === 'LK_IP' ||

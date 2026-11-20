@@ -8,7 +8,7 @@ import { sql as adminSql } from '@/lib/db';
 import { adminStore } from '@/lib/admin-store';
 
 export async function POST(req: NextRequest) {
-  const guard = await requireRole(['admin', 'owner']);
+  const guard = await requireRole(['owner']); // free grants are owner-only
   if ('response' in guard) return guard.response;
 
   try {
@@ -79,8 +79,12 @@ export async function POST(req: NextRequest) {
         });
         clientUuid = liveClient.uuid;
       } catch (xuiErr) {
-        console.warn('3x-ui automated provisioning fallback:', xuiErr);
-        clientUuid = generatedUuid;
+        // Never hand out a config that does not exist on the panel.
+        console.error('3x-ui provisioning failed, grant aborted:', xuiErr);
+        return NextResponse.json(
+          { success: false, error: 'Could not create the client on the V2Ray panel. Nothing was granted; check the panel connection and retry.' },
+          { status: 502 }
+        );
       }
 
       dispensedPayload = buildVlessUri({

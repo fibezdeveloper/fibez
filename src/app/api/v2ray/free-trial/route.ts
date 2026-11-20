@@ -125,7 +125,12 @@ export async function POST(req: NextRequest) {
         trialUuid = liveClient.uuid;
       }
     } catch (xuiErr) {
-      console.warn('3x-ui free trial client registration warning:', xuiErr);
+      // Never hand out a trial config that does not exist on the panel.
+      console.error('3x-ui free trial provisioning failed:', xuiErr);
+      return NextResponse.json(
+        { success: false, error: 'The trial server is busy right now. Please try again in a few minutes.' },
+        { status: 502 }
+      );
     }
 
     // Build personalized VLESS config URI
@@ -268,7 +273,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Trial generation error:', error);
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to generate trial configuration' },
+      { success: false, error: 'Failed to generate trial configuration' },
       { status: 500 }
     );
   }

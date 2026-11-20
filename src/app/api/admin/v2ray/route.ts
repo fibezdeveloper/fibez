@@ -262,6 +262,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'delete_client') {
+      if (guard.user.role !== 'owner') {
+        return NextResponse.json({ error: 'Only the owner can delete panel clients' }, { status: 403 });
+      }
       const email = typeof body.email === 'string' ? body.email.trim() : '';
       if (!email) {
         return NextResponse.json({ error: 'Client email is required' }, { status: 400 });

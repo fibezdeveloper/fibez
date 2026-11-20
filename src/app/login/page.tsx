@@ -45,7 +45,7 @@ function LoginContent() {
   const rawMode = searchParams.get('mode');
   const initialMode: AuthMode =
     rawMode === 'register' ? 'register' : rawMode === 'forgot' ? 'forgot' : 'login';
-  const callbackUrl = searchParams.get('callbackUrl') || '/vault';
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
   const { data: session } = authClient.useSession();
 

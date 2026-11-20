@@ -21,14 +21,20 @@ import {
 import { AnimatedButton } from '@/components/ui/AnimatedButton';
 import { ShareSheet } from '@/components/ui/ShareSheet';
 import TechText from '@/components/TechText';
+import { authClient } from '@/lib/auth-client';
 
 export default function BillingPage() {
-  const [walletBalance, setWalletBalance] = useState<number>(0);
-  const [memberId] = useState('#1041');
-  const [userId] = useState('77602');
-  const [username] = useState('damnon');
-  const [displayName] = useState('bro');
-  const [referralCode] = useState('7SEOBCQL');
+  // Real identity + balance (from the signed-in account), never hardcoded
+  const { data: session } = authClient.useSession();
+  const [profile, setProfile] = useState<{ referralCode: string; creditValueLKR: number } | null>(null);
+  const userEmail = session?.user?.email || '';
+  const username = session?.user?.name || userEmail.split('@')[0] || 'Account';
+  const displayName = userEmail;
+  const sessionId = String(session?.user?.id || '');
+  const memberId = sessionId ? `#${sessionId.slice(0, 6).toUpperCase()}` : '';
+  const userId = sessionId.slice(0, 8);
+  const referralCode = profile?.referralCode ?? '';
+  const walletBalance = profile?.creditValueLKR ?? 0;
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedAcc, setCopiedAcc] = useState(false);
 
@@ -42,14 +48,18 @@ export default function BillingPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('fibez_wallet_balance');
-      if (saved) {
-        setWalletBalance(parseFloat(saved) || 0);
-      }
-    }
+    fetch('/api/referrals', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.success && d.profile) {
+          setProfile({
+            referralCode: d.profile.referralCode,
+            creditValueLKR: Number(d.profile.creditValueLKR) || 0,
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
-
   const handleCopyReferral = () => {
     navigator.clipboard.writeText(`https://fibez.store/register?ref=${referralCode}`);
     setCopiedCode(true);
@@ -85,36 +95,34 @@ export default function BillingPage() {
     setErrorMessage(null);
 
     try {
-      let receiptImageUrl = slipPreview || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=1200&q=80';
+      // 1) upload the slip (if any) to our storage, 2) open a billing ticket for staff to verify it.
+      let slipUrl = '';
+      if (slipFile) {
+        const fd = new FormData();
+        fd.append('file', slipFile);
+        fd.append('folder', 'slips');
+        const up = await fetch('/api/upload', { method: 'POST', body: fd });
+        const upData = await up.json().catch(() => ({}));
+        if (!up.ok || !upData.url) throw new Error(upData.error || 'Slip upload failed');
+        slipUrl = upData.url;
+      }
 
-      // Submit wallet deposit request through checkout API
-      const res = await fetch('/api/checkout', {
+      const res = await fetch('/api/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: [
-            {
-              id: 'wallet-topup',
-              title: `Wallet Top-Up — Member ${memberId}`,
-              unitPriceLKR: depositAmount,
-              quantity: 1,
-            },
-          ],
-          customerEmail: `${username}@fibez.store`,
-          customerName: `${username} (${displayName})`,
-          customerWhatsapp: '+94 77 123 4567',
-          paymentMethod: 'bank_transfer',
-          bankName: 'Commercial Bank of Ceylon',
-          receiptImageUrl,
-          referralCode,
+          subject: `Wallet top-up request: Rs. ${depositAmount}`,
+          category: 'Billing',
+          priority: 'MEDIUM',
+          message: `Top-up amount: Rs. ${depositAmount}\nBank reference: ${txnReference.trim()}\nSlip: ${slipUrl || 'not attached'}`,
         }),
       });
 
-      const data = await res.json();
-      if (data.success) {
-        setSuccessOrder(data.orderNumber || 'FBZ-WLT-9921');
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setSuccessOrder(data.ticket?.ticket_number || 'submitted');
       } else {
-        throw new Error(data.error || 'Failed to submit deposit slip');
+        throw new Error(data.error || 'Failed to submit deposit request');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Deposit submission failed');
@@ -122,7 +130,6 @@ export default function BillingPage() {
       setIsSubmitting(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-[#070709] text-white pt-24 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto space-y-6">

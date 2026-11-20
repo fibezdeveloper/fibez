@@ -173,6 +173,11 @@ export async function DELETE(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { id, action } = body;
 
+    // Bulk wipe / reset actions are owner-only (admins can still delete single items).
+    if ((action === 'clear_all' || action === 'reset_seed' || action === 'clear_dispensed') && guard.user.role !== 'owner') {
+      return NextResponse.json({ error: 'Only the owner can run bulk inventory actions' }, { status: 403 });
+    }
+
     // Reset whole inventory to empty state
     if (action === 'clear_all') {
       await adminStore.clearAllInventory();

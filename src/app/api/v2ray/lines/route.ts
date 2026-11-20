@@ -41,7 +41,9 @@ export async function GET(req: NextRequest) {
           item.productTitle.toLowerCase().includes('vless') ||
           Boolean(item.dispensedKey && item.dispensedKey.startsWith('vless://'));
 
-        if (isVpn) {
+        // Only configs that were actually delivered (paid + approved). Pending orders have no line.
+        const delivered = Boolean(item.dispensedKey && item.dispensedKey.startsWith('vless://'));
+        if (isVpn && delivered) {
           const line = createPurchasedLineFromCartItem({
             orderNumber: ord.orderNumber,
             productId: item.productId,
@@ -61,6 +63,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching V2Ray lines:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to load lines' }, { status: 500 });
   }
 }
