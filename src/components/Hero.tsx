@@ -42,9 +42,8 @@ export default function Hero({
           intro
           lightMode={false}
         />
-        {/* Directional vignettes: preserves 100% text contrast on left while letting interactive ASCII shine across center & right */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-black via-black/80 lg:via-black/65 to-transparent" />
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black via-transparent to-black" />
+        {/* Deep vignette at the top so top bar is pure clean dark with no weird gradient bleed */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black via-black/30 to-black" />
       </div>
 
       {/* Hero Foreground Content */}

@@ -2,16 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import FibezLogo from '@/components/FibezLogo';
 import { BackgroundBeams } from '@/components/ui/background-beams';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { ShieldCheck, Lock, Unlock, Eye, EyeOff, Loader2, CheckCircle2, AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Lock, Unlock, Eye, EyeOff, Loader2, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 
 export default function UnlockPage() {
-  const router = useRouter();
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,22 +18,28 @@ export default function UnlockPage() {
 
   // Check current status on load
   useEffect(() => {
-    // Check cookie or API status
+    const hasCookie = typeof document !== 'undefined' && document.cookie.includes('fibez_unlocked=true');
+    const hasStorage = typeof localStorage !== 'undefined' && localStorage.getItem('fibez_unlocked') === 'true';
+
+    if (hasCookie || hasStorage) {
+      setIsUnlocked(true);
+      return;
+    }
+
     fetch('/api/unlock')
       .then((res) => res.json())
       .then((data) => {
         setIsUnlocked(Boolean(data.unlocked));
       })
       .catch(() => {
-        const hasCookie = typeof document !== 'undefined' && document.cookie.includes('fibez_unlocked=true');
-        setIsUnlocked(hasCookie);
+        setIsUnlocked(false);
       });
   }, []);
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) {
-      setError('Please provide both operator username and master key.');
+    if (!password.trim()) {
+      setError('Please enter the master unlock password.');
       return;
     }
 
@@ -48,34 +51,34 @@ export default function UnlockPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: username.trim(),
           password: password.trim(),
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data.success) {
-        setError(data.error || 'Invalid operator credentials. Access denied.');
+        setError(data.error || 'Invalid master password. Access denied.');
         setIsLoading(false);
         return;
       }
 
-      // Also set client cookie and localStorage fallback
-      document.cookie = 'fibez_unlocked=true; path=/; max-age=2592000; SameSite=Lax';
+      // Set cookie and localStorage for 1 year
+      document.cookie = 'fibez_unlocked=true; path=/; max-age=31536000; SameSite=Lax';
       try {
         localStorage.setItem('fibez_unlocked', 'true');
+        window.dispatchEvent(new Event('fibez_unlocked'));
       } catch {}
 
       setIsSuccess(true);
       setIsUnlocked(true);
 
+      // Perform direct page navigation so all layouts and cookies reload fresh
       setTimeout(() => {
-        router.push('/');
-        router.refresh();
-      }, 800);
+        window.location.href = '/';
+      }, 500);
     } catch (err: any) {
-      setError(err?.message || 'Failed to authenticate clearance. Try again.');
+      setError(err?.message || 'Authentication error. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +94,7 @@ export default function UnlockPage() {
       } catch {}
       setIsUnlocked(false);
       setIsSuccess(false);
-      router.refresh();
+      window.location.href = '/';
     } catch (err) {
       console.error(err);
     } finally {
@@ -126,18 +129,21 @@ export default function UnlockPage() {
             <div>
               <h2 className="text-xl font-bold text-white">Platform Unlocked</h2>
               <p className="text-xs text-zinc-400 mt-1 max-w-xs">
-                You have active operator clearance. You can browse all store pages, test orders, and configure V2Ray nodes.
+                Operator clearance is currently active on this browser.
               </p>
             </div>
 
             <div className="w-full flex flex-col gap-2.5 pt-4">
-              <Link
-                href="/"
-                className="w-full py-3 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs font-mono flex items-center justify-center gap-2 transition-all shadow-lg"
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = '/';
+                }}
+                className="w-full py-3 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs font-mono flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer"
               >
                 <span>Enter Storefront</span>
                 <ArrowRight className="w-4 h-4" />
-              </Link>
+              </button>
 
               <button
                 type="button"
@@ -157,8 +163,8 @@ export default function UnlockPage() {
                 <Lock className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-white">Authorized Access</h2>
-                <p className="text-xs text-zinc-400">Pre-release authorization verification</p>
+                <h2 className="text-base font-semibold text-white">Storefront Unlock</h2>
+                <p className="text-xs text-zinc-400">Enter master password to access pre-release</p>
               </div>
             </div>
 
@@ -172,41 +178,28 @@ export default function UnlockPage() {
             {isSuccess && (
               <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span>Clearance verified. Redirecting to Fibez...</span>
+                <span>Password verified! Unlocking Fibez...</span>
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <Label htmlFor="unlock-username">Operator Username</Label>
-              <Input
-                id="unlock-username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Nuthara"
-                autoComplete="username"
-                autoFocus
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="unlock-password">Master Key</Label>
+            <div className="space-y-2">
+              <Label htmlFor="unlock-password">Master Password</Label>
               <div className="relative">
                 <Input
                   id="unlock-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Master unlock key"
+                  placeholder="Enter master password..."
                   autoComplete="current-password"
+                  autoFocus
                   disabled={isLoading}
                   className="pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -221,12 +214,12 @@ export default function UnlockPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Verifying Clearance...</span>
+                  <span>Verifying Password...</span>
                 </>
               ) : (
                 <>
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Authenticate &amp; Unlock</span>
+                  <span>Unlock Website</span>
                 </>
               )}
             </button>
@@ -236,7 +229,7 @@ export default function UnlockPage() {
                 href="/"
                 className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors font-mono"
               >
-                &larr; Back to Public Countdown Screen
+                &larr; Back to Countdown Screen
               </Link>
             </div>
           </form>

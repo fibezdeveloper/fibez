@@ -152,9 +152,6 @@ export default function V2RayPackageCard({
       {/* Proximity Glowing Border Effect */}
       <GlowingEffect color="emerald" proximity={55} />
 
-      {/* Meteors Animation for active and featured cards */}
-      <Meteors number={pkg.badge ? 8 : 4} />
-
       {/* Top Banner Ribbon for Popular / Bestsellers */}
       {pkg.badge && (
         <div className="absolute top-3 right-3 z-20">

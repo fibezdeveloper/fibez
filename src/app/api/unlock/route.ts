@@ -70,16 +70,17 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const username = (body.username || '').toString().trim();
     const password = (body.password || '').toString().trim();
+    const username = (body.username || '').toString().trim();
 
-    const isUserValid = username.toLowerCase() === UNLOCK_USERNAME.toLowerCase();
+    // Valid if password matches R1MT2N6E8FB (and if username is provided, accept Nuthara or ignore)
     const isPassValid = password === UNLOCK_PASSWORD;
+    const isUserValid = !username || username.toLowerCase() === UNLOCK_USERNAME.toLowerCase();
 
-    if (!isUserValid || !isPassValid) {
+    if (!isPassValid || !isUserValid) {
       recordFailedAttempt(ip);
       return NextResponse.json(
-        { error: 'Invalid operator credentials. Access denied.' },
+        { error: 'Invalid master unlock key. Access denied.' },
         { status: 401 }
       );
     }

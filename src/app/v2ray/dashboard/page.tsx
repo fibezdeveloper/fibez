@@ -918,9 +918,9 @@ export default function V2RayDashboardPage() {
             text="Welcome to "
             words={[
               "Fibez V2Ray",
-              "Airflight High-Speed",
+              "Abroad",
               "Singapore Tier-1 Node",
-              "Zero-Trust Cloud"
+              "Airflight"
             ]}
           />
         </div>

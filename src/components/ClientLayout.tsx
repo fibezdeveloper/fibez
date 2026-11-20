@@ -19,36 +19,47 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   // Check if site is unlocked
   const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
-    // If launch date has arrived, it's public for everyone
+    if (typeof window === 'undefined') return false;
     if (Date.now() >= LAUNCH_DATE) return true;
-    if (typeof document !== 'undefined') {
-      return document.cookie.includes('fibez_unlocked=true');
-    }
-    return false;
+    const hasCookie = document.cookie.includes('fibez_unlocked=true');
+    let hasStorage = false;
+    try {
+      hasStorage = localStorage.getItem('fibez_unlocked') === 'true';
+    } catch {}
+    return hasCookie || hasStorage;
   });
 
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    if (Date.now() >= LAUNCH_DATE) {
-      setIsUnlocked(true);
-      return;
-    }
-
-    const hasCookie = document.cookie.includes('fibez_unlocked=true');
-    let hasStorage = false;
-    try {
-      hasStorage = localStorage.getItem('fibez_unlocked') === 'true';
-    } catch {}
-
-    if (hasCookie || hasStorage) {
-      setIsUnlocked(true);
-      if (!hasCookie && hasStorage) {
-        document.cookie = 'fibez_unlocked=true; path=/; max-age=2592000; SameSite=Lax';
+    const syncStatus = () => {
+      if (Date.now() >= LAUNCH_DATE) {
+        setIsUnlocked(true);
+        return;
       }
-    }
-  }, []);
+      const hasCookie = typeof document !== 'undefined' && document.cookie.includes('fibez_unlocked=true');
+      let hasStorage = false;
+      try {
+        hasStorage = typeof localStorage !== 'undefined' && localStorage.getItem('fibez_unlocked') === 'true';
+      } catch {}
+
+      if (hasCookie || hasStorage) {
+        setIsUnlocked(true);
+        if (!hasCookie && hasStorage) {
+          document.cookie = 'fibez_unlocked=true; path=/; max-age=31536000; SameSite=Lax';
+        }
+      }
+    };
+
+    syncStatus();
+    window.addEventListener('storage', syncStatus);
+    window.addEventListener('fibez_unlocked', syncStatus);
+    return () => {
+      window.removeEventListener('storage', syncStatus);
+      window.removeEventListener('fibez_unlocked', syncStatus);
+    };
+  }, [pathname]);
 
   // 1. Allow the /unlock terminal route to render freely
   if (isUnlockRoute) {

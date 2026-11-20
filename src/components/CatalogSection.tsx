@@ -202,7 +202,6 @@ export default function CatalogSection({
                   className="resend-card relative p-5 flex flex-col justify-between group hover:border-[#464a4d] transition-colors rounded-[20px] overflow-hidden"
                 >
                   <GlowingEffect color="emerald" proximity={50} />
-                  <Meteors number={5} />
                   <div>
                     {/* Digital Product Brand Pass / Official Logo Header */}
                     <DigitalProductThumbnail product={product} />
