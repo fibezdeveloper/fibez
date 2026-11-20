@@ -3,8 +3,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import ProductModal from '@/components/ProductModal';
+import DigitalProductThumbnail from '@/components/DigitalProductThumbnail';
 import { ProductItem, PRODUCTS } from '@/lib/products';
 import { Search, ArrowRight } from 'lucide-react';
+import { Meteors } from '@/components/ui/meteors';
+import { GlowingEffect } from '@/components/ui/glowing-effect';
 
 const FEATURED_IDS = [
   'steam-wallet-code-global',
@@ -48,23 +51,26 @@ export default function CatalogSection({
       .then((res) => res.json())
       .then((data) => {
         if (data.products && data.products.length > 0) {
-          const mapped: ProductItem[] = data.products.map((p: any) => ({
-            id: p.id,
-            category: p.category_id,
-            brand: p.brand || undefined,
-            region: p.region || undefined,
-            title: p.title,
-            description: p.description,
-            priceUSD: Number(p.price_usd),
-            priceLKR: Number(p.price_lkr),
-            stockCount: Number(p.stock_count),
-            badge: p.badge || undefined,
-            isInstant: p.is_instant,
-            durations: p.durations || [],
-            options: p.options || [],
-            guideMarkdown: p.guide_markdown || '',
-            warranty: p.warranty_terms || '',
-          }));
+          const mapped: ProductItem[] = data.products.map((p: any) => {
+            const baseProd = PRODUCTS.find((x) => x.id === p.id);
+            return {
+              id: p.id,
+              category: p.category || p.category_id || baseProd?.category || 'software',
+              brand: p.brand || baseProd?.brand || undefined,
+              region: p.region || baseProd?.region || undefined,
+              title: p.title || baseProd?.title || '',
+              description: p.description || baseProd?.description || '',
+              priceUSD: Number(p.priceUSD ?? p.price_usd ?? baseProd?.priceUSD ?? 0),
+              priceLKR: Number(p.priceLKR ?? p.price_lkr ?? baseProd?.priceLKR ?? 0),
+              stockCount: Number(p.stockCount ?? p.stock_count ?? baseProd?.stockCount ?? 10),
+              badge: p.badge || baseProd?.badge || undefined,
+              isInstant: p.isInstant ?? p.is_instant ?? baseProd?.isInstant ?? true,
+              durations: p.durations || baseProd?.durations || [],
+              options: p.options || baseProd?.options || [],
+              guideMarkdown: p.guideMarkdown ?? p.guide_markdown ?? baseProd?.guideMarkdown ?? '',
+              warranty: p.warranty ?? p.warranty_terms ?? baseProd?.warranty ?? '',
+            };
+          });
           setProductList(mapped.filter((p) => p.category !== 'vpn'));
         }
       })
@@ -178,69 +184,87 @@ export default function CatalogSection({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="resend-card p-6 flex flex-col justify-between group hover:border-[#464a4d] transition-colors"
-              >
-                <div>
-                  {/* Top Meta Row */}
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="font-mono text-[11px] uppercase tracking-wider text-[#6e727a]">
-                      {CATEGORY_LABELS[product.category] || product.category}
-                    </span>
+            {filteredProducts.map((product) => {
+              const fallbackProd = PRODUCTS.find((x) => x.id === product.id);
+              const lkrVal = Number.isFinite(product.priceLKR) && product.priceLKR > 0
+                ? product.priceLKR
+                : (fallbackProd?.priceLKR ?? 3300);
+              const usdVal = Number.isFinite(product.priceUSD) && product.priceUSD > 0
+                ? product.priceUSD
+                : (fallbackProd?.priceUSD ?? 10);
+              const stockVal = Number.isFinite(product.stockCount)
+                ? product.stockCount
+                : (fallbackProd?.stockCount ?? 10);
 
-                    {/* Stock Status Pill */}
-                    <div className="inline-flex items-center gap-1.5 font-mono text-[11px] text-zinc-400">
-                      <span className={`w-1.5 h-1.5 rounded-full ${product.stockCount > 0 ? 'bg-[#3ad389]' : 'bg-zinc-600'}`} />
-                      <span>{product.stockCount > 0 ? 'In Stock' : 'Out of Stock'}</span>
-                    </div>
-                  </div>
-
-                  {/* Title & Description */}
-                  <Link href={`/products/${product.id}`} className="hover:text-zinc-300 transition-colors block">
-                    <h3 className="text-xl font-normal tracking-[-0.03em] text-white transition-colors mb-2">
-                      {product.title}
-                    </h3>
-                  </Link>
-                  <p className="text-[14px] leading-relaxed text-[#a1a4a5] mb-6 line-clamp-2">
-                    {product.description}
-                  </p>
-
-                  {/* Highlights */}
-                  <div className="space-y-1.5 pt-2 border-t border-[#1f2224] font-mono text-xs text-[#6e727a] mb-6">
-                    <div className="flex items-center justify-between">
-                      <span>Delivery:</span>
-                      <span className="text-zinc-300">Instant Email &amp; Vault</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Warranty:</span>
-                      <span className="text-[#f0f0f0]">Full Term Replacement</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Pricing & Action */}
-                <div className="pt-4 border-t border-[#292d30] flex items-center justify-between">
+              return (
+                <div
+                  key={product.id}
+                  className="resend-card relative p-5 flex flex-col justify-between group hover:border-[#464a4d] transition-colors rounded-[20px] overflow-hidden"
+                >
+                  <GlowingEffect color="emerald" proximity={50} />
+                  <Meteors number={5} />
                   <div>
-                    <div className="font-mono text-xl font-medium text-white">
-                      {currency === 'LKR' ? `LKR ${product.priceLKR.toLocaleString()}` : `$${product.priceUSD.toFixed(2)}`}
+                    {/* Digital Product Brand Pass / Official Logo Header */}
+                    <DigitalProductThumbnail product={product} />
+
+                    {/* Top Meta Row */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 font-semibold">
+                        {product.brand || CATEGORY_LABELS[product.category] || product.category}
+                      </span>
+
+                      {/* Stock Status Pill */}
+                      <div className="inline-flex items-center gap-1.5 font-mono text-[11px] text-zinc-400">
+                        <span className={`w-1.5 h-1.5 rounded-full ${stockVal > 0 ? 'bg-[#3ad389]' : 'bg-zinc-600'}`} />
+                        <span>{stockVal > 0 ? `${stockVal} In Stock` : 'Out of Stock'}</span>
+                      </div>
                     </div>
-                    <div className="font-mono text-[11px] text-[#6e727a]">
-                      {currency === 'LKR' ? `$${product.priceUSD.toFixed(2)} USD` : `LKR ${product.priceLKR.toLocaleString()}`}
+
+                    {/* Title & Description */}
+                    <Link href={`/products/${product.id}`} className="hover:text-zinc-300 transition-colors block">
+                      <h3 className="text-xl font-normal tracking-[-0.03em] text-white transition-colors mb-2">
+                        {product.title}
+                      </h3>
+                    </Link>
+                    <p className="text-[14px] leading-relaxed text-[#a1a4a5] mb-6 line-clamp-2">
+                      {product.description}
+                    </p>
+
+                    {/* Highlights */}
+                    <div className="space-y-1.5 pt-2 border-t border-[#1f2224] font-mono text-xs text-[#6e727a] mb-6">
+                      <div className="flex items-center justify-between">
+                        <span>Delivery:</span>
+                        <span className="text-zinc-300">Instant Email &amp; Vault</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Warranty:</span>
+                        <span className="text-[#f0f0f0]">Full Term Replacement</span>
+                      </div>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => setSelectedProduct(product)}
-                    className="btn-ghost-resend text-xs !py-1.5 !px-3.5"
-                  >
-                    <span>Buy Now</span>
-                    <span>›</span>
-                  </button>
+                  {/* Bottom Pricing & Action */}
+                  <div className="pt-4 border-t border-[#292d30] flex items-center justify-between">
+                    <div>
+                      <div className="font-mono text-xl font-medium text-white">
+                        {currency === 'LKR' ? `LKR ${lkrVal.toLocaleString()}` : `$${usdVal.toFixed(2)}`}
+                      </div>
+                      <div className="font-mono text-[11px] text-[#6e727a]">
+                        {currency === 'LKR' ? `$${usdVal.toFixed(2)} USD` : `LKR ${lkrVal.toLocaleString()}`}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setSelectedProduct(product)}
+                      className="btn-ghost-resend text-xs !py-1.5 !px-3.5"
+                    >
+                      <span>Buy Now</span>
+                      <span>›</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

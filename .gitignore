@@ -44,3 +44,4 @@ next-env.d.ts
 # local references
 save file/
 do not push/
+.fibez-*.json

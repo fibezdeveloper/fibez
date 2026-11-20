@@ -12,6 +12,17 @@ const VALID_REVIEW_STATUSES = new Set(['APPROVED', 'FLAGGED', 'PENDING']);
 
 export async function GET(req: NextRequest) {
   try {
+    if (!process.env.DATABASE_AUTHENTICATED_URL && !process.env.DATABASE_URL) {
+      return NextResponse.json({
+        reviews: [],
+        stats: {
+          totalReviews: 0,
+          averageRating: 5.0,
+          distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+        },
+      });
+    }
+
     const actor = await getVerifiedSessionUser();
     const isStaff = isStaffRole(actor?.role);
 

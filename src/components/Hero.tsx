@@ -5,6 +5,9 @@ import Link from 'next/link';
 import HeroCube from '@/components/HeroCube';
 import GradientASCII from '@/components/GradientASCII';
 import { ShieldCheck } from 'lucide-react';
+import { FlipText } from '@/components/ui/FlipText';
+import { TextAnimation } from '@/components/ui/TextAnimation';
+import { AnimatedButton } from '@/components/ui/AnimatedButton';
 
 export default function Hero({
   onExploreCatalog,
@@ -22,9 +25,26 @@ export default function Hero({
           characters=" =+xX0S8#@"
           cellSize={18}
           density={0.8}
+          glyphOpacity={0.85}
+          glow={0.2}
+          depthOfField={0}
+          flicker={0.2}
+          softness={0.5}
+          scale={1}
+          flow={0.5}
+          speed={1}
+          gradientOpacity={0.9}
+          grain={0.08}
+          variation={0}
+          mouseInteraction
+          scrambleRadius={0.1}
+          clickEffect="wave"
+          intro
+          lightMode={false}
         />
-        {/* Deep vignette at the top so top bar is pure clean dark with no weird gradient bleed */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black via-black/40 to-black" />
+        {/* Directional vignettes: preserves 100% text contrast on left while letting interactive ASCII shine across center & right */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-black via-black/80 lg:via-black/65 to-transparent" />
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black via-transparent to-black" />
       </div>
 
       {/* Hero Foreground Content */}
@@ -35,36 +55,47 @@ export default function Hero({
           {/* Left Column: Editorial Display Typography */}
           <div className="lg:col-span-7 flex flex-col items-start text-left space-y-7 pointer-events-auto">
             
-            {/* Editorial Serif Display Headline */}
-            <h1 className="font-serif text-[56px] sm:text-[72px] lg:text-[84px] leading-[1.02] tracking-[-0.01em] text-white font-normal drop-shadow-sm">
-              Digital products, <br />
-              <span className="italic font-normal text-[#f0f0f0]">delivered in seconds.</span>
+            {/* Editorial Serif Display Headline with Vengeance UI FlipText */}
+            <h1 className="font-serif text-[52px] sm:text-[68px] lg:text-[80px] leading-[1.08] tracking-[-0.01em] text-white font-normal drop-shadow-sm select-none">
+              <span className="block">
+                <FlipText duration={2.2} delay={0.1}>
+                  Digital products,
+                </FlipText>
+              </span>
+              <span className="block italic font-normal text-[#f0f0f0]">
+                <FlipText duration={2.2} delay={0.45}>
+                  delivered in seconds.
+                </FlipText>
+              </span>
             </h1>
 
-            {/* Sub-headline */}
+            {/* Sub-headline with Staggered Word Slide-in Animation */}
             <p className="text-[17px] sm:text-[19px] leading-[1.5] text-[#a1a4a5] max-w-xl font-normal">
-              Instant gift cards, streaming subscriptions, game top-ups, software keys, and high-speed VLESS VPN — sent straight to your email and vault.
+              <TextAnimation delay={0.6} divideBy="word">
+                Instant gift cards, streaming subscriptions, game top-ups, software keys, and high-speed VLESS VPN — sent straight to your email and vault.
+              </TextAnimation>
             </p>
 
             {/* CTAs */}
             <div className="flex flex-wrap items-center gap-4 pt-2">
-              <button
+              <AnimatedButton
                 onClick={onExploreCatalog || (() => {
                   document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
                 })}
-                className="btn-action-resend text-[15px] px-5 py-2.5 shadow-lg"
+                className="bg-white text-black font-semibold text-[15px] px-6 py-2.5 rounded-full border-none shadow-[0_0_24px_rgba(255,255,255,0.2)] hover:bg-[#eaeaea] [--shine:rgba(0,0,0,0.5)] cursor-pointer"
               >
                 <span>Shop All Products</span>
-                <span className="text-sm">›</span>
-              </button>
+                <span className="text-sm ml-1">›</span>
+              </AnimatedButton>
 
-              <Link
+              <AnimatedButton
+                as="a"
                 href="/v2ray"
-                className="btn-ghost-resend text-[15px] px-5 py-2.5 text-[#f0f0f0] backdrop-blur-md bg-black/40"
+                className="text-[15px] px-5 py-2.5 text-[#f0f0f0] backdrop-blur-md bg-black/60 border border-[#292d30] hover:border-[#464a4d] rounded-full gap-2"
               >
-                <ShieldCheck className="w-4 h-4 text-white" />
+                <ShieldCheck className="w-4 h-4 text-[#3ad389]" />
                 <span>High-Speed VLESS VPN</span>
-              </Link>
+              </AnimatedButton>
             </div>
 
             {/* Minimal Metrics Row */}

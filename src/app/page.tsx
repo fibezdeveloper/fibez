@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Hero from '@/components/Hero';
 import TrustBar from '@/components/TrustBar';
+import FibezDevParticles from '@/components/FibezDevParticles';
 import CatalogSection from '@/components/CatalogSection';
 import HowItWorks from '@/components/HowItWorks';
 import FeaturesGrid from '@/components/FeaturesGrid';
@@ -27,6 +28,9 @@ export default function HomePage() {
 
       {/* Popular Brands & Networks Strip */}
       <TrustBar />
+
+      {/* Interactive FibezDevelopers GPU Particle Field */}
+      <FibezDevParticles />
 
       {/* Featured Products Catalog */}
       <CatalogSection currency={currency} />

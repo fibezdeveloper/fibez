@@ -19,7 +19,9 @@ import {
   UserPlus, 
   LayoutDashboard,
   LifeBuoy,
-  X
+  Radio,
+  X,
+  User,
 } from 'lucide-react';
 
 export interface NavbarProps {
@@ -46,6 +48,15 @@ export default function Navbar(props: NavbarProps) {
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Better Auth session hook
   const { data: session } = authClient.useSession();
@@ -86,6 +97,15 @@ export default function Navbar(props: NavbarProps) {
       },
     },
     {
+      id: 'v2ray-dash',
+      label: 'V2Ray Dash',
+      icon: <Radio className="w-4 h-4 text-[#3ad389]" />,
+      detail: 'Nodes, configs & diagnostics',
+      onSelect: () => {
+        router.push('/v2ray/dashboard');
+      },
+    },
+    {
       id: 'currency',
       label: `Currency: ${currentCurrency}`,
       icon: <Globe className="w-4 h-4 text-zinc-300" />,
@@ -102,6 +122,15 @@ export default function Navbar(props: NavbarProps) {
             divider: true,
             onSelect: () => {
               router.push('/dashboard');
+            },
+          },
+          {
+            id: 'profile',
+            label: 'Profile & Settings',
+            icon: <User className="w-4 h-4 text-zinc-300" />,
+            detail: 'Username, email & security',
+            onSelect: () => {
+              router.push('/dashboard?tab=profile');
             },
           },
           {
@@ -165,6 +194,7 @@ export default function Navbar(props: NavbarProps) {
       description: 'View keys, track orders, and configure apps.',
       links: [
         { label: 'My Key Vault & Orders', href: '/vault' },
+        { label: 'V2Ray Dashboard', href: '/v2ray/dashboard' },
         { label: 'Shopping Cart', href: '/cart' },
         { label: 'NetMod & v2rayNG Guide', href: '/v2ray/guide' },
       ]
@@ -345,7 +375,7 @@ export default function Navbar(props: NavbarProps) {
       <div className="pointer-events-auto">
         <CardNav
           defaultOpen={false}
-          maxWidth={1120}
+          maxWidth={isScrolled ? 860 : 1120}
           theme="dark"
           surface="glass"
           cardEffect="rise"

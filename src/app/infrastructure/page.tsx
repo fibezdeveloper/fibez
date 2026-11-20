@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import TechText from '@/components/TechText';
 import { ChevronRight, CheckCircle2, Activity, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export default function InfrastructurePage() {
@@ -46,9 +47,24 @@ export default function InfrastructurePage() {
             <ShieldCheck className="w-3.5 h-3.5 text-[#3ad389]" />
             <span>Live System Status</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-normal tracking-[-0.03em] text-white">
-            Store &amp; VLESS VPN Service Status
-          </h1>
+          <div className="h-[46px] sm:h-[56px] w-full max-w-[620px] relative -ml-1">
+            <h1 className="sr-only">Store & VLESS VPN Service Status</h1>
+            <TechText
+              text="Store & VLESS VPN Service Status"
+              align="left"
+              fontWeight={700}
+              fontSize={38}
+              color="#ffffff"
+              accentColor="#3ad389"
+              reveal="letter"
+              dashLength={4}
+              dashGap={2}
+              specks={12}
+              intro="none"
+              clickKick
+              guides={false}
+            />
+          </div>
           <p className="text-sm text-[#a1a4a5] mt-2 max-w-2xl leading-relaxed">
             High-speed VLESS VPN — optimised for SLT, Dialog, Hutch &amp; Airtel. Instant delivery. Config sent to your email in seconds.
           </p>

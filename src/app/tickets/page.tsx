@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { ChevronRight, LifeBuoy, ShieldCheck, MessageSquare } from 'lucide-react';
 import TicketCenter from '@/components/TicketCenter';
+import TechText from '@/components/TechText';
 
 export const metadata = {
   title: 'Support Desk & Ticket System — Fibez',
@@ -31,9 +32,24 @@ export default function TicketsPage() {
             <LifeBuoy className="w-3.5 h-3.5" />
             <span>24/7 Operations Help Desk</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-normal tracking-[-0.03em] text-white">
-            Support Ticket Center
-          </h1>
+          <div className="h-[46px] sm:h-[56px] w-full max-w-[460px] relative -ml-1">
+            <h1 className="sr-only">Support Ticket Center</h1>
+            <TechText
+              text="Support Ticket Center"
+              align="left"
+              fontWeight={700}
+              fontSize={40}
+              color="#ffffff"
+              accentColor="#3ad389"
+              reveal="letter"
+              dashLength={4}
+              dashGap={2}
+              specks={12}
+              intro="none"
+              clickKick
+              guides={false}
+            />
+          </div>
           <p className="text-sm text-[#a1a4a5] mt-2 max-w-2xl leading-relaxed">
             Get help with High-Speed VLESS VPN setup (NetMod &amp; v2rayNG), gift card redemption, subscriptions, and bank slip payment verification.
           </p>

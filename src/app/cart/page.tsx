@@ -5,6 +5,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store-context';
 import { authClient } from '@/lib/auth-client';
+import { createPurchasedLineFromCartItem, recordPurchasedLines } from '@/lib/v2ray-lines';
+import { AnimatedNumber, QuantityStepper } from '@/components/ui/AnimatedNumber';
+import { AnimatedButton } from '@/components/ui/AnimatedButton';
+import TechText from '@/components/TechText';
+import { EncryptedText } from '@/components/ui/encrypted-text';
+import { ContainerTextFlip } from '@/components/ui/container-text-flip';
+import { FileUpload } from '@/components/ui/file-upload';
 import { 
   ChevronRight, 
   ShoppingCart, 
@@ -26,7 +33,9 @@ import {
   Check,
   Globe,
   Clock,
-  ExternalLink
+  ExternalLink,
+  RefreshCw,
+  Gift,
 } from 'lucide-react';
 
 export default function CartPage() {
@@ -47,13 +56,26 @@ export default function CartPage() {
 
   const { data: session } = authClient.useSession();
 
-  const [paymentMethod, setPaymentMethod] = useState<'gateway' | 'crypto' | 'bank_transfer'>('gateway');
+  const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'crypto' | 'gateway'>('bank_transfer');
   const [customerEmail, setCustomerEmail] = useState(session?.user?.email || '');
+  const [customerWhatsapp, setCustomerWhatsapp] = useState('');
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; percent: number } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
+
+  // Referral & 1-Click Renewal State
+  const [referralCodeInput, setReferralCodeInput] = useState('');
+  const [appliedReferral, setAppliedReferral] = useState<{ code: string; discountLKR: number } | null>(null);
+  const [referralError, setReferralError] = useState<string | null>(null);
+  const [renewOrderId, setRenewOrderId] = useState<string | null>(null);
+  const [existingUuid, setExistingUuid] = useState<string | null>(null);
+  const [userCredits, setUserCredits] = useState<number>(0);
+  const [useCredits, setUseCredits] = useState<boolean>(false);
+
   const [copiedCrypto, setCopiedCrypto] = useState(false);
+  const [copiedBankAcc, setCopiedBankAcc] = useState<string | null>(null);
   const [uploadedSlip, setUploadedSlip] = useState<string | null>(null);
+  const [uploadedSlipName, setUploadedSlipName] = useState<string | null>(null);
   const [isUploadingSlip, setIsUploadingSlip] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -66,10 +88,62 @@ export default function CartPage() {
     }
   }, [session, customerEmail]);
 
+  // Read URL query params on mount: ?renew=<order_id> and ?ref=<code>
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    
+    // Check 1-Click Renewal
+    const renew = params.get('renew');
+    if (renew) {
+      setRenewOrderId(renew);
+      // Try to read existing UUID if cached or saved
+      const savedUuid = localStorage.getItem(`fibez_uuid_${renew}`);
+      if (savedUuid) setExistingUuid(savedUuid);
+    }
+
+    // Check Referral Code in URL or LocalStorage
+    const refCode = params.get('ref') || localStorage.getItem('fibez_ref');
+    if (refCode) {
+      setReferralCodeInput(refCode);
+      // Validate automatically
+      fetch('/api/referrals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'validate', code: refCode }),
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.valid) {
+            setAppliedReferral({ code: refCode.toUpperCase(), discountLKR: data.discountLKR || 50 });
+            localStorage.setItem('fibez_ref', refCode.toUpperCase());
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Fetch user's store credits balance if logged in
+    fetch('/api/referrals')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.profile?.storeCredits > 0) {
+          setUserCredits(data.profile.storeCredits);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Discount calculation
-  const discountMultiplier = appliedPromo ? (1 - appliedPromo.percent / 100) : 1;
-  const finalTotalLKR = Math.round(cartTotalLKR * discountMultiplier);
-  const finalTotalUSD = parseFloat((cartTotalUSD * discountMultiplier).toFixed(2));
+  const promoDiscountLKR = appliedPromo ? Math.round(cartTotalLKR * (appliedPromo.percent / 100)) : 0;
+  const referralDiscountLKR = appliedReferral ? appliedReferral.discountLKR : 0;
+  const maxAvailableCreditDiscount = Math.max(0, cartTotalLKR - promoDiscountLKR - referralDiscountLKR);
+  const creditsDiscountLKR = useCredits && userCredits > 0 ? Math.min(maxAvailableCreditDiscount, userCredits * 10) : 0;
+  const totalDiscountLKR = promoDiscountLKR + referralDiscountLKR + creditsDiscountLKR;
+
+  const finalTotalLKR = Math.max(0, cartTotalLKR - totalDiscountLKR);
+  const finalTotalUSD = parseFloat(
+    (cartTotalUSD * (cartTotalLKR > 0 ? finalTotalLKR / cartTotalLKR : 1)).toFixed(2)
+  );
 
   const totalFormatted =
     currency === 'USD'
@@ -83,8 +157,8 @@ export default function CartPage() {
 
   const discountAmountFormatted =
     currency === 'USD'
-      ? `-$${(cartTotalUSD - finalTotalUSD).toFixed(2)}`
-      : `-Rs. ${(cartTotalLKR - finalTotalLKR).toLocaleString()}`;
+      ? `-$${((cartTotalUSD * totalDiscountLKR) / (cartTotalLKR || 1)).toFixed(2)}`
+      : `-Rs. ${totalDiscountLKR.toLocaleString()}`;
 
   const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,12 +185,44 @@ export default function CartPage() {
     }
   };
 
+  const handleApplyReferral = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setReferralError(null);
+    const code = referralCodeInput.trim().toUpperCase();
+    if (!code) return;
+
+    try {
+      const res = await fetch('/api/referrals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'validate', code }),
+      });
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setAppliedReferral({ code, discountLKR: data.discountLKR || 50 });
+        localStorage.setItem('fibez_ref', code);
+      } else {
+        setReferralError(data.message || 'Referral code not found or expired.');
+      }
+    } catch {
+      setReferralError('Failed to validate referral code.');
+    }
+  };
+
+  const handleCopyAcc = (accNum: string) => {
+    navigator.clipboard.writeText(accNum);
+    setCopiedBankAcc(accNum);
+    setTimeout(() => setCopiedBankAcc(null), 1500);
+  };
+
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) return;
 
     setIsProcessing(true);
     try {
+      const creditsRedeemed = useCredits && userCredits > 0 ? Math.min(userCredits, Math.ceil(creditsDiscountLKR / 10)) : 0;
+
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,7 +242,12 @@ export default function CartPage() {
           paymentMethod,
           customerEmail,
           customerName: session?.user?.name || customerEmail.split('@')[0],
+          customerWhatsapp: customerWhatsapp.trim() || undefined,
           promoCode: appliedPromo?.code,
+          referralCode: appliedReferral?.code,
+          renewOrderId: renewOrderId || undefined,
+          existingUuid: existingUuid || undefined,
+          creditsRedeemed,
           receiptUrl: uploadedSlip,
           userId: session?.user?.id,
         }),
@@ -145,6 +256,36 @@ export default function CartPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setIsSuccess(true);
+
+        // Record any purchased V2Ray packages into multi-line manager
+        try {
+          const vpnItems = cart.filter(
+            (item) =>
+              item.product?.category === 'vpn' ||
+              item.productId.includes('v2ray') ||
+              item.productId.includes('dialog') ||
+              item.productId.includes('slt') ||
+              item.productId.includes('airtel') ||
+              item.productId.includes('hutch') ||
+              item.productId.includes('mobitel') ||
+              (item.product?.title || '').toLowerCase().includes('v2ray')
+          );
+          if (vpnItems.length > 0) {
+            const newLines = vpnItems.map((item) =>
+              createPurchasedLineFromCartItem({
+                orderNumber: data.orderNumber || 'FBZ-ORDER',
+                productId: item.productId || item.product?.id || item.id,
+                title: item.product?.title || 'V2Ray High-Speed VPN',
+                variantTitle: item.durationLabel,
+                selectedIsp: item.selectedISP,
+              })
+            );
+            recordPurchasedLines(newLines);
+          }
+        } catch (lineErr) {
+          console.warn('Failed to register purchased V2Ray line:', lineErr);
+        }
+
         clearCart();
         setTimeout(() => {
           router.push(`/vault?order=${data.orderNumber}`);
@@ -195,18 +336,60 @@ export default function CartPage() {
     }
   };
 
+  const handleDropzoneUpload = async (files: File[]) => {
+    const file = files[0];
+    if (!file) return;
+    setUploadedSlipName(file.name);
+    setIsUploadingSlip(true);
+    setUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'slips');
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to upload receipt');
+      }
+      setUploadedSlip(data.url);
+    } catch (err: any) {
+      console.error('Slip upload error:', err);
+      setUploadError(err.message || 'Upload failed. Please try again.');
+    } finally {
+      setIsUploadingSlip(false);
+    }
+  };
+
   if (cartCount === 0 && !isSuccess) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-28 pb-36 text-center">
         <div className="w-20 h-20 rounded-full bg-[#111114] border border-[#222226] flex items-center justify-center mx-auto text-white mb-6">
           <ShoppingCart className="w-10 h-10" />
         </div>
-        <h1 className="text-2xl sm:text-4xl font-medium text-white mb-3">
-          Your Dedicated Shopping Cart is Empty
+        <h1 className="text-2xl sm:text-4xl font-medium text-white mb-3 tracking-tight">
+          <EncryptedText
+            text="Your Dedicated Shopping Cart is Empty"
+            encryptedClassName="text-[#3ad389]/60 font-mono"
+            revealedClassName="text-white"
+            revealDelayMs={35}
+          />
         </h1>
-        <p className="text-sm text-[#a1a4a5] max-w-md mx-auto mb-8 leading-relaxed">
-          Select high-speed V2Ray reality nodes, AMD EPYC NVMe cloud servers, or zero-trust software subscriptions to get started.
-        </p>
+        <div className="text-sm sm:text-base text-[#a1a4a5] max-w-xl mx-auto mb-8 leading-relaxed flex flex-wrap items-center justify-center gap-1.5 font-sans">
+          <span>Select high-speed</span>
+          <ContainerTextFlip
+            words={[
+              "V2Ray Reality Nodes",
+              "AMD EPYC Cloud",
+              "Netflix 4K Profiles",
+              "Game Top-Ups & UC",
+              "Zero-Trust VPN Lines"
+            ]}
+          />
+          <span>to get started.</span>
+        </div>
         <Link
           href="/catalog"
           className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold uppercase tracking-wider transition-all"
@@ -261,9 +444,29 @@ export default function CartPage() {
           <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">
             Dedicated Cart & Zero-Trust Checkout
           </div>
-          <h1 className="text-3xl sm:text-4xl font-normal tracking-[-0.03em] text-white">
-            Shopping Cart ({cartCount} {cartCount === 1 ? 'item' : 'items'})
-          </h1>
+          <div className="flex items-center gap-3">
+            <div className="h-[44px] sm:h-[52px] w-[220px] sm:w-[280px] relative -ml-1">
+              <h1 className="sr-only">Shopping Cart</h1>
+              <TechText
+                text="Shopping Cart"
+                align="left"
+                fontWeight={700}
+                fontSize={38}
+                color="#ffffff"
+                accentColor="#3ad389"
+                reveal="letter"
+                dashLength={4}
+                dashGap={2}
+                specks={12}
+                intro="none"
+                clickKick
+                guides={false}
+              />
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-zinc-300">
+              {cartCount} {cartCount === 1 ? 'item' : 'items'}
+            </span>
+          </div>
         </div>
 
         {/* 3-Step Indicator */}
@@ -284,6 +487,28 @@ export default function CartPage() {
           </div>
         </div>
       </div>
+
+      {/* 1-Click Renewal Active Notification */}
+      {renewOrderId && (
+        <div className="mb-8 p-4 sm:p-5 rounded-[20px] bg-[#0c1f15] border border-[#3ad389]/40 flex items-start gap-3.5 shadow-xl shadow-[#3ad389]/5 animate-in fade-in">
+          <div className="w-10 h-10 rounded-xl bg-[#3ad389]/20 border border-[#3ad389]/30 flex items-center justify-center text-[#3ad389] shrink-0 mt-0.5">
+            <RefreshCw className="w-5 h-5 animate-spin" style={{ animationDuration: '8s' }} />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[#3ad389] bg-[#3ad389]/10 px-2 py-0.5 rounded">
+                1-Click Subscription Renewal
+              </span>
+              <span className="font-mono text-xs text-white">
+                Extending Order #{renewOrderId}
+              </span>
+            </div>
+            <p className="text-xs text-zinc-300 mt-1 leading-relaxed">
+              Your 30-day package quota will be extended and traffic reset on your <strong className="text-white">exact same VLESS UUID</strong>. No re-importing into NetMod, V2Box, or v2rayNG needed!
+            </p>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleCheckout} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
@@ -403,28 +628,28 @@ export default function CartPage() {
                       </div>
 
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center rounded-xl bg-[#141417] border border-[#222226] p-1">
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            className="p-1 rounded text-zinc-400 hover:text-white"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="px-3 text-xs font-mono text-white font-semibold">{item.quantity}</span>
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="p-1 rounded text-zinc-400 hover:text-white"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <QuantityStepper
+                          value={item.quantity}
+                          min={1}
+                          max={99}
+                          onChange={(newQty) => updateQuantity(item.id, newQty)}
+                          size="sm"
+                        />
 
                         <div className="text-right min-w-[90px]">
                           <div className="text-[10px] font-mono text-[#a1a4a5]">Line Total</div>
-                          <div className="text-base font-mono font-bold text-white">
-                            {lineTotalText}
+                          <div className="text-base font-mono font-bold text-white flex items-center justify-end gap-0.5">
+                            {currency === 'USD' ? (
+                              <>
+                                <span>$</span>
+                                <AnimatedNumber value={(item.priceUSD * item.quantity).toFixed(2)} />
+                              </>
+                            ) : (
+                              <>
+                                <span>Rs. </span>
+                                <AnimatedNumber value={item.priceLKR * item.quantity} formatCommas />
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -447,23 +672,31 @@ export default function CartPage() {
 
           {/* Payment Method Selector */}
           <div className="p-6 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23] space-y-5">
-            <h2 className="text-base font-medium text-white">
-              Choose Payment Method
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-medium text-white">
+                Choose Payment Method
+              </h2>
+              <span className="font-mono text-[11px] text-[#3ad389] bg-[#3ad389]/10 px-2.5 py-0.5 rounded-full">
+                Zero Fees
+              </span>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button
                 type="button"
-                onClick={() => setPaymentMethod('gateway')}
+                onClick={() => setPaymentMethod('bank_transfer')}
                 className={`p-4 rounded-[14px] border text-left transition-all cursor-pointer ${
-                  paymentMethod === 'gateway'
-                    ? 'bg-[#18181c] border-white'
+                  paymentMethod === 'bank_transfer'
+                    ? 'bg-[#18181c] border-[#3ad389] shadow-lg shadow-[#3ad389]/10'
                     : 'bg-[#121215] border-white/5 hover:border-white/20'
                 }`}
               >
-                <CreditCard className="w-5 h-5 text-white mb-2" />
-                <div className="text-xs font-mono font-medium text-white">Online Cards</div>
-                <div className="text-[10px] font-mono text-[#a1a4a5] mt-0.5">Visa / Mastercard / LKR</div>
+                <div className="flex items-center justify-between mb-2">
+                  <Upload className={`w-5 h-5 ${paymentMethod === 'bank_transfer' ? 'text-[#3ad389]' : 'text-white'}`} />
+                  <span className="text-[9px] font-mono text-[#3ad389] uppercase font-bold">Fastest</span>
+                </div>
+                <div className="text-xs font-mono font-medium text-white">Bank Transfer / CDM</div>
+                <div className="text-[10px] font-mono text-[#a1a4a5] mt-0.5">ComBank / Sampath / BOC</div>
               </button>
 
               <button
@@ -482,18 +715,145 @@ export default function CartPage() {
 
               <button
                 type="button"
-                onClick={() => setPaymentMethod('bank_transfer')}
+                onClick={() => setPaymentMethod('gateway')}
                 className={`p-4 rounded-[14px] border text-left transition-all cursor-pointer ${
-                  paymentMethod === 'bank_transfer'
+                  paymentMethod === 'gateway'
                     ? 'bg-[#18181c] border-white'
                     : 'bg-[#121215] border-white/5 hover:border-white/20'
                 }`}
               >
-                <Upload className="w-5 h-5 text-white mb-2" />
-                <div className="text-xs font-mono font-medium text-white">Bank Transfer / CDM</div>
-                <div className="text-[10px] font-mono text-[#a1a4a5] mt-0.5">Instant Slip Upload</div>
+                <CreditCard className="w-5 h-5 text-zinc-400 mb-2" />
+                <div className="text-xs font-mono font-medium text-zinc-300">Online Cards</div>
+                <div className="text-[10px] font-mono text-zinc-500 mt-0.5">Visa / Mastercard / LKR</div>
               </button>
             </div>
+
+            {/* Bank Transfer Details View */}
+            {paymentMethod === 'bank_transfer' && (
+              <div className="p-5 rounded-[16px] bg-[#141417] border border-[#222228] text-xs font-mono space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-[#222228]">
+                  <span className="text-white font-semibold">
+                    Supported Sri Lankan Banks
+                  </span>
+                  <span className="text-[10px] text-zinc-400">Transfer or Cash CDM</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                  {/* ComBank */}
+                  <div className="p-3 rounded-xl bg-[#0c0c0e] border border-white/10 hover:border-[#3ad389]/40 transition-colors">
+                    <div className="text-zinc-400 text-[10px] uppercase font-bold text-[#3ad389]">Commercial Bank</div>
+                    <div className="text-white font-bold text-xs mt-1">8002914820</div>
+                    <div className="text-[10px] text-zinc-500">Colombo Main</div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyAcc('8002914820')}
+                      className="mt-2 text-[10px] text-zinc-400 hover:text-white flex items-center gap-1"
+                    >
+                      {copiedBankAcc === '8002914820' ? <Check className="w-3 h-3 text-[#3ad389]" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedBankAcc === '8002914820' ? 'Copied' : 'Copy Acc #'}</span>
+                    </button>
+                  </div>
+
+                  {/* Sampath */}
+                  <div className="p-3 rounded-xl bg-[#0c0c0e] border border-white/10 hover:border-[#3ad389]/40 transition-colors">
+                    <div className="text-zinc-400 text-[10px] uppercase font-bold text-amber-400">Sampath Bank</div>
+                    <div className="text-white font-bold text-xs mt-1">100299182390</div>
+                    <div className="text-[10px] text-zinc-500">Colombo 03</div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyAcc('100299182390')}
+                      className="mt-2 text-[10px] text-zinc-400 hover:text-white flex items-center gap-1"
+                    >
+                      {copiedBankAcc === '100299182390' ? <Check className="w-3 h-3 text-[#3ad389]" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedBankAcc === '100299182390' ? 'Copied' : 'Copy Acc #'}</span>
+                    </button>
+                  </div>
+
+                  {/* BOC */}
+                  <div className="p-3 rounded-xl bg-[#0c0c0e] border border-white/10 hover:border-[#3ad389]/40 transition-colors">
+                    <div className="text-zinc-400 text-[10px] uppercase font-bold text-sky-400">Bank of Ceylon</div>
+                    <div className="text-white font-bold text-xs mt-1">00928172901</div>
+                    <div className="text-[10px] text-zinc-500">Kollupitiya</div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyAcc('00928172901')}
+                      className="mt-2 text-[10px] text-zinc-400 hover:text-white flex items-center gap-1"
+                    >
+                      {copiedBankAcc === '00928172901' ? <Check className="w-3 h-3 text-[#3ad389]" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedBankAcc === '00928172901' ? 'Copied' : 'Copy Acc #'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-zinc-300">
+                  Beneficiary Name: <span className="text-white font-semibold">Fibez Digital Infrastructure Ltd</span>
+                </div>
+
+                {/* Slip Upload & Interactive Preview */}
+                <div className="pt-2 border-t border-[#222228]">
+                  <label className="block text-[11px] text-[#a1a4a5] mb-2 font-medium">
+                    Upload Bank Transfer Slip (PNG, JPG or PDF from ComBank / Sampath app):
+                  </label>
+
+                  {uploadedSlip ? (
+                    <div className="p-3.5 rounded-xl bg-[#0c0c0e] border border-[#3ad389]/40 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        {uploadedSlip.toLowerCase().endsWith('.pdf') || uploadedSlipName?.toLowerCase().endsWith('.pdf') ? (
+                          <div className="w-10 h-10 rounded-lg bg-rose-500/20 border border-rose-500/30 flex items-center justify-center font-bold text-rose-400 text-xs">
+                            PDF
+                          </div>
+                        ) : (
+                          <img
+                            src={uploadedSlip}
+                            alt="Slip thumbnail"
+                            className="w-10 h-10 rounded-lg object-cover border border-white/20"
+                          />
+                        )}
+                        <div>
+                          <div className="text-xs font-semibold text-white flex items-center gap-1.5">
+                            <span>{uploadedSlipName || 'Bank Transfer Slip'}</span>
+                            <Check className="w-3.5 h-3.5 text-[#3ad389]" />
+                          </div>
+                          <span className="text-[10px] text-[#3ad389]">
+                            Ready for intelligent bank verification
+                          </span>
+                        </div>
+                      </div>
+
+                      <label className="px-3 py-1.5 rounded-lg bg-[#1a1a1f] hover:bg-[#25252c] text-xs font-mono text-zinc-300 hover:text-white cursor-pointer transition-colors">
+                        <span>Change</span>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          disabled={isUploadingSlip}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setUploadedSlipName(file.name);
+                            handleFileUpload(e);
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <div>
+                      {isUploadingSlip ? (
+                        <div className="flex flex-col items-center justify-center gap-2 p-8 rounded-2xl bg-[#0c0c0e] border border-dashed border-[#3ad389]/40 text-center">
+                          <div className="w-6 h-6 border-2 border-[#3ad389] border-t-transparent rounded-full animate-spin" />
+                          <span className="text-xs font-mono text-[#3ad389]">Uploading &amp; Scanning Receipt...</span>
+                        </div>
+                      ) : (
+                        <FileUpload onChange={handleDropzoneUpload} />
+                      )}
+                    </div>
+                  )}
+
+                  {uploadError && (
+                    <div className="text-[10px] text-red-400 mt-1.5">{uploadError}</div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Crypto Details View */}
             {paymentMethod === 'crypto' && (
@@ -521,70 +881,38 @@ export default function CartPage() {
               </div>
             )}
 
-            {/* Bank Transfer Details View */}
-            {paymentMethod === 'bank_transfer' && (
-              <div className="p-4 rounded-[14px] bg-[#141417] border border-[#1f1f23] text-xs font-mono space-y-3">
-                <div className="text-white font-semibold">
-                  Commercial Bank of Ceylon PLC
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-zinc-300">
-                  <div>Account: <span className="text-white font-semibold">8002914820</span></div>
-                  <div>Branch: <span className="text-white">Colombo Main</span></div>
-                  <div className="col-span-2">Beneficiary: <span className="text-white">Fibez Digital Infrastructure Ltd</span></div>
-                </div>
-
-                <div className="pt-2">
-                  <label className="block text-[11px] text-[#a1a4a5] mb-1.5">
-                    Attach Transfer Receipt Slip:
-                  </label>
-                  <label className="flex items-center justify-center gap-2 p-3 rounded-[12px] bg-[#0c0c0e] border border-dashed border-white/20 hover:border-white/40 cursor-pointer text-zinc-400 hover:text-white transition-colors">
-                    {isUploadingSlip ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Uploading to Secure Object Storage...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 text-white" />
-                        <span>{uploadedSlip ? 'Slip Uploaded & Verified ✓' : 'Upload Bank Slip / Screenshot'}</span>
-                      </>
-                    )}
-                    <input 
-                      type="file" 
-                      accept="image/*,application/pdf" 
-                      disabled={isUploadingSlip} 
-                      onChange={handleFileUpload} 
-                      className="hidden" 
-                    />
-                  </label>
-                  {uploadError && (
-                    <div className="text-[10px] text-red-400 mt-1">{uploadError}</div>
-                  )}
-                  {uploadedSlip && (
-                    <div className="text-[10px] text-[#3ad389] mt-1 flex items-center gap-1 font-mono">
-                      <span>✓ Securely stored in Neon Object Storage bucket</span>
-                    </div>
-                  )}
-                </div>
+            {/* Customer Details: Email & WhatsApp Phone */}
+            <div className="pt-2 space-y-4">
+              <div>
+                <label className="block text-xs font-mono text-[#a1a4a5] uppercase tracking-wider mb-1.5">
+                  Fulfillment &amp; Key Notification Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  placeholder="customer@domain.com"
+                  className="w-full px-3.5 py-2.5 rounded-[12px] bg-[#141417] border border-white/10 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/30 font-mono"
+                />
               </div>
-            )}
 
-            {/* Delivery Email Input */}
-            <div className="pt-2">
-              <label className="block text-xs font-mono text-[#a1a4a5] uppercase tracking-wider mb-2">
-                Fulfillment & Key Notification Email
-              </label>
-              <input
-                type="email"
-                required
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                placeholder="developer@terminal.sh"
-                className="w-full px-3.5 py-2.5 rounded-[12px] bg-[#141417] border border-white/10 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/30 font-mono"
-              />
-              <span className="text-[10px] font-mono text-zinc-500 mt-1 block">
-                Keys will be dispatched to this email and immediately available in your personal <Link href="/vault" className="text-white hover:underline">Key Vault</Link>.
-              </span>
+              <div>
+                <label className="block text-xs font-mono text-[#a1a4a5] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                  <span>WhatsApp Mobile Number (Sri Lanka)</span>
+                  <span className="text-[10px] text-[#3ad389] lowercase">instant dispatch</span>
+                </label>
+                <input
+                  type="tel"
+                  value={customerWhatsapp}
+                  onChange={(e) => setCustomerWhatsapp(e.target.value)}
+                  placeholder="077 123 4567 or +94 77 123 4567"
+                  className="w-full px-3.5 py-2.5 rounded-[12px] bg-[#141417] border border-white/10 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/30 font-mono"
+                />
+                <span className="text-[10px] font-mono text-zinc-500 mt-1 block">
+                  Keys, VLESS links, and 1-tap NetMod / V2Box import buttons will be dispatched directly to this WhatsApp!
+                </span>
+              </div>
             </div>
           </div>
 
@@ -636,7 +964,7 @@ export default function CartPage() {
                 </button>
               </div>
               {appliedPromo && (
-                <div className="mt-2 text-[11px] font-mono text-zinc-300 flex items-center gap-1.5">
+                <div className="mt-2 text-[11px] font-mono text-[#3ad389] flex items-center gap-1.5">
                   <Tag className="w-3.5 h-3.5" />
                   <span>Promo &ldquo;{appliedPromo.code}&rdquo; Applied ({appliedPromo.percent}% OFF)</span>
                 </div>
@@ -648,6 +976,66 @@ export default function CartPage() {
               )}
             </div>
 
+            {/* Friend Referral Code Box */}
+            <div className="pt-2 border-t border-[#1f1f23]">
+              <div className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Gift className="w-3.5 h-3.5 text-amber-400" />
+                <span>Friend Referral Code</span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={referralCodeInput}
+                  onChange={(e) => setReferralCodeInput(e.target.value)}
+                  placeholder="e.g. AKAIN-89"
+                  className="flex-1 px-3 py-2 rounded-xl bg-[#141417] border border-white/10 text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-white/30 uppercase"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyReferral}
+                  className="px-4 py-2 rounded-xl bg-[#16161a] border border-[#26262b] hover:border-white/30 text-xs font-mono text-white transition-colors"
+                >
+                  Apply
+                </button>
+              </div>
+              {appliedReferral && (
+                <div className="mt-2 text-[11px] font-mono text-amber-400 flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Referral &ldquo;{appliedReferral.code}&rdquo; Active: Rs. {appliedReferral.discountLKR} OFF!</span>
+                </div>
+              )}
+              {referralError && (
+                <div className="mt-2 text-[11px] font-mono text-rose-400">
+                  {referralError}
+                </div>
+              )}
+            </div>
+
+            {/* Fibez Store Credits Redemption */}
+            {userCredits > 0 && (
+              <div className="p-3.5 rounded-xl bg-[#121815] border border-[#3ad389]/30 text-xs font-mono">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#3ad389]" />
+                    <span className="text-white font-medium">Fibez Store Credits</span>
+                  </div>
+                  <span className="text-[#3ad389] font-bold">{userCredits} Credits</span>
+                </div>
+                <div className="text-[11px] text-zinc-400 mt-1">
+                  1 credit = Rs. 10. Balance: Rs. {userCredits * 10}
+                </div>
+                <label className="mt-2.5 flex items-center gap-2 text-xs text-white cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useCredits}
+                    onChange={(e) => setUseCredits(e.target.checked)}
+                    className="w-4 h-4 rounded accent-[#3ad389]"
+                  />
+                  <span>Redeem Store Credits (-Rs. {creditsDiscountLKR})</span>
+                </label>
+              </div>
+            )}
+
             {/* Breakdown */}
             <div className="space-y-3 text-xs font-mono">
               <div className="flex justify-between">
@@ -655,14 +1043,26 @@ export default function CartPage() {
                 <span className="text-white">{subtotalFormatted}</span>
               </div>
               {appliedPromo && (
-                <div className="flex justify-between text-zinc-300">
+                <div className="flex justify-between text-[#3ad389]">
                   <span>Voucher Discount</span>
-                  <span>{discountAmountFormatted}</span>
+                  <span>-Rs. {promoDiscountLKR.toLocaleString()}</span>
+                </div>
+              )}
+              {appliedReferral && (
+                <div className="flex justify-between text-amber-400">
+                  <span>Referral Discount</span>
+                  <span>-Rs. {referralDiscountLKR.toLocaleString()}</span>
+                </div>
+              )}
+              {useCredits && creditsDiscountLKR > 0 && (
+                <div className="flex justify-between text-[#3ad389]">
+                  <span>Store Credits Redeemed</span>
+                  <span>-Rs. {creditsDiscountLKR.toLocaleString()}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span className="text-[#a1a4a5]">Digital Delivery</span>
-                <span className="text-zinc-300 font-semibold">FREE (Email &amp; Vault)</span>
+                <span className="text-zinc-300 font-semibold">FREE (WhatsApp &amp; Vault)</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#a1a4a5]">SLA Replacement Warranty</span>
@@ -670,17 +1070,30 @@ export default function CartPage() {
               </div>
               <div className="pt-4 border-t border-[#1f1f23] flex items-baseline justify-between text-base">
                 <span className="text-white font-medium">Grand Total</span>
-                <span className="text-3xl font-bold text-white tracking-tight">
-                  {totalFormatted}
+                <span className="text-3xl font-bold text-white tracking-tight flex items-baseline justify-end gap-1">
+                  {currency === 'USD' ? (
+                    <>
+                      <span>$</span>
+                      <AnimatedNumber value={finalTotalUSD.toFixed(2)} />
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xl font-normal text-zinc-400">Rs. </span>
+                      <AnimatedNumber value={finalTotalLKR} formatCommas />
+                    </>
+                  )}
                 </span>
               </div>
             </div>
 
             {/* Submit Button */}
-            <button
+            <AnimatedButton
+              as="button"
               type="submit"
+              variant="emerald"
+              size="lg"
               disabled={isProcessing}
-              className="w-full py-4 px-6 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs tracking-wider uppercase text-center transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              className="w-full text-xs font-mono font-bold uppercase tracking-wider shadow-lg shadow-[#3ad389]/20"
             >
               {isProcessing ? (
                 <span>Minting Encrypted Keys...</span>
@@ -690,12 +1103,12 @@ export default function CartPage() {
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
-            </button>
+            </AnimatedButton>
 
             {/* Guarantees */}
             <div className="pt-2 text-center space-y-1.5">
               <div className="flex items-center justify-center gap-1.5 text-xs text-[#a1a4a5]">
-                <ShieldCheck className="w-3.5 h-3.5 text-white" />
+                <ShieldCheck className="w-3.5 h-3.5 text-[#3ad389]" />
                 <span>Zero-trust encrypted payload delivery</span>
               </div>
               <p className="text-[10px] font-mono text-zinc-500">

@@ -19,7 +19,11 @@ import {
   Sparkles,
   KeyRound,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Radio,
+  Server,
+  Layers,
+  Smartphone
 } from 'lucide-react';
 
 interface FreeTrialModalProps {
@@ -27,10 +31,134 @@ interface FreeTrialModalProps {
   onClose: () => void;
 }
 
+export interface TrialPackageOption {
+  id: string;
+  title: string;
+  isp: 'Dialog' | 'SLT' | 'Airtel' | 'Hutch' | 'Mobitel';
+  badge: string;
+  reloadDesc: string;
+  sni: string;
+  port: number;
+  inboundId: number;
+  inboundName: string;
+  tag: string;
+}
+
+export const TRIAL_PACKAGES: TrialPackageOption[] = [
+  {
+    id: 'dialog-zoom-router',
+    title: 'Dialog Zoom (Router & 4G)',
+    isp: 'Dialog',
+    badge: '#678# Video Conf',
+    reloadDesc: 'Dialog 298 / 724 Zoom & Router pack',
+    sni: 'zoom.us',
+    port: 443,
+    inboundId: 3,
+    inboundName: 'Port 443 · Inbound #3 (Dialog Gateway)',
+    tag: 'Home Broadband & 4G',
+  },
+  {
+    id: 'dialog-tiktok-sim',
+    title: 'Dialog TikTok (Mobile SIM)',
+    isp: 'Dialog',
+    badge: '297 / 997 TikTok',
+    reloadDesc: 'Dialog Rs. 297 / 997 TikTok Unlimited',
+    sni: 'm.tiktok.com',
+    port: 443,
+    inboundId: 3,
+    inboundName: 'Port 443 · Inbound #3 (Dialog Gateway)',
+    tag: 'Mobile 4G/5G SIM',
+  },
+  {
+    id: 'dialog-social-media',
+    title: 'Dialog Social Media Blaster',
+    isp: 'Dialog',
+    badge: '348 / 488 Social',
+    reloadDesc: 'Facebook, Insta & WhatsApp bundle',
+    sni: 'm.facebook.com',
+    port: 443,
+    inboundId: 3,
+    inboundName: 'Port 443 · Inbound #3 (Dialog Gateway)',
+    tag: 'Social Bundle',
+  },
+  {
+    id: 'slt-zoom-meet-fiber',
+    title: 'SLT Fiber Zoom & Meet',
+    isp: 'SLT',
+    badge: 'Meet / Flash / Pre 235',
+    reloadDesc: 'SLT Fiber, 4G & ADSL Meet / Zoom',
+    sni: 'teams.microsoft.com',
+    port: 445,
+    inboundId: 1,
+    inboundName: 'Port 445 · Inbound #1 (SLT Meet Gateway)',
+    tag: 'Fiber / 4G / ADSL',
+  },
+  {
+    id: 'slt-netflix-entertainment',
+    title: 'SLT Netflix & Streaming',
+    isp: 'SLT',
+    badge: '1,990 Ent. Pack',
+    reloadDesc: 'SLT Fiber & 4G Netflix unthrottled',
+    sni: 'api.netflix.com',
+    port: 444,
+    inboundId: 2,
+    inboundName: 'Port 444 · Inbound #2 (SLT Netflix Gateway)',
+    tag: 'Fiber & 4G',
+  },
+  {
+    id: 'airtel-tiktok-unlimited',
+    title: 'Airtel TikTok (297 / 997)',
+    isp: 'Airtel',
+    badge: '297 / 997 Unlimited',
+    reloadDesc: 'Airtel 4G/5G TikTok unlimited pack',
+    sni: 'm.tiktok.com',
+    port: 443,
+    inboundId: 3,
+    inboundName: 'Port 443 · Inbound #3 (Singapore SG3)',
+    tag: 'Airtel 4G/5G',
+  },
+  {
+    id: 'airtel-youtube-pack',
+    title: 'Airtel YouTube (135 / 260)',
+    isp: 'Airtel',
+    badge: '135 / 260 Pack',
+    reloadDesc: 'Airtel 135 / 260 YouTube data reload',
+    sni: 'm.youtube.com',
+    port: 443,
+    inboundId: 3,
+    inboundName: 'Port 443 · Inbound #3 (Singapore SG3)',
+    tag: 'Airtel 4G/5G',
+  },
+  {
+    id: 'hutch-zoom-work',
+    title: 'Hutch Zoom & Work',
+    isp: 'Hutch',
+    badge: '224 / 494 / 794',
+    reloadDesc: 'Hutch 4G Non-Stop Work & Zoom reload',
+    sni: 'zoom.us',
+    port: 443,
+    inboundId: 3,
+    inboundName: 'Port 443 · Inbound #3 (Singapore SG3)',
+    tag: 'Hutch 4G',
+  },
+  {
+    id: 'mobitel-zoom-sim',
+    title: 'Mobitel Zoom & Education',
+    isp: 'Mobitel',
+    badge: '#170# Education',
+    reloadDesc: 'Mobitel Port 4445 (Android IP Hunt)',
+    sni: 'gateway.icloud.com',
+    port: 4445,
+    inboundId: 4,
+    inboundName: 'Port 4445 · Inbound #4 (Mobitel Port)',
+    tag: 'Mobitel 4G',
+  },
+];
+
 export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps) {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
 
-  const [selectedIsp, setSelectedIsp] = useState('Dialog');
+  const [selectedPackageId, setSelectedPackageId] = useState<string>('dialog-zoom-router');
   const [isLoading, setIsLoading] = useState(false);
   const [trialData, setTrialData] = useState<any | null>(null);
   const [copied, setCopied] = useState(false);
@@ -39,14 +167,7 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
 
   if (!isOpen) return null;
 
-  const isps = [
-    { id: 'Dialog', label: 'Dialog Axiata', desc: 'Zoom & Router (*678#)' },
-    { id: 'SLT', label: 'SLT Fiber', desc: 'Netflix & Streaming' },
-    { id: 'Airtel', label: 'Airtel 4G/5G', desc: 'TikTok 297/997 Unlimited' },
-    { id: 'Mobitel', label: 'Mobitel', desc: 'Zoom1 & Higher Education' },
-    { id: 'Hutch', label: 'Hutch 4G', desc: 'Zoom & Non-stop Work' },
-    { id: 'Direct', label: 'Direct (Global)', desc: 'Unmetered browsing' },
-  ];
+  const selectedPkg = TRIAL_PACKAGES.find((p) => p.id === selectedPackageId) || TRIAL_PACKAGES[0];
 
   const handleGenerate = async () => {
     setIsLoading(true);
@@ -56,7 +177,12 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          isp: selectedIsp,
+          packageId: selectedPkg.id,
+          title: selectedPkg.title,
+          isp: selectedPkg.isp,
+          sni: selectedPkg.sni,
+          port: selectedPkg.port,
+          inboundId: selectedPkg.inboundId,
           protocol: 'vless',
           userEmail: session?.user?.email,
           userId: session?.user?.id,
@@ -66,7 +192,7 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
       if (res.ok && data.success) {
         setTrialData(data.trial);
       } else {
-        setErrorMsg(data.error || 'Failed to generate trial config. Please try again.');
+        setErrorMsg(data.error || 'Failed to generate trial configuration. Please try again.');
       }
     } catch (e: any) {
       console.error(e);
@@ -86,7 +212,7 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-xl bg-[#0e0e12] border border-[#23232d] rounded-2xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-[#0e0e12] border border-[#23232d] rounded-2xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
         
         {/* Close Button */}
         <button
@@ -118,25 +244,29 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
             {/* Trial Feature Highlights */}
             <div className="p-4 rounded-xl bg-[#131318] border border-[#23232d] space-y-3">
               <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-400 font-semibold flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-white" />
+                <Sparkles className="w-3.5 h-3.5 text-[#3ad389]" />
                 <span>What you get in your trial:</span>
               </div>
               <ul className="space-y-2 text-xs text-zinc-300">
                 <li className="flex items-center gap-2.5">
-                  <span className="w-4 h-4 rounded-full bg-white/10 text-white flex items-center justify-center text-[10px] shrink-0">✓</span>
-                  <span><strong>24-Hour Free Trial</strong> — instant High-Speed VLESS VPN test config</span>
+                  <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-[#3ad389] flex items-center justify-center text-[10px] shrink-0 font-bold">✓</span>
+                  <span><strong>10 GB High-Speed Bandwidth</strong> — unthrottled Singapore Equinix SG3 connection</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <span className="w-4 h-4 rounded-full bg-white/10 text-white flex items-center justify-center text-[10px] shrink-0">✓</span>
+                  <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-[#3ad389] flex items-center justify-center text-[10px] shrink-0 font-bold">✓</span>
+                  <span><strong>24-Hour Active Validity</strong> — instant automated provisioning on live inbounds</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-[#3ad389] flex items-center justify-center text-[10px] shrink-0 font-bold">✓</span>
+                  <span><strong>2 Devices / 2 IPs HWID Limit</strong> — connect both PC and smartphone simultaneously</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-[#3ad389] flex items-center justify-center text-[10px] shrink-0 font-bold">✓</span>
                   <span><strong>Saved to Key Vault</strong> — access credentials anytime from your dashboard</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <span className="w-4 h-4 rounded-full bg-white/10 text-white flex items-center justify-center text-[10px] shrink-0">✓</span>
-                  <span><strong>Optimized SNI Masks</strong> for Dialog, SLT Fiber, Airtel, Mobitel &amp; Hutch</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <span className="w-4 h-4 rounded-full bg-white/10 text-white flex items-center justify-center text-[10px] shrink-0">✓</span>
-                  <span><strong>Zero payment required</strong> — no credit card, no phone number verification</span>
+                  <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-[#3ad389] flex items-center justify-center text-[10px] shrink-0 font-bold">✓</span>
+                  <span><strong>Zero payment required</strong> — no credit card or payment slip required</span>
                 </li>
               </ul>
             </div>
@@ -168,13 +298,13 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
           </div>
         ) : !trialData ? (
           /* ------------------------------------------------------------- */
-          /* STATE 2: AUTHENTICATED - SELECT ISP & GENERATE TRIAL         */
+          /* STATE 2: AUTHENTICATED - SELECT REAL PACKAGE & GENERATE TRIAL */
           /* ------------------------------------------------------------- */
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
               <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-mono text-emerald-400 mb-2">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>AUTHENTICATED · NO PAYMENT REQUIRED</span>
+                <span>AUTHENTICATED · 24-HOUR FREE TRIAL</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
                 Generate 24-Hour Free VLESS Trial
@@ -192,34 +322,97 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
               </div>
             )}
 
-            {/* Select ISP */}
+            {/* Select Real Package */}
             <div>
-              <label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400 block mb-3 font-semibold">
-                Select Your Sri Lankan Network / Package
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                {isps.map((isp) => (
-                  <button
-                    key={isp.id}
-                    type="button"
-                    onClick={() => setSelectedIsp(isp.id)}
-                    className={`p-3 rounded-xl border text-left transition-all ${
-                      selectedIsp === isp.id
-                        ? 'bg-white text-black border-white'
-                        : 'bg-[#141418] border-[#24242e] text-zinc-300 hover:border-zinc-500'
-                    }`}
-                  >
-                    <div className="font-semibold text-xs sm:text-sm">{isp.label}</div>
-                    <div className={`text-[10px] mt-0.5 truncate ${selectedIsp === isp.id ? 'text-zinc-700' : 'text-zinc-500'}`}>
-                      {isp.desc}
-                    </div>
-                  </button>
-                ))}
+              <div className="flex items-center justify-between mb-2.5">
+                <label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400 font-semibold">
+                  Select Your Sri Lankan Package / SIM
+                </label>
+                <span className="text-[11px] font-mono text-[#3ad389]">
+                  {TRIAL_PACKAGES.length} Live Inbound Targets
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[260px] overflow-y-auto pr-1">
+                {TRIAL_PACKAGES.map((pkg) => {
+                  const isSelected = selectedPackageId === pkg.id;
+                  let ispBadgeColor = 'bg-amber-500/10 text-amber-300 border-amber-500/30';
+                  if (pkg.isp === 'SLT') ispBadgeColor = 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30';
+                  if (pkg.isp === 'Airtel') ispBadgeColor = 'bg-rose-500/10 text-rose-300 border-rose-500/30';
+                  if (pkg.isp === 'Mobitel') ispBadgeColor = 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30';
+                  if (pkg.isp === 'Hutch') ispBadgeColor = 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30';
+
+                  return (
+                    <button
+                      key={pkg.id}
+                      type="button"
+                      onClick={() => setSelectedPackageId(pkg.id)}
+                      className={`p-3 rounded-xl border text-left transition-all relative ${
+                        isSelected
+                          ? 'bg-[#181820] border-[#3ad389] text-white shadow-lg ring-1 ring-[#3ad389]/30'
+                          : 'bg-[#121216] border-[#22222a] text-zinc-300 hover:border-zinc-600 hover:bg-[#15151c]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold border ${ispBadgeColor}`}>
+                          {pkg.isp}
+                        </span>
+                        <span className="text-[10px] font-mono text-zinc-500">
+                          Port {pkg.port}
+                        </span>
+                      </div>
+                      <div className="font-bold text-xs truncate text-white">
+                        {pkg.title}
+                      </div>
+                      <div className="text-[10px] text-zinc-400 mt-0.5 truncate">
+                        {pkg.reloadDesc}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Dynamic SNI & Live Inbound Route Preview */}
+            <div className="p-3.5 rounded-xl bg-[#141419] border border-[#23232d] space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-zinc-400 flex items-center gap-1.5">
+                  <Radio className="w-3.5 h-3.5 text-[#3ad389]" />
+                  <span>Target SNI Masquerade:</span>
+                </span>
+                <span className="px-2.5 py-0.5 rounded font-mono font-bold bg-[#3ad389]/15 text-[#3ad389] border border-[#3ad389]/30 text-xs">
+                  {selectedPkg.sni}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-zinc-400 flex items-center gap-1.5">
+                  <Server className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Target Inbound Gateway:</span>
+                </span>
+                <span className="text-zinc-200 font-bold">
+                  {selectedPkg.inboundName}
+                </span>
+              </div>
+
+              {/* Specs Pills: 10GB, 24 Hours, 2 Devices */}
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#1f1f27] text-center text-[11px] font-mono">
+                <div className="p-2 rounded-lg bg-[#0e0e12] border border-[#1c1c24]">
+                  <span className="text-zinc-500 block text-[9px] uppercase tracking-wider">Quota Allowance</span>
+                  <span className="text-[#3ad389] font-bold">10 GB High-Speed</span>
+                </div>
+                <div className="p-2 rounded-lg bg-[#0e0e12] border border-[#1c1c24]">
+                  <span className="text-zinc-500 block text-[9px] uppercase tracking-wider">Active Period</span>
+                  <span className="text-white font-bold">24 Hours (1 Day)</span>
+                </div>
+                <div className="p-2 rounded-lg bg-[#0e0e12] border border-[#1c1c24]">
+                  <span className="text-zinc-500 block text-[9px] uppercase tracking-wider">Device / HWID</span>
+                  <span className="text-cyan-400 font-bold">2 Devices (2 IPs)</span>
+                </div>
               </div>
             </div>
 
             {/* Generate Action Button */}
-            <div className="pt-2">
+            <div className="pt-1">
               <button
                 type="button"
                 onClick={handleGenerate}
@@ -229,11 +422,11 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
                 {isLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                    <span>Generating VLESS Configuration...</span>
+                    <span>Provisioning VLESS Client on Inbound #{selectedPkg.inboundId}...</span>
                   </>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4 fill-current" />
+                    <Zap className="w-4 h-4 fill-current text-black" />
                     <span>Generate 24-Hour VLESS Trial Now</span>
                   </>
                 )}
@@ -244,22 +437,22 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
           /* ------------------------------------------------------------- */
           /* STATE 3: TRIAL GENERATED & STORED IN USER'S KEY VAULT        */
           /* ------------------------------------------------------------- */
-          <div className="space-y-6 animate-fadeIn">
+          <div className="space-y-5 animate-fadeIn">
             
             {/* Vault Synced Notice */}
             <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2.5 text-emerald-300">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>
-                  <strong>Trial Activated!</strong> Linked to <code className="text-white font-mono">{session?.user?.email}</code> &amp; saved in your Key Vault.
+                  <strong>Trial Activated!</strong> Saved to Key Vault for <code className="text-white font-mono">{session?.user?.email}</code>.
                 </span>
               </div>
               <Link
                 href="/vault"
                 onClick={onClose}
-                className="px-2.5 py-1 rounded-lg bg-emerald-400/20 hover:bg-emerald-400/30 text-emerald-200 text-[11px] font-mono transition-colors flex items-center gap-1 shrink-0"
+                className="px-2.5 py-1 rounded-lg bg-emerald-400/20 hover:bg-emerald-400/30 text-emerald-200 text-[11px] font-mono transition-colors flex items-center gap-1 shrink-0 font-bold"
               >
-                <span>View Vault</span>
+                <span>Open Vault</span>
                 <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
@@ -272,22 +465,30 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
                 </div>
                 <div>
                   <div className="font-semibold text-white text-sm">
-                    Trial Active: VLESS VPN ({trialData.isp})
+                    {trialData.title || `VLESS VPN (${trialData.isp})`}
                   </div>
-                  <div className="text-xs text-zinc-400 font-mono">
-                    SNI: {trialData.sni} · Ref: {trialData.id}
+                  <div className="text-xs text-zinc-400 font-mono flex items-center gap-2 mt-0.5">
+                    <span>SNI: <strong className="text-[#3ad389]">{trialData.sni}</strong></span>
+                    <span>·</span>
+                    <span>Port: <strong className="text-white">{trialData.port || selectedPkg.port}</strong></span>
+                    <span>·</span>
+                    <span>Ref: {trialData.id}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 text-xs font-mono">
-                <div className="flex items-center gap-1.5 text-zinc-300">
-                  <Clock className="w-4 h-4 text-zinc-400" />
+              <div className="flex items-center gap-3 text-xs font-mono">
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#0e0e12] border border-[#22222a] text-zinc-300">
+                  <Clock className="w-3.5 h-3.5 text-zinc-400" />
                   <span>24 Hours</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-zinc-300">
-                  <Database className="w-4 h-4 text-zinc-400" />
-                  <span>{trialData.bandwidthLimit}</span>
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#0e0e12] border border-[#22222a] text-zinc-300">
+                  <Database className="w-3.5 h-3.5 text-[#3ad389]" />
+                  <span>10 GB</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#0e0e12] border border-[#22222a] text-cyan-300">
+                  <Smartphone className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>2 Devices</span>
                 </div>
               </div>
             </div>
@@ -302,12 +503,12 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
                   readOnly
                   rows={3}
                   value={trialData.configUri}
-                  className="w-full bg-[#121216] border border-[#23232c] rounded-xl p-3 pr-24 text-xs font-mono text-zinc-300 resize-none outline-none focus:border-zinc-500"
+                  className="w-full bg-[#121216] border border-[#23232c] rounded-xl p-3 pr-24 text-xs font-mono text-zinc-300 resize-none outline-none focus:border-zinc-500 select-all"
                 />
                 <button
                   type="button"
                   onClick={() => handleCopy(trialData.configUri)}
-                  className="absolute top-2.5 right-2.5 px-3 py-1.5 rounded-lg bg-white text-black font-medium text-xs flex items-center gap-1.5 hover:bg-zinc-200 transition-all shadow"
+                  className="absolute top-2.5 right-2.5 px-3 py-1.5 rounded-lg bg-white text-black font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-200 transition-all shadow"
                 >
                   {copied ? (
                     <>
@@ -317,7 +518,7 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
                   ) : (
                     <>
                       <Copy className="w-3.5 h-3.5" />
-                      <span>Copy</span>
+                      <span>Copy URI</span>
                     </>
                   )}
                 </button>
@@ -332,43 +533,45 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
                   onClick={() => setShowQr(!showQr)}
                   className="text-xs text-zinc-400 hover:text-white flex items-center gap-1.5 font-mono"
                 >
-                  <QrCode className="w-4 h-4" />
-                  <span>{showQr ? 'Hide QR Code' : 'Show Mobile QR Code (v2rayNG / NetMod)'}</span>
+                  <QrCode className="w-4 h-4 text-[#3ad389]" />
+                  <span className="underline underline-offset-4">
+                    {showQr ? 'Hide QR Code' : 'Show Mobile QR Code (Scan with v2rayNG / NetMod)'}
+                  </span>
                 </button>
               </div>
 
               {showQr && trialData.qrDataUrl && (
-                <div className="p-4 rounded-xl bg-white border border-zinc-300 flex flex-col items-center justify-center max-w-xs mx-auto">
+                <div className="p-4 rounded-xl bg-white border border-zinc-300 flex flex-col items-center justify-center max-w-xs mx-auto animate-fadeIn">
                   <img
                     src={trialData.qrDataUrl}
                     alt="Config QR Code"
                     className="w-48 h-48 rounded-lg"
                   />
-                  <p className="text-[11px] text-zinc-600 mt-2 text-center font-mono">
-                    Scan with v2rayNG or NetMod Syna on Android
+                  <p className="text-[11px] text-zinc-700 mt-2 text-center font-mono font-medium">
+                    Scan with v2rayNG, NetMod Syna, or Nekobox
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Quick 3-Step Setup Advice */}
-            <div className="p-4 rounded-xl bg-[#121216] border border-[#22222b]">
-              <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400 mb-3 font-semibold flex items-center gap-2">
-                <Laptop className="w-4 h-4" />
-                <span>How to use in NetMod Syna:</span>
+            {/* Quick Setup Instructions */}
+            <div className="p-3.5 rounded-xl bg-[#121216] border border-[#22222b]">
+              <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400 mb-2 font-semibold flex items-center gap-2">
+                <Laptop className="w-4 h-4 text-[#3ad389]" />
+                <span>Quick Setup (NetMod Syna &amp; v2rayNG):</span>
               </div>
-              <ol className="space-y-2 text-xs text-zinc-400">
+              <ol className="space-y-1.5 text-xs text-zinc-400">
                 <li className="flex items-start gap-2">
                   <span className="font-mono text-white font-bold">1.</span>
-                  <span>Copy the VLESS config link above.</span>
+                  <span>Click <strong>Copy URI</strong> above or scan the QR Code on your mobile app.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="font-mono text-white font-bold">2.</span>
-                  <span>Open NetMod Syna on Windows/Android and click <strong>&quot;Import from Clipboard&quot;</strong>.</span>
+                  <span>In NetMod Syna (Windows/Android) click <strong>&quot;Import from Clipboard&quot;</strong>.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="font-mono text-white font-bold">3.</span>
-                  <span>Ensure <strong>Tun Mode</strong> is checked in NetMod and press <strong>Start</strong>.</span>
+                  <span>Toggle <strong>Tun Mode ON</strong> in settings and click <strong>Start</strong> to connect!</span>
                 </li>
               </ol>
             </div>
@@ -380,7 +583,7 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
                 onClick={() => setTrialData(null)}
                 className="text-xs font-mono text-zinc-400 hover:text-white underline underline-offset-4"
               >
-                ← Test Another Network
+                ← Test Another Package
               </button>
 
               <div className="flex items-center gap-2">

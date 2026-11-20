@@ -50,14 +50,30 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const storageUrl = await uploadObject({
-      key,
-      body: buffer,
-      contentType: file.type,
-      bucket: BUCKET_NAME,
-    });
+    let presignedViewUrl = '';
+    let storageUrl = '';
 
-    const presignedViewUrl = await getObjectDownloadUrl(key, BUCKET_NAME, 7 * 24 * 60 * 60);
+    try {
+      storageUrl = await uploadObject({
+        key,
+        body: buffer,
+        contentType: file.type,
+        bucket: BUCKET_NAME,
+      });
+      presignedViewUrl = await getObjectDownloadUrl(key, BUCKET_NAME, 7 * 24 * 60 * 60);
+    } catch (s3Err: any) {
+      // Local filesystem fallback for dev & offline operation
+      const fs = await import('fs');
+      const path = await import('path');
+      const localUploadDir = path.join(process.cwd(), 'public', 'uploads', folder);
+      if (!fs.existsSync(localUploadDir)) {
+        fs.mkdirSync(localUploadDir, { recursive: true });
+      }
+      const localFilePath = path.join(localUploadDir, path.basename(key));
+      fs.writeFileSync(localFilePath, buffer);
+      presignedViewUrl = `/uploads/${folder}/${path.basename(key)}`;
+      storageUrl = presignedViewUrl;
+    }
 
     return NextResponse.json({
       success: true,

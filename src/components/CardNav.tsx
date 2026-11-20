@@ -144,6 +144,7 @@ const DEFAULT_ITEMS: CardNavItem[] = [
     description: 'View keys, track orders, and configure apps.',
     links: [
       { label: 'My Key Vault & Orders', href: '/vault' },
+      { label: 'V2Ray Dashboard', href: '/v2ray/dashboard' },
       { label: 'Shopping Cart', href: '/cart' },
       { label: 'NetMod & v2rayNG Guide', href: '/v2ray/guide' }
     ]

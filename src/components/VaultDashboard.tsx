@@ -7,7 +7,7 @@ import { authClient } from '@/lib/auth-client';
 import { PRODUCTS } from '@/lib/products';
 import { 
   Key, QrCode as QrIcon, Copy, Check, Clock, X,
-  Eye, EyeOff, CheckCircle2, Send, Search
+  Eye, EyeOff, CheckCircle2, Send, Search, ExternalLink
 } from 'lucide-react';
 
 interface ActiveAsset {
@@ -215,42 +215,17 @@ export default function VaultDashboard() {
     <section id="vault" className="w-full py-12 bg-black">
       <div className="max-w-[1200px] mx-auto px-2 sm:px-6">
         
-        {/* Top Header & Mode Toggle */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-10 gap-4 pb-6 border-b border-[#1f2224]">
-          <div>
-            <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">
-              Order &amp; Key Vault
-            </div>
-            <h2 className="text-[32px] sm:text-[44px] font-normal leading-[1.12] tracking-[-0.04em] text-white">
-              {activeTab === 'vault' ? 'Personal Key Vault' : 'Admin Verification Queue'}
-            </h2>
+        {/* Top Action Bar (Admin Link if active) */}
+        {isAdmin && (
+          <div className="flex items-center justify-end mb-6 pb-4 border-b border-[#1f2224]">
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#3ad389]/10 hover:bg-[#3ad389]/20 border border-[#3ad389]/30 text-[#3ad389] text-xs font-mono font-semibold transition-all"
+            >
+              <span>Master Admin Console (/admin) →</span>
+            </Link>
           </div>
-
-          {isAdmin && (
-            <div className="flex items-center gap-2 bg-[#050505] p-1 rounded-[6px] border border-[#292d30] self-start sm:self-auto">
-              <button
-                onClick={() => setActiveTab('vault')}
-                className={`font-mono text-xs px-4 py-2 rounded-[6px] transition-colors ${
-                  activeTab === 'vault'
-                    ? 'bg-white text-black font-medium'
-                    : 'text-[#a1a4a5] hover:text-white'
-                }`}
-              >
-                My Vault
-              </button>
-              <button
-                onClick={() => setActiveTab('admin')}
-                className={`font-mono text-xs px-4 py-2 rounded-[6px] transition-colors ${
-                  activeTab === 'admin'
-                    ? 'bg-white text-black font-medium'
-                    : 'text-[#a1a4a5] hover:text-white'
-                }`}
-              >
-                Admin Queue ({pendingReceipts.length})
-              </button>
-            </div>
-          )}
-        </div>
+        )}
 
         {/* TAB 1: CUSTOMER KEY VAULT */}
         {activeTab === 'vault' && (
@@ -349,13 +324,23 @@ export default function VaultDashboard() {
 
                     <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       {asset.category === 'vpn' && asset.payload?.startsWith('vless://') && (
-                        <button
-                          onClick={() => handleShowQr(asset.payload)}
-                          className="btn-ghost-resend text-xs !py-2 !px-3 text-[#f0f0f0]"
-                        >
-                          <QrIcon className="w-3.5 h-3.5 text-white" />
-                          <span>Mobile QR</span>
-                        </button>
+                        <>
+                          <Link
+                            href={`/v2ray/dashboard?vless=${encodeURIComponent(asset.payload)}&order=${encodeURIComponent(asset.orderNumber || '')}`}
+                            className="btn-ghost-resend text-xs !py-2 !px-3 text-[#3ad389] hover:bg-[#3ad389]/10 border border-[#3ad389]/30 flex items-center justify-center gap-1.5 transition-colors"
+                            title="Open interactive control panel for this V2Ray line"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>V2Ray Dashboard</span>
+                          </Link>
+                          <button
+                            onClick={() => handleShowQr(asset.payload)}
+                            className="btn-ghost-resend text-xs !py-2 !px-3 text-[#f0f0f0]"
+                          >
+                            <QrIcon className="w-3.5 h-3.5 text-white" />
+                            <span>Mobile QR</span>
+                          </button>
+                        </>
                       )}
 
                       {asset.password && (

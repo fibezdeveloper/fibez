@@ -7,6 +7,7 @@ import {
   isStaffRole,
 } from '@/lib/dal';
 import { withRlsTransaction } from '@/lib/db/rls';
+import { adminStore } from '@/lib/admin-store';
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,74 +34,110 @@ export async function GET(request: NextRequest) {
 
     const isStaff = isStaffRole(actor?.role);
 
-    const itemsQuery = await withRlsTransaction(
-      buildRlsContext(actor, { recentOrderNumber }),
-      async (client) => {
-        if (orderNumberParam) {
-          const res = await client.query(
-            `SELECT
-               oi.id,
-               o.order_number,
-               oi.product_title as product_name,
-               p.category_id as category,
-               oi.variant_title,
-               oi.quantity,
-               oi.dispensed_key as payload,
-               oi.credential_user as username,
-               oi.credential_pass as password,
-               oi.key_type as type,
-               oi.guide_markdown,
-               oi.warranty,
-               oi.status,
-               o.created_at
-             FROM public.order_items oi
-             JOIN public.orders o ON oi.order_id = o.id
-             LEFT JOIN public.products p ON oi.product_id = p.id
-             WHERE o.order_number = $1
-               AND (
-                 $2::boolean = TRUE
-                 OR ($3::text <> '' AND o.user_id = $3)
-                 OR ($4::text <> '' AND LOWER(o.customer_email) = $4)
-                 OR ($5::text <> '' AND o.order_number = $5)
-               )
-             ORDER BY oi.created_at DESC`,
-            [
-              orderNumberParam,
-              isStaff,
-              actor?.id || '',
-              actor?.email || '',
-              recentOrderNumber || '',
-            ]
-          );
-          return res.rows;
-        }
+    let itemsQuery: any[] = [];
+    if (process.env.DATABASE_URL) {
+      try {
+        itemsQuery = await withRlsTransaction(
+          buildRlsContext(actor, { recentOrderNumber }),
+          async (client) => {
+            if (orderNumberParam) {
+              const res = await client.query(
+                `SELECT
+                   oi.id,
+                   o.order_number,
+                   oi.product_title as product_name,
+                   p.category_id as category,
+                   oi.variant_title,
+                   oi.quantity,
+                   oi.dispensed_key as payload,
+                   oi.credential_user as username,
+                   oi.credential_pass as password,
+                   oi.key_type as type,
+                   oi.guide_markdown,
+                   oi.warranty,
+                   oi.status,
+                   o.created_at
+                 FROM public.order_items oi
+                 JOIN public.orders o ON oi.order_id = o.id
+                 LEFT JOIN public.products p ON oi.product_id = p.id
+                 WHERE o.order_number = $1
+                   AND (
+                     $2::boolean = TRUE
+                     OR ($3::text <> '' AND o.user_id = $3)
+                     OR ($4::text <> '' AND LOWER(o.customer_email) = $4)
+                     OR ($5::text <> '' AND o.order_number = $5)
+                   )
+                 ORDER BY oi.created_at DESC`,
+                [
+                  orderNumberParam,
+                  isStaff,
+                  actor?.id || '',
+                  actor?.email || '',
+                  recentOrderNumber || '',
+                ]
+              );
+              return res.rows;
+            }
 
-        const res = await client.query(
-          `SELECT
-             oi.id,
-             o.order_number,
-             oi.product_title as product_name,
-             p.category_id as category,
-             oi.variant_title,
-             oi.quantity,
-             oi.dispensed_key as payload,
-             oi.credential_user as username,
-             oi.credential_pass as password,
-             oi.key_type as type,
-             oi.guide_markdown,
-             oi.warranty,
-             oi.status,
-             o.created_at
-           FROM public.order_items oi
-           JOIN public.orders o ON oi.order_id = o.id
-           LEFT JOIN public.products p ON oi.product_id = p.id
-           WHERE o.user_id = $1 OR LOWER(o.customer_email) = $2
-           ORDER BY oi.created_at DESC`,
-          [actor!.id, actor!.email]
+            const res = await client.query(
+              `SELECT
+                 oi.id,
+                 o.order_number,
+                 oi.product_title as product_name,
+                 p.category_id as category,
+                 oi.variant_title,
+                 oi.quantity,
+                 oi.dispensed_key as payload,
+                 oi.credential_user as username,
+                 oi.credential_pass as password,
+                 oi.key_type as type,
+                 oi.guide_markdown,
+                 oi.warranty,
+                 oi.status,
+                 o.created_at
+               FROM public.order_items oi
+               JOIN public.orders o ON oi.order_id = o.id
+               LEFT JOIN public.products p ON oi.product_id = p.id
+               WHERE o.user_id = $1 OR LOWER(o.customer_email) = $2
+               ORDER BY oi.created_at DESC`,
+              [actor!.id, actor!.email]
+            );
+            return res.rows;
+          }
         );
-        return res.rows;
+      } catch (dbErr) {
+        console.warn('Postgres vault query skipped:', dbErr);
       }
-    );
+    }
+
+    if (!itemsQuery || itemsQuery.length === 0) {
+      // Fallback to adminStore when database is not configured or in dev
+      const allOrders = adminStore.getOrders();
+      const userOrders = allOrders.filter((o) => {
+        if (orderNumberParam) return o.orderNumber?.toUpperCase() === orderNumberParam;
+        if (actor?.email && o.customerEmail?.toLowerCase() === actor.email.toLowerCase()) return true;
+        if (recentOrderNumber && o.orderNumber?.toUpperCase() === recentOrderNumber.toUpperCase()) return true;
+        return false;
+      });
+      itemsQuery = userOrders.flatMap((o) =>
+        (o.items || []).map((item) => ({
+          id: item.id,
+          order_number: o.orderNumber,
+          product_name: item.productTitle,
+          category: 'vpn',
+          variant_title: item.variantTitle,
+          quantity: item.quantity,
+          payload: item.dispensedKey || '',
+          username: null,
+          password: null,
+          type: item.keyType || 'CONNECTION_CONFIG',
+          guide_markdown: item.guideMarkdown,
+          warranty: item.warranty,
+          status: item.status,
+          created_at: o.createdAt,
+        }))
+      );
+    }
 
     const assets = itemsQuery.map((item) => ({
       id: item.id,

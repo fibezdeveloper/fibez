@@ -3,6 +3,7 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import VaultDashboard from '@/components/VaultDashboard';
+import TechText from '@/components/TechText';
 import { ChevronRight, KeyRound, ShieldCheck, Lock, Terminal } from 'lucide-react';
 
 export default function VaultPage() {
@@ -22,9 +23,24 @@ export default function VaultPage() {
             <Lock className="w-3.5 h-3.5" />
             <span>Personal Key Vault</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-normal tracking-[-0.03em] text-white">
-            Your Key Vault &amp; Orders
-          </h1>
+          <div className="h-[46px] sm:h-[56px] w-full max-w-[480px] relative -ml-1">
+            <h1 className="sr-only">Your Key Vault & Orders</h1>
+            <TechText
+              text="Your Key Vault & Orders"
+              align="left"
+              fontWeight={700}
+              fontSize={40}
+              color="#ffffff"
+              accentColor="#3ad389"
+              reveal="letter"
+              dashLength={4}
+              dashGap={2}
+              specks={12}
+              intro="none"
+              clickKick
+              guides={false}
+            />
+          </div>
           <p className="text-sm text-[#a1a4a5] mt-2 max-w-2xl leading-relaxed">
             View delivered gift card codes, subscription logins, and VLESS VPN configuration links &amp; QR codes.
           </p>

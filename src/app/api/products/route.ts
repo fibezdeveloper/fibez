@@ -7,15 +7,34 @@ import {
   requireRole,
 } from '@/lib/dal';
 import { withRlsTransaction } from '@/lib/db/rls';
+import { PRODUCTS } from '@/lib/products';
 
 export async function GET(request: NextRequest) {
   try {
-    const actor = await getVerifiedSessionUser();
-    const isStaff = isStaffRole(actor?.role);
-
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category')?.trim() || '';
     const id = searchParams.get('id')?.trim() || '';
+
+    // Local fallback when DATABASE_URL is not configured
+    if (!process.env.DATABASE_URL) {
+      if (id) {
+        const single = PRODUCTS.find((p) => p.id === id);
+        if (!single) {
+          return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+        }
+        return NextResponse.json({ product: single });
+      }
+
+      if (category && category !== 'all') {
+        const filtered = PRODUCTS.filter((p) => p.category === category);
+        return NextResponse.json({ products: filtered });
+      }
+
+      return NextResponse.json({ products: PRODUCTS });
+    }
+
+    const actor = await getVerifiedSessionUser();
+    const isStaff = isStaffRole(actor?.role);
     const includeInactive = isStaff && searchParams.get('all') === 'true';
 
     const data = await withRlsTransaction(buildRlsContext(actor), async (client) => {

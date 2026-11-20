@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="280" viewBox="0 0 900 280">
+  <rect width="900" height="280" fill="#000000"/>
+  
+  <!-- Subtle code badge -->
+  <rect x="330" y="32" width="240" height="36" rx="18" fill="#141419" stroke="#3ad389" stroke-width="2"/>
+  <circle cx="355" cy="50" r="5" fill="#3ad389"/>
+  <text x="460" y="56" font-family="'JetBrains Mono', monospace, sans-serif" font-size="14" font-weight="700" fill="#3ad389" text-anchor="middle" letter-spacing="2">DEV KERNEL v2.4</text>
+  
+  <!-- Main Display Typography -->
+  <text x="450" y="165" font-family="'Inter', system-ui, -apple-system, sans-serif" font-size="88" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="-3">FibezDevelopers</text>
+  
+  <!-- Subtitle Tagline -->
+  <text x="450" y="225" font-family="'JetBrains Mono', monospace, sans-serif" font-size="16" font-weight="600" fill="#a1a4a5" text-anchor="middle" letter-spacing="3">HIGH-SPEED VLESS • 3X-UI • REAL-TIME MESH</text>
+</svg>

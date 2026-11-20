@@ -41,7 +41,7 @@ interface StoreContextType {
   currency: 'LKR' | 'USD';
   setCurrency: (currency: 'LKR' | 'USD') => void;
   cart: CartItem[];
-  addToCart: (product: ProductItem, durationIndex?: number, selectedISP?: string) => void;
+  addToCart: (product: ProductItem, durationIndex?: number, selectedISP?: string, quantity?: number) => void;
   removeFromCart: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
   updateDuration: (cartItemId: string, durationIndex: number) => void;
@@ -142,18 +142,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setCurrencyState(curr);
   };
 
-  const addToCart = (product: ProductItem, durationIndex: number = 0, selectedISP?: string) => {
+  const addToCart = (product: ProductItem, durationIndex: number = 0, selectedISP?: string, quantity: number = 1) => {
     const selectedDuration = product.durations[durationIndex] || product.durations[0];
     const multiplier = selectedDuration?.multiplier || 1;
     const priceLKR = Math.round(product.priceLKR * multiplier);
     const priceUSD = parseFloat((product.priceUSD * multiplier).toFixed(2));
     const cartItemId = `${product.id}-${selectedDuration?.days || 30}`;
+    const qtyToAdd = Math.max(1, quantity);
 
     setCart((prevCart) => {
       const existing = prevCart.find((item) => item.id === cartItemId);
       if (existing) {
         return prevCart.map((item) =>
-          item.id === cartItemId ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === cartItemId ? { ...item, quantity: item.quantity + qtyToAdd } : item
         );
       }
       return [
@@ -166,7 +167,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           durationDays: selectedDuration?.days || 30,
           durationIndex,
           selectedISP: selectedISP || (product.category === 'vpn' ? 'SLT Fiber / Mobitel / Dialog' : undefined),
-          quantity: 1,
+          quantity: qtyToAdd,
           priceLKR,
           priceUSD,
         },

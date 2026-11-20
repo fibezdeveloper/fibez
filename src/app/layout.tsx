@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { StoreProvider } from "@/lib/store-context";
@@ -30,7 +31,10 @@ export const metadata: Metadata = {
     appUrl && (appUrl.startsWith("http://") || appUrl.startsWith("https://"))
       ? new URL(appUrl)
       : new URL("https://fibez.store"),
-  title: "Fibez — Digital Products, Gift Cards, Subscriptions & VLESS VPN",
+  title: {
+    default: "Fibez — High Speed Digital Store & V2Ray Hub",
+    template: "%s | Fibez",
+  },
   description:
     "Instant digital store for High-Speed VLESS VPN (SLT, Dialog, Hutch & Airtel), gift cards, game top-ups, streaming accounts, and software keys delivered in seconds.",
   manifest: "/site.webmanifest",
@@ -39,8 +43,8 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
       { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
     ],
     shortcut: "/favicon.ico",
     apple: [
@@ -61,8 +65,8 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} ${playfairDisplay.variable} dark antialiased`}
     >
       <head>
-        <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-title" content="Fibez" />
@@ -73,9 +77,11 @@ export default function RootLayout({
         className="min-h-screen bg-black text-[#f0f0f0] font-sans selection:bg-white selection:text-black"
       >
         <StoreProvider>
-          <ClientLayout>
-            {children}
-          </ClientLayout>
+          <Suspense fallback={null}>
+            <ClientLayout>
+              {children}
+            </ClientLayout>
+          </Suspense>
         </StoreProvider>
       </body>
     </html>

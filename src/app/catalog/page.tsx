@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { PRODUCTS, ProductItem } from '@/lib/products';
 import { useStore } from '@/lib/store-context';
 import ProductModal from '@/components/ProductModal';
+import DigitalProductThumbnail from '@/components/DigitalProductThumbnail';
+import TechText from '@/components/TechText';
 import { 
   Search, 
   Sparkles, 
@@ -75,23 +77,26 @@ function CatalogContent() {
       .then((res) => res.json())
       .then((data) => {
         if (data.products && data.products.length > 0) {
-          const mapped: ProductItem[] = data.products.map((p: any) => ({
-            id: p.id,
-            category: p.category_id,
-            brand: p.brand || undefined,
-            region: p.region || undefined,
-            title: p.title,
-            description: p.description,
-            priceUSD: Number(p.price_usd),
-            priceLKR: Number(p.price_lkr),
-            stockCount: Number(p.stock_count),
-            badge: p.badge || undefined,
-            isInstant: p.is_instant,
-            durations: p.durations || [],
-            options: p.options || [],
-            guideMarkdown: p.guide_markdown || '',
-            warranty: p.warranty_terms || '',
-          }));
+          const mapped: ProductItem[] = data.products.map((p: any) => {
+            const baseProd = PRODUCTS.find((x) => x.id === p.id);
+            return {
+              id: p.id,
+              category: p.category || p.category_id || baseProd?.category || 'software',
+              brand: p.brand || baseProd?.brand || undefined,
+              region: p.region || baseProd?.region || undefined,
+              title: p.title || baseProd?.title || '',
+              description: p.description || baseProd?.description || '',
+              priceUSD: Number(p.priceUSD ?? p.price_usd ?? baseProd?.priceUSD ?? 0),
+              priceLKR: Number(p.priceLKR ?? p.price_lkr ?? baseProd?.priceLKR ?? 0),
+              stockCount: Number(p.stockCount ?? p.stock_count ?? baseProd?.stockCount ?? 10),
+              badge: p.badge || baseProd?.badge || undefined,
+              isInstant: p.isInstant ?? p.is_instant ?? baseProd?.isInstant ?? true,
+              durations: p.durations || baseProd?.durations || [],
+              options: p.options || baseProd?.options || [],
+              guideMarkdown: p.guideMarkdown ?? p.guide_markdown ?? baseProd?.guideMarkdown ?? '',
+              warranty: p.warranty ?? p.warranty_terms ?? baseProd?.warranty ?? '',
+            };
+          });
           setProductList(mapped.filter((p) => p.category !== 'vpn'));
         }
       })
@@ -165,9 +170,24 @@ function CatalogContent() {
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span>Instant Email &amp; Key Vault Delivery</span>
         </div>
-        <h1 className="text-3xl sm:text-5xl font-normal tracking-[-0.04em] text-white">
-          Shop Everything Digital
-        </h1>
+        <div className="h-[52px] sm:h-[68px] w-full max-w-[560px] relative -ml-1">
+          <h1 className="sr-only">Shop Everything Digital</h1>
+          <TechText
+            text="Shop Everything Digital"
+            align="left"
+            fontWeight={700}
+            fontSize={48}
+            color="#ffffff"
+            accentColor="#3ad389"
+            reveal="letter"
+            dashLength={4}
+            dashGap={2}
+            specks={14}
+            intro="none"
+            clickKick
+            guides={false}
+          />
+        </div>
         <p className="text-sm sm:text-base text-zinc-400 mt-2 max-w-2xl leading-relaxed">
           Official gaming top-ups, digital gift cards, streaming subscriptions, and software licenses with instant email &amp; vault delivery.
         </p>
@@ -296,10 +316,21 @@ function CatalogContent() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => {
+            const fallbackProd = PRODUCTS.find((x) => x.id === product.id);
+            const lkrVal = Number.isFinite(product.priceLKR) && product.priceLKR > 0
+              ? product.priceLKR
+              : (fallbackProd?.priceLKR ?? 3300);
+            const usdVal = Number.isFinite(product.priceUSD) && product.priceUSD > 0
+              ? product.priceUSD
+              : (fallbackProd?.priceUSD ?? 10);
+            const stockVal = Number.isFinite(product.stockCount)
+              ? product.stockCount
+              : (fallbackProd?.stockCount ?? 10);
+
             const priceFormatted =
               currency === 'USD'
-                ? `$${product.priceUSD.toFixed(2)}`
-                : `Rs. ${product.priceLKR.toLocaleString()}`;
+                ? `$${usdVal.toFixed(2)}`
+                : `Rs. ${lkrVal.toLocaleString()}`;
 
             const isJustAdded = addedId === product.id;
 
@@ -309,33 +340,11 @@ function CatalogContent() {
                 className="group relative flex flex-col justify-between rounded-[16px] bg-[#111114] border border-white/10 hover:border-white/25 transition-all p-6 shadow-lg"
               >
                 <div>
-                  {/* Card Header */}
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-[10px] bg-white/5 border border-white/10 flex items-center justify-center text-white shrink-0">
-                      {product.category === 'subscription' && <Sparkles className="w-5 h-5 text-purple-400" />}
-                      {product.category === 'gaming' && <Zap className="w-5 h-5 text-amber-400" />}
-                      {product.category === 'giftcard' && <Gift className="w-5 h-5 text-emerald-400" />}
-                      {product.category === 'software' && <Cpu className="w-5 h-5 text-sky-400" />}
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-end gap-1.5">
-                      {product.badge && (
-                        <span className="font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-zinc-200">
-                          {product.badge}
-                        </span>
-                      )}
-                      <span className={`font-mono text-[9px] px-2 py-0.5 rounded-full border ${
-                        product.stockCount > 0
-                          ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20'
-                          : 'text-zinc-500 bg-white/5 border-white/10'
-                      }`}>
-                        {product.stockCount > 0 ? 'In Stock' : 'Out of Stock'}
-                      </span>
-                    </div>
-                  </div>
+                  {/* Digital Product Brand Pass / Official Logo Header */}
+                  <DigitalProductThumbnail product={product} />
 
                   {/* Brand & Region meta */}
-                  <div className="flex items-center gap-2 mb-1.5">
+                  <div className="flex items-center gap-2 mb-2">
                     {product.brand && (
                       <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">
                         {product.brand}
@@ -346,6 +355,13 @@ function CatalogContent() {
                         {product.region}
                       </span>
                     )}
+                    <span className={`ml-auto font-mono text-[9px] px-2 py-0.5 rounded-full border ${
+                      stockVal > 0
+                        ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20'
+                        : 'text-zinc-500 bg-white/5 border-white/10'
+                    }`}>
+                      {stockVal > 0 ? `${stockVal} In Stock` : 'Out of Stock'}
+                    </span>
                   </div>
 
                   {/* Title & Detail Link */}
@@ -372,16 +388,16 @@ function CatalogContent() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      disabled={product.stockCount <= 0}
+                      disabled={stockVal <= 0}
                       onClick={(e) => handleQuickAdd(product, e)}
                       className={`p-2.5 rounded-xl border transition-all ${
-                        product.stockCount <= 0
+                        stockVal <= 0
                           ? 'bg-white/5 border-white/5 text-zinc-600 cursor-not-allowed'
                           : isJustAdded
                             ? 'bg-white text-black border-white cursor-pointer'
                             : 'bg-white/5 border-white/10 hover:border-white/30 text-white cursor-pointer'
                       }`}
-                      title={product.stockCount <= 0 ? 'Out of Stock' : 'Quick Add to Cart'}
+                      title={stockVal <= 0 ? 'Out of Stock' : 'Quick Add to Cart'}
                     >
                       {isJustAdded ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
                     </button>
@@ -390,7 +406,7 @@ function CatalogContent() {
                       href={`/products/${product.id}`}
                       className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs tracking-wider uppercase transition-all inline-flex items-center gap-1.5"
                     >
-                      <span>{product.stockCount > 0 ? 'Buy Now' : 'Details'}</span>
+                      <span>{stockVal > 0 ? 'Buy Now' : 'Details'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
