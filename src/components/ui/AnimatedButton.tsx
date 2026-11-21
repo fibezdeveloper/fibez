@@ -4,7 +4,7 @@ import React from 'react';
 import { motion, MotionProps } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
-export type AnimatedButtonVariant = 'default' | 'emerald' | 'dark' | 'outline' | 'amber';
+export type AnimatedButtonVariant = 'default' | 'emerald' | 'dark' | 'outline' | 'amber' | 'blue';
 export type AnimatedButtonSize = 'sm' | 'md' | 'lg';
 
 export type AnimatedButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
@@ -63,6 +63,10 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
     outline: {
       base: 'bg-transparent hover:bg-white/5 text-zinc-300 hover:text-white border border-white/15 hover:border-white/30',
       defaultShine: 'rgba(58, 211, 137, 0.7)',
+    },
+    blue: {
+      base: 'bg-[#1d4ed8] hover:bg-[#1e40af] text-white font-semibold border border-[#2563eb] shadow-lg shadow-[#1d4ed8]/25',
+      defaultShine: 'rgba(147, 180, 255, 0.9)',
     },
     amber: {
       base: 'bg-amber-400 hover:bg-amber-300 text-black font-semibold border border-amber-400 shadow-lg shadow-amber-400/20',

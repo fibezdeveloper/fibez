@@ -170,12 +170,12 @@ export default function V2RayPackageCard({
       onClick={toggleExpand}
       className={`group relative rounded-[20px] bg-[#09090c] border transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer select-none ${
         isCardActive
-          ? 'border-[#3ad389]/60 shadow-[0_0_35px_-8px_rgba(58,211,137,0.22)] ring-1 ring-[#3ad389]/40'
+          ? 'border-[#2563eb]/60 shadow-[0_0_35px_-8px_rgba(37,99,235,0.28)] ring-1 ring-[#2563eb]/40'
           : 'border-[#1b1b20] hover:border-zinc-700/80 hover:shadow-lg'
       }`}
     >
       {/* Proximity Glowing Border Effect */}
-      <GlowingEffect color="emerald" proximity={55} />
+      <GlowingEffect color="rgba(37, 99, 235, 0.85)" proximity={55} />
 
       {/* Top Banner Ribbon for Popular / Bestsellers */}
       {pkg.badge && (
@@ -212,7 +212,7 @@ export default function V2RayPackageCard({
         {/* Title & Target Indicator */}
         <div className="flex items-start justify-between gap-2 mt-1">
           <div>
-            <h3 className="text-base font-bold text-white tracking-tight group-hover:text-[#3ad389] transition-colors line-clamp-1">
+            <h3 className="text-base font-bold text-white tracking-tight group-hover:text-[#5b8cff] transition-colors line-clamp-1">
               {pkg.title}
             </h3>
             <span className="text-[11px] font-mono text-zinc-400 flex items-center gap-1.5 mt-0.5">
@@ -267,7 +267,7 @@ export default function V2RayPackageCard({
           </div>
 
           <AnimatedButton
-            variant="emerald"
+            variant="blue"
             size="sm"
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
