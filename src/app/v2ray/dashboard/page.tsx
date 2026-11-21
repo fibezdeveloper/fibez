@@ -48,6 +48,7 @@ import {
   Wallet,
   Gift
 } from 'lucide-react';
+import DailyUsageBars from '@/components/v2ray/DailyUsageBars';
 import WindsterAreaChart, { ChartDataPoint } from '@/components/admin/WindsterAreaChart';
 import { LIVE_V2RAY_PACKAGES, normalizeIsp } from '@/lib/v2ray-catalog';
 import {
@@ -341,6 +342,19 @@ export default function V2RayDashboardPage() {
       setSelectedPackageId(line.packageId);
       setCustomClientUuid(line.uuid);
       setCustomVlessUri(line.vlessUri);
+      // Clear the previous line's live numbers before loading this one.
+      setLiveUsageGB(null);
+      setCustomQuotaGB(null);
+      setCustomExpiryTime(null);
+      setIsTrialClient(false);
+      setCustomClientEmail(null);
+      setCustomClientRemark(null);
+      setLiveEnabled(null);
+      setLastOnlineMs(0);
+      setConnections([]);
+      setRegisteredDevices([]);
+      setLimits({ ip: 0, hwid: 0 });
+      setUsageHistory({ series: [], trackingSince: null });
       fetchTelemetryForClient(line.uuid);
     }
   };
@@ -801,8 +815,66 @@ export default function V2RayDashboardPage() {
           </div>
         </section>
 
+        {/* Line switcher: sits above the tabs because it drives config, usage and devices */}
+        {purchasedLines.length > 0 && (
+          <div className="mt-8 p-4 sm:p-5 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23] shadow-xl space-y-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#3ad389]/10 border border-[#3ad389]/20 flex items-center justify-center shrink-0">
+                  <Radio className="w-4 h-4 text-[#3ad389]" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                      My Purchased V2Ray Lines ({purchasedLines.length})
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-[#3ad389]/10 text-[#3ad389] border border-[#3ad389]/20 font-bold">
+                      Multi-Line Switcher
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    Pick a line: the config, usage and devices below all follow the line you select.
+                  </p>
+                </div>
+              </div>
+
+              <Link
+                href="/v2ray"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#3ad389] hover:bg-[#32be7a] text-black shadow-md shadow-[#3ad389]/15 transition-all self-start sm:self-auto cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Buy Another Line</span>
+              </Link>
+            </div>
+
+            {/* Line Selection Buttons */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-1">
+              {purchasedLines.map((line, idx) => {
+                const isCurrent = line.id === activeLineId;
+                return (
+                  <button
+                    key={line.id}
+                    onClick={() => handleSelectLine(line.id)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-mono transition-all flex items-center gap-2.5 whitespace-nowrap cursor-pointer shrink-0 ${
+                      isCurrent
+                        ? 'bg-[#18181f] text-white border border-[#3ad389] shadow-md shadow-[#3ad389]/15 font-bold'
+                        : 'bg-[#121215] text-zinc-400 hover:text-white border border-[#1f1f23] hover:border-zinc-700'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${isCurrent ? 'bg-[#3ad389] animate-pulse' : 'bg-zinc-600'}`} />
+                    <span className="font-semibold text-white">Line {idx + 1}: {line.title.split('(')[0].trim()}</span>
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/5 border border-white/10 text-zinc-400">
+                      {line.ispTag} • Port {line.port}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* 3 Focused Main Tabs: V2Ray Config, Usage & Reviews */}
-        <div className="flex items-center gap-2 mt-8 border-b border-[#1f1f23] pb-px overflow-x-auto">
+        <div className="flex items-center gap-2 mt-6 border-b border-[#1f1f23] pb-px overflow-x-auto">
           <button
             onClick={() => setActiveTab('config')}
             className={`flex items-center gap-2.5 px-6 py-3 text-xs sm:text-sm font-mono uppercase tracking-wider border-b-2 transition-all whitespace-nowrap ${
@@ -851,62 +923,6 @@ export default function V2RayDashboardPage() {
         {/* ======================================================== */}
         {activeTab === 'config' && (
           <div className="mt-8 space-y-6">
-            {/* MULTI-LINE PURCHASE SWITCHER TOOLBAR */}
-            <div className="p-4 sm:p-5 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23] shadow-xl space-y-3.5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#3ad389]/10 border border-[#3ad389]/20 flex items-center justify-center shrink-0">
-                    <Radio className="w-4 h-4 text-[#3ad389]" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                        My Purchased V2Ray Lines ({purchasedLines.length})
-                      </h4>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-[#3ad389]/10 text-[#3ad389] border border-[#3ad389]/20 font-bold">
-                        Multi-Line Switcher
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 mt-0.5">
-                      Switch between your purchased packages to copy connection configs, sync subscriptions, or check live speedtests.
-                    </p>
-                  </div>
-                </div>
-
-                <Link
-                  href="/v2ray"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#3ad389] hover:bg-[#32be7a] text-black shadow-md shadow-[#3ad389]/15 transition-all self-start sm:self-auto cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ Buy Another Line</span>
-                </Link>
-              </div>
-
-              {/* Line Selection Buttons */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-1">
-                {purchasedLines.map((line, idx) => {
-                  const isCurrent = line.id === activeLineId;
-                  return (
-                    <button
-                      key={line.id}
-                      onClick={() => handleSelectLine(line.id)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-mono transition-all flex items-center gap-2.5 whitespace-nowrap cursor-pointer shrink-0 ${
-                        isCurrent
-                          ? 'bg-[#18181f] text-white border border-[#3ad389] shadow-md shadow-[#3ad389]/15 font-bold'
-                          : 'bg-[#121215] text-zinc-400 hover:text-white border border-[#1f1f23] hover:border-zinc-700'
-                      }`}
-                    >
-                      <span className={`w-2 h-2 rounded-full ${isCurrent ? 'bg-[#3ad389] animate-pulse' : 'bg-zinc-600'}`} />
-                      <span className="font-semibold text-white">Line {idx + 1}: {line.title.split('(')[0].trim()}</span>
-                      <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/5 border border-white/10 text-zinc-400">
-                        {line.ispTag} • Port {line.port}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             {/* Active Purchased Subscription Profile (Locked to user's purchased order) */}
             <div className="p-6 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23] relative overflow-hidden">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#18181c]">
@@ -1240,34 +1256,7 @@ export default function V2RayDashboardPage() {
             </div>
 
             {/* Daily data usage (real: derived from stored panel snapshots) */}
-            {usageHistory.series.some((d) => d.known) ? (
-              <WindsterAreaChart
-                title="Data usage per day"
-                subtitle={`Download vs upload from the V2Ray panel${usageHistory.trackingSince ? ` · tracked since ${usageHistory.trackingSince}` : ''}`}
-                data={clientTelemetryChartData}
-                primaryName="Download"
-                secondaryName="Upload"
-                primaryColor="#3ad389"
-                secondaryColor="#06b6d4"
-                unit="GB"
-                trendText={`${clientTelemetryChartData.reduce((sum, d) => sum + d.primaryValue + (d.secondaryValue ?? 0), 0).toFixed(1)} GB in range`}
-                trendPositive={true}
-                timeRanges={[
-                  { label: 'Last 7 Days', value: '7d' },
-                  { label: 'Last 14 Days', value: '30d' },
-                ]}
-                activeRange={clientUsageRange}
-                onRangeChange={(r) => setClientUsageRange(r as any)}
-              />
-            ) : (
-              <div className="p-6 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23]">
-                <h3 className="text-lg font-medium text-white">Data usage per day</h3>
-                <p className="text-xs text-[#a1a4a5] mt-2 leading-relaxed">
-                  The panel only reports your total so far, so the daily history is built from a snapshot we take each
-                  night. {usageHistory.trackingSince ? `Tracking started ${usageHistory.trackingSince}; the chart appears after the next snapshot.` : "Tracking starts now; the chart appears after tomorrow's snapshot."}
-                </p>
-              </div>
-            )}
+            <DailyUsageBars series={usageHistory.series} trackingSince={usageHistory.trackingSince} />
 
             {/* Connections (real: panel IP log) and registered devices */}
             <div className="p-6 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23]">
