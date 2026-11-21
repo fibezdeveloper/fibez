@@ -254,7 +254,7 @@ export default function Navbar(props: NavbarProps) {
   // Three clear groups: what to buy, your account, and help. Each page appears once.
   // The menu adapts to what is switched on:
   //  - everything on: Shop, My Account, Help
-  //  - V2Ray only (shop off): V2Ray, My Account, plus a Support card only when it has 2+ links
+  //  - V2Ray only (shop off): V2Ray, My Account, plus a Support card when it has any link
   const v2rayOpen = pageFlags ? pageFlags.v2ray : true;
   const ticketsOpen = pageFlags ? pageFlags.tickets : true;
   const whatsappOpen = pageFlags ? pageFlags.whatsapp !== false : true;
@@ -316,10 +316,8 @@ export default function Navbar(props: NavbarProps) {
       ...(ticketsOpen ? [{ label: 'Support Tickets', href: '/tickets' }] : []),
       ...(whatsappOpen ? [whatsapp] : []),
     ];
-    if (supportLinks.length < 2) {
-      // One support link left: fold it into the V2Ray card instead of a card with one link.
-      return [{ ...v2rayCard, links: [...(v2rayCard.links || []), ...supportLinks] }, account];
-    }
+    // No support link at all (tickets and WhatsApp both off): two cards only.
+    if (supportLinks.length === 0) return [v2rayCard, account];
     return [v2rayCard, account, { label: 'Support', description: 'Real people, quick replies.', links: supportLinks }];
   })();
 
