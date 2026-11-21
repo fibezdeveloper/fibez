@@ -15,6 +15,8 @@ export interface ResolvedPrice {
   /** Server-owned display title when the id is a generated V2Ray plan id. */
   generatedTitle?: string;
   isV2Ray: boolean;
+  /** The V2Ray package id behind a generated plan id (used to block disabled packages). */
+  packageId?: string;
 }
 
 const PLAN_IDS = V2RAY_PLAN_TIERS.map((t) => t.id.replace(/[-]/g, '\\-')).join('|');
@@ -57,6 +59,7 @@ export function resolveServerPrice(productId: string, variantLabel: string): Res
         catalogProduct: null,
         generatedTitle: `V2Ray VLESS ${plan.name} ${plan.quotaLabel} (${card[3] === 'lk_ip' ? 'Sri Lankan IP' : 'Singapore SG3'}) - ${months} Month${months > 1 ? 's' : ''}`,
         isV2Ray: true,
+        packageId: card[1],
       };
     }
     return null;
@@ -142,4 +145,19 @@ export function resolveV2RayProvisioning(
     expiryDays: 30 * months,
     limitIp: plan?.deviceLimit ?? 2,
   };
+}
+/**
+ * Price of renewing a line you bought as a V2Ray plan: the same package + plan + server type,
+ * for 1, 3, 6 or 12 months (with the normal duration discount). Null if it was not bought as a plan.
+ */
+export function renewalQuote(productId: string, months: number): { productId: string; title: string; priceLKR: number } | null {
+  if (!DURATION_DISCOUNTS.some((d) => d.months === months)) return null;
+  const card = CARD_ID_RE.exec(productId);
+  const page = PAGE_ID_RE.exec(productId);
+  const parts = card ? [card[1], card[2], card[3]] : page ? [page[1], page[2], page[3]] : null;
+  if (!parts) return null;
+  const id = `${parts[0]}-${parts[1]}-${parts[2]}-${months}m`;
+  const priced = resolveServerPrice(id, '');
+  if (!priced || !priced.generatedTitle) return null;
+  return { productId: id, title: `Renewal: ${priced.generatedTitle}`, priceLKR: priced.unitPriceLKR };
 }

@@ -10,6 +10,8 @@ import {
   Eye, EyeOff, CheckCircle2, Send, Search, ExternalLink
 } from 'lucide-react';
 
+import OrderRefundBar from '@/components/OrderRefundBar';
+
 interface ActiveAsset {
   id: string;
   orderNumber: string;
@@ -22,6 +24,8 @@ interface ActiveAsset {
   username?: string;
   password?: string;
   status: string;
+  refundable?: boolean;
+  refundDeadline?: string | null;
 }
 
 interface PendingReceipt {
@@ -297,10 +301,10 @@ export default function VaultDashboard() {
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4">
-                {assets.map((asset) => (
+                {assets.map((asset, assetIdx) => (
                   <div
                     key={asset.id}
-                    className="resend-card p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+                    className="resend-card p-6 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between gap-6"
                   >
                     <div className="space-y-1.5 max-w-xl">
                       <div className="flex items-center gap-3">
@@ -326,7 +330,7 @@ export default function VaultDashboard() {
                       {asset.category === 'vpn' && asset.payload?.startsWith('vless://') && (
                         <>
                           <Link
-                            href={`/v2ray/dashboard?vless=${encodeURIComponent(asset.payload)}&order=${encodeURIComponent(asset.orderNumber || '')}`}
+                            href={`/v2ray/dashboard?order=${encodeURIComponent(asset.orderNumber || '')}`}
                             className="btn-ghost-resend text-xs !py-2 !px-3 text-[#3ad389] hover:bg-[#3ad389]/10 border border-[#3ad389]/30 flex items-center justify-center gap-1.5 transition-colors"
                             title="Open interactive control panel for this V2Ray line"
                           >
@@ -375,6 +379,12 @@ export default function VaultDashboard() {
                         )}
                       </button>
                     </div>
+
+                    {asset.refundable && assets.findIndex((a) => a.orderNumber === asset.orderNumber) === assetIdx && (
+                      <div className="w-full basis-full pt-4 border-t border-white/5">
+                        <OrderRefundBar orderNumber={asset.orderNumber} refundDeadline={asset.refundDeadline} onChanged={() => window.location.reload()} />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

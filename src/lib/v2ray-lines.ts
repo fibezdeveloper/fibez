@@ -21,6 +21,13 @@ export interface PurchasedV2RayLine {
   purchasedAt: string;
   status: 'ACTIVE' | 'EXPIRED' | 'TRIAL';
   notes?: string;
+  /** When the line expires on the panel (ISO). */
+  expiresAt?: string | null;
+  /** True when this line can be renewed online from the wallet. */
+  renewable?: boolean;
+  /** True while the order can still be refunded (24h after delivery, not confirmed as working). */
+  refundable?: boolean;
+  refundDeadline?: string | null;
 }
 
 // No demo lines: a line only exists if it was really delivered to the signed-in account.

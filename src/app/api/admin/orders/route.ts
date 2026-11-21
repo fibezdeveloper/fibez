@@ -8,7 +8,9 @@ import { resolveV2RayProvisioning } from '@/lib/pricing';
 import { PRODUCTS } from '@/lib/products';
 import { analyzeBankReceipt } from '@/lib/receipt-verifier';
 import { getWhatsAppDispatchUrl, buildWhatsAppDispatchMessage } from '@/lib/whatsapp';
-import { awardReferralCredits } from '@/lib/referrals';
+import { awardReferral } from '@/lib/wallet';
+import { fulfillOrder, recordFulfilledClients, revokeOrderLines } from '@/lib/fulfillment';
+import { dbReady } from '@/lib/db/tx';
 import { getObjectDownloadUrl, BUCKET_NAME } from '@/lib/storage';
 
 async function freshSlipUrl(url?: string | null): Promise<string | null | undefined> {
@@ -125,126 +127,28 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (action === 'APPROVE') {
-      const itemKeys: Record<string, string> = {};
-      const panelClients: { email: string; uuid: string }[] = [];
       const manualKeys: Record<string, string> =
         body.manualKeys && typeof body.manualKeys === 'object' ? body.manualKeys : {};
-      const provisionExtra = {
-        overrides: await adminStore.getPackageOverrides(),
-        customPackages: await adminStore.getCustomPackages(),
-      };
-      const emailTag = order.customerEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').slice(0, 10);
 
-      // If anything fails half-way, remove the panel clients we already created so nothing is orphaned.
-      const rollbackPanel = async () => {
-        for (const c of panelClients) await xui.deleteClient(c.email).catch(() => false);
-      };
-
-      for (let idx = 0; idx < order.items.length; idx++) {
-        const item = order.items[idx];
-        const prod = PRODUCTS.find((p) => p.id === item.productId);
-        const isV2Ray =
-          item.productId.startsWith('v2ray') ||
-          (prod && prod.category === 'vpn') ||
-          item.productTitle.toLowerCase().includes('vless') ||
-          item.productTitle.toLowerCase().includes('v2ray');
-        const qty = Math.max(1, Math.min(20, Math.round(item.quantity || 1)));
-        const delivered: string[] = [];
-
-        if (isV2Ray) {
-          const spec = resolveV2RayProvisioning(item.productId, provisionExtra);
-          const isRenewal =
-            idx === 0 && Boolean(order.renewOrderId || order.existingUuid || order.reviewNotes?.includes('RENEW:'));
-
-          if (isRenewal && order.existingUuid) {
-            // Renewal: keep the existing client, reset its traffic.
-            try {
-              const existing = await xui.getClient(order.existingUuid);
-              if (existing) await xui.resetClientTraffic(existing.email);
-            } catch (xErr) {
-              console.warn('3x-ui renewal traffic reset note:', xErr);
-            }
-            delivered.push(
-              buildVlessUri({
-                uuid: order.existingUuid,
-                host: spec.host || xui.getPublicHost(),
-                port: spec.port,
-                sni: spec.sni,
-                remark: `${spec.remarkName} (${order.orderNumber}-RENEW)`,
-              })
-            );
-          } else {
-            for (let n = 0; n < qty; n++) {
-              const clientEmail = `${order.orderNumber}-${idx + 1}${qty > 1 ? `-${n + 1}` : ''}_${emailTag}`;
-              try {
-                const client = await xui.createClient({
-                  email: clientEmail,
-                  inboundId: spec.inboundId,
-                  totalGB: spec.totalBytes,
-                  expiryDays: spec.expiryDays,
-                  limitIp: spec.limitIp,
-                  comment: `Order ${order.orderNumber} - ${order.customerName} (${order.customerEmail})`,
-                });
-                panelClients.push({ email: clientEmail, uuid: client.uuid });
-                delivered.push(
-                  buildVlessUri({
-                    uuid: client.uuid,
-                    host: spec.host || xui.getPublicHost(),
-                    port: spec.port,
-                    sni: spec.sni,
-                    remark: `${spec.remarkName} (${order.orderNumber})`,
-                  })
-                );
-              } catch (xErr) {
-                // Never deliver a config that does not exist on the panel: keep the order pending.
-                console.error('3x-ui provisioning failed, order left pending:', xErr);
-                await rollbackPanel();
-                return NextResponse.json(
-                  { error: 'Could not create the client on the V2Ray panel. The order was NOT approved; check the panel connection and retry.' },
-                  { status: 502 }
-                );
-              }
-            }
-          }
-        } else {
-          // Physical stock only: never invent keys. Admin can paste keys via manualKeys if needed.
-          const manual = String(manualKeys[item.id] || '')
-            .split('\n')
-            .map((s) => s.trim())
-            .filter(Boolean);
-          for (let n = 0; n < qty; n++) {
-            if (manual[n]) {
-              delivered.push(manual[n]);
-              continue;
-            }
-            const invItem = await adminStore.dispenseStockItem(item.productId, order.id, order.customerEmail);
-            if (!invItem) {
-              await rollbackPanel();
-              return NextResponse.json(
-                {
-                  error: `No stock available for "${item.productTitle}". Add stock in Inventory (or provide the key manually) and approve again. The order was NOT approved.`,
-                },
-                { status: 409 }
-              );
-            }
-            delivered.push(invItem.keyPayload);
-          }
-        }
-
-        itemKeys[item.id] = delivered.join('\n');
+      const result = await fulfillOrder(order, manualKeys);
+      if (!result.ok) {
+        return NextResponse.json({ error: `${result.error} The order was NOT approved.` }, { status: result.status });
       }
-
-      const dispensedPayload = Object.values(itemKeys).join('\n');
+      const { itemKeys, panelClients, dispensedPayload } = result;
       const firstItem = order.items[0];
-      // Check referral rewards: If this order used a referral code, award 10 Fibez store credits!
-      const referralCodeToAward = order.referralCode || order.promoCode;
-      let referralAwardResult = null;
-      if (referralCodeToAward) {
-        referralAwardResult = await awardReferralCredits({
-          referralCode: referralCodeToAward,
-          orderNumber: order.orderNumber,
-          buyerEmail: order.customerEmail,
-        });
+
+      // Referral reward goes to the referrer's WALLET (once per order, idempotent).
+      let referralAwardResult: { awarded: boolean } | null = null;
+      if (order.referralCode && dbReady()) {
+        try {
+          referralAwardResult = await awardReferral({
+            orderNumber: order.orderNumber,
+            code: order.referralCode,
+            buyerEmail: order.customerEmail,
+          });
+        } catch (refErr) {
+          console.error('Referral reward failed (order still approved):', refErr);
+        }
       }
 
       const updated = await adminStore.updateOrderStatus(orderNumber, {
@@ -255,7 +159,7 @@ export async function PATCH(req: NextRequest) {
         itemKeys,
         metadata: { panelClients },
       });
-
+      await recordFulfilledClients(order, panelClients);
       // Build WhatsApp Automated Dispatch URL
       const whatsAppUrl = getWhatsAppDispatchUrl({
         customerName: order.customerName,
@@ -282,14 +186,11 @@ export async function PATCH(req: NextRequest) {
         dispensedPayload,
         whatsAppUrl,
         whatsAppMessage,
-        referralAwarded: referralAwardResult?.success ? 10 : 0,
+        referralAwarded: referralAwardResult?.awarded ? 100 : 0,
       });
     } else if (action === 'REJECT') {
       // Rejecting (or revoking) an order that already got V2Ray lines removes them from the panel.
-      let revokedClients = 0;
-      for (const c of order.metadata?.panelClients || []) {
-        if (await xui.deleteClient(c.email)) revokedClients++;
-      }
+      const revokedClients = await revokeOrderLines(order);
       const updated = await adminStore.updateOrderStatus(orderNumber, {
         paymentStatus: 'FAILED',
         fulfillmentStatus: 'REVOKED',

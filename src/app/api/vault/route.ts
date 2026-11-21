@@ -8,6 +8,7 @@ import {
 } from '@/lib/dal';
 import { withRlsTransaction } from '@/lib/db/rls';
 import { adminStore } from '@/lib/admin-store';
+import { REFUND_WINDOW_HOURS } from '@/lib/wallet';
 
 export async function GET(request: NextRequest) {
   try {
@@ -144,7 +145,30 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Refund window info per order (24h after delivery, closed once confirmed as working).
+    const refundInfo = new Map<string, { refundable: boolean; refundDeadline: string | null }>();
+    if (actor) {
+      for (const num of new Set(itemsQuery.map((i) => String(i.order_number)))) {
+        const ord = await adminStore.getOrder(num);
+        if (!ord || ord.customerEmail.toLowerCase() !== actor.email.toLowerCase()) continue;
+        const deliveredMs = new Date(ord.deliveredAt || ord.updatedAt).getTime();
+        const paid = ord.totalAmountLKR > 0 && ord.paymentMethod !== 'staff_grant' && !ord.orderNumber.startsWith('FBZ-TRL-');
+        const open =
+          paid &&
+          ord.paymentStatus === 'VERIFIED' &&
+          ord.fulfillmentStatus === 'DELIVERED' &&
+          !ord.receivedConfirmedAt &&
+          Date.now() - deliveredMs < REFUND_WINDOW_HOURS * 3600 * 1000;
+        refundInfo.set(num, {
+          refundable: open,
+          refundDeadline: open ? new Date(deliveredMs + REFUND_WINDOW_HOURS * 3600 * 1000).toISOString() : null,
+        });
+      }
+    }
+
     const assets = itemsQuery.map((item) => ({
+      refundable: refundInfo.get(String(item.order_number))?.refundable ?? false,
+      refundDeadline: refundInfo.get(String(item.order_number))?.refundDeadline ?? null,
       id: item.id,
       orderNumber: item.order_number,
       productName: item.product_name,

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { unstable_rethrow } from 'next/navigation';
 import { buildRlsContext, getVerifiedSessionUser } from '@/lib/dal';
 import { withRlsTransaction } from '@/lib/db/rls';
+import { rateLimit } from '@/lib/rate-limit';
+import { requestIp } from '@/lib/trial';
 
 async function validatePromoCode(code: string) {
   const actor = await getVerifiedSessionUser();
@@ -43,6 +45,9 @@ async function validatePromoCode(code: string) {
 
 export async function GET(request: NextRequest) {
   try {
+    if ((await rateLimit('coupon', requestIp(request.headers), 30, 600)).limited) {
+      return NextResponse.json({ valid: false, message: 'Too many attempts. Please wait a few minutes.' }, { status: 429 });
+    }
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code')?.trim().toUpperCase();
 
@@ -64,6 +69,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if ((await rateLimit('coupon', requestIp(request.headers), 30, 600)).limited) {
+      return NextResponse.json({ valid: false, message: 'Too many attempts. Please wait a few minutes.' }, { status: 429 });
+    }
     const body = await request.json().catch(() => ({}));
     const code = typeof body.code === 'string' ? body.code.trim().toUpperCase() : '';
     if (!code) {

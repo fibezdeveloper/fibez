@@ -1,34 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedSessionUser } from '@/lib/dal';
-import {
-  getOrCreateReferralProfile,
-  validateReferralCode,
-  redeemUserCredits,
-} from '@/lib/referrals';
+import { dbReady } from '@/lib/db/tx';
+import { getBalance, getHistory, getOrCreateReferralCode, findReferrerByCode, referralStats, REFERRAL_BONUS_LKR } from '@/lib/wallet';
 
+// Referral rewards are paid into the user's WALLET (see src/lib/wallet.ts). The old "store credits"
+// are gone; the response keeps a compatible shape so existing screens keep working.
 export async function GET(req: NextRequest) {
   try {
     const user = await getVerifiedSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Please log in to view referral rewards' }, { status: 401 });
-    }
+    if (!user) return NextResponse.json({ error: 'Please log in to view referral rewards' }, { status: 401 });
+    if (!dbReady()) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
 
-    const profile = await getOrCreateReferralProfile(user.email, user.name);
+    const [code, balance, stats, ledger] = await Promise.all([
+      getOrCreateReferralCode(user.id, user.email, user.name),
+      getBalance(user.id),
+      referralStats(user.id),
+      getHistory(user.id, 50),
+    ]);
+
     const host = req.headers.get('host') || 'fibez.store';
     const proto = req.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
-    const origin = `${proto}://${host}`;
 
-    return NextResponse.json({
-      success: true,
-      profile: {
-        ...profile,
-        referralLink: `${origin}/?ref=${profile.referralCode}`,
-        creditValueLKR: profile.storeCredits * 10,
-        rewardPerFriend: 10, // 10 credits
+    return NextResponse.json(
+      {
+        success: true,
+        profile: {
+          referralCode: code,
+          referralLink: `${proto}://${host}/?ref=${code}`,
+          balanceLkr: balance,
+          creditValueLKR: balance,
+          storeCredits: Math.floor(balance / 10), // legacy display unit (1 credit = Rs. 10)
+          invitedCount: stats.rewardedFriends,
+          purchasedCount: stats.rewardedFriends,
+          totalEarnedCredits: Math.floor(stats.totalEarnedLkr / 10),
+          totalEarnedLkr: stats.totalEarnedLkr,
+          rewardPerFriendLkr: REFERRAL_BONUS_LKR,
+          history: ledger
+            .filter((l) => l.entry_type === 'REFERRAL_BONUS')
+            .map((l) => ({
+              id: l.id,
+              type: 'FRIEND_PURCHASED',
+              orderNumber: l.ref_id,
+              creditsDelta: Math.floor(l.amount_lkr / 10),
+              timestamp: l.created_at,
+              description: l.reason || 'Referral reward',
+            })),
+        },
       },
-    });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to fetch referral profile' }, { status: 500 });
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
+  } catch (error) {
+    console.error('Referral profile failed:', error);
+    return NextResponse.json({ error: 'Failed to fetch referral profile' }, { status: 500 });
   }
 }
 
@@ -39,42 +62,23 @@ export async function POST(req: NextRequest) {
 
     if (action === 'validate') {
       const code = String(body.code || '').trim();
-      const result = await validateReferralCode(code);
+      const referrer = dbReady() && code ? await findReferrerByCode(code) : null;
+      const valid = Boolean(referrer);
       return NextResponse.json({
-        success: result.valid,
-        valid: result.valid,
-        discountLKR: result.discountLKR,
-        message: result.valid
-          ? `Referral Code "${code}" Applied: Rs. ${result.discountLKR} discount!`
-          : 'Invalid or expired referral code',
+        success: valid,
+        valid,
+        discountLKR: valid ? 50 : 0,
+        message: valid ? `Referral Code "${code}" Applied: Rs. 50 discount!` : 'Invalid or expired referral code',
       });
     }
 
     if (action === 'redeem') {
-      const user = await getVerifiedSessionUser();
-      if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-
-      const credits = Number(body.credits) || 0;
-      if (credits <= 0) {
-        return NextResponse.json({ error: 'Invalid credits amount' }, { status: 400 });
-      }
-
-      const result = await redeemUserCredits(user.email, credits);
-      if (!result.success) {
-        return NextResponse.json({ error: 'Insufficient store credits' }, { status: 400 });
-      }
-
-      return NextResponse.json({
-        success: true,
-        discountLKR: result.discountLKR,
-        message: `Applied ${credits} Fibez Credits (Rs. ${result.discountLKR} discount)!`,
-      });
+      return NextResponse.json({ error: 'Store credits are now your wallet balance: choose "Pay with wallet" at checkout.' }, { status: 410 });
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Referral operation failed' }, { status: 500 });
+  } catch (error) {
+    console.error('Referral operation failed:', error);
+    return NextResponse.json({ error: 'Referral operation failed' }, { status: 500 });
   }
 }

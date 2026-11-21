@@ -34,7 +34,18 @@ export default function BillingPage() {
   const memberId = sessionId ? `#${sessionId.slice(0, 6).toUpperCase()}` : '';
   const userId = sessionId.slice(0, 8);
   const referralCode = profile?.referralCode ?? '';
-  const walletBalance = profile?.creditValueLKR ?? 0;
+  // The wallet ledger (server) is the only source of truth for the balance.
+  const [wallet, setWallet] = useState<{
+    balanceLkr: number;
+    history: { id: string; entry_type: string; amount_lkr: number; balance_after_lkr: number; reason: string | null; created_at: string }[];
+    topups: { id: string; amount_lkr: number; bank_reference: string; status: string; review_note: string | null; created_at: string }[];
+  } | null>(null);
+  const walletBalance = wallet?.balanceLkr ?? 0;
+  const loadWallet = () =>
+    fetch('/api/wallet', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setWallet(d))
+      .catch(() => {});
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedAcc, setCopiedAcc] = useState(false);
 
@@ -48,6 +59,7 @@ export default function BillingPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    loadWallet();
     fetch('/api/referrals', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -90,37 +102,30 @@ export default function BillingPage() {
       setErrorMessage('Please enter the Commercial Bank transaction reference number.');
       return;
     }
+    if (!slipFile) {
+      setErrorMessage('Please attach your bank slip. It is required so we can verify the transfer.');
+      return;
+    }
 
     setIsSubmitting(true);
     setErrorMessage(null);
 
     try {
-      // 1) upload the slip (if any) to our storage, 2) open a billing ticket for staff to verify it.
-      let slipUrl = '';
-      if (slipFile) {
-        const fd = new FormData();
-        fd.append('file', slipFile);
-        fd.append('folder', 'slips');
-        const up = await fetch('/api/upload', { method: 'POST', body: fd });
-        const upData = await up.json().catch(() => ({}));
-        if (!up.ok || !upData.url) throw new Error(upData.error || 'Slip upload failed');
-        slipUrl = upData.url;
-      }
-
-      const res = await fetch('/api/tickets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subject: `Wallet top-up request: Rs. ${depositAmount}`,
-          category: 'Billing',
-          priority: 'MEDIUM',
-          message: `Top-up amount: Rs. ${depositAmount}\nBank reference: ${txnReference.trim()}\nSlip: ${slipUrl || 'not attached'}`,
-        }),
-      });
+      // One request: amount + bank reference + slip. It becomes a PENDING top-up; your wallet is only
+      // credited after staff verify the transfer in the bank.
+      const fd = new FormData();
+      fd.append('amount', String(depositAmount));
+      fd.append('bankReference', txnReference.trim());
+      fd.append('slip', slipFile);
+      const res = await fetch('/api/wallet/topups', { method: 'POST', body: fd });
 
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
-        setSuccessOrder(data.ticket?.ticket_number || 'submitted');
+        setSuccessOrder(data.id || 'submitted');
+        setSlipFile(null);
+        setSlipPreview(null);
+        setTxnReference('');
+        loadWallet();
       } else {
         throw new Error(data.error || 'Failed to submit deposit request');
       }
@@ -412,12 +417,12 @@ export default function BillingPage() {
                 {/* Deposit Slip Screenshot */}
                 <div>
                   <label className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1.5">
-                    Upload Bank Deposit Slip / Mobile Screenshot (Optional)
+                    Upload Bank Deposit Slip / Mobile Screenshot (Required)
                   </label>
                   <div className="relative border-2 border-dashed border-[#242430] hover:border-zinc-500 rounded-2xl p-4 text-center cursor-pointer transition-colors bg-[#0e0e13]">
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
                       onChange={handleFileChange}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
@@ -456,6 +461,68 @@ export default function BillingPage() {
                   <span>{isSubmitting ? 'Submitting to Review...' : `Submit Proof for Rs ${depositAmount.toLocaleString()} LKR`}</span>
                 </AnimatedButton>
               </form>
+            )}
+          </div>
+        </div>
+
+        {/* Your top-ups + wallet history */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="p-6 rounded-[24px] bg-[#0c0c0f] border border-[#1f1f26] space-y-3">
+            <h3 className="text-base font-bold text-white">Your top-up requests</h3>
+            {(wallet?.topups || []).length === 0 ? (
+              <p className="text-xs font-mono text-zinc-500">No top-ups yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {wallet!.topups.map((t) => (
+                  <div key={t.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#121217] border border-[#1e1e26] text-xs font-mono">
+                    <div>
+                      <div className="text-white font-semibold">Rs {Number(t.amount_lkr).toLocaleString()}</div>
+                      <div className="text-zinc-500">{t.bank_reference} · {new Date(t.created_at).toLocaleDateString()}</div>
+                      {t.review_note && <div className="text-zinc-400 mt-0.5">{t.review_note}</div>}
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        t.status === 'APPROVED'
+                          ? 'bg-emerald-500/10 text-emerald-300'
+                          : t.status === 'REJECTED'
+                          ? 'bg-red-500/10 text-red-300'
+                          : 'bg-amber-500/10 text-amber-300'
+                      }`}
+                    >
+                      {t.status === 'PENDING' ? 'UNDER REVIEW' : t.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-[11px] text-zinc-500 leading-relaxed">
+              Wallet money is store credit: it can be used for any Fibez purchase or renewal and is not withdrawable.
+              Purchases are final once delivered. If something is wrong, you can ask for a refund within 24 hours of
+              delivery from your Key Vault. Approved refunds are credited back to this wallet.
+            </p>
+          </div>
+
+          <div className="p-6 rounded-[24px] bg-[#0c0c0f] border border-[#1f1f26] space-y-3">
+            <h3 className="text-base font-bold text-white">Wallet history</h3>
+            {(wallet?.history || []).length === 0 ? (
+              <p className="text-xs font-mono text-zinc-500">No activity yet.</p>
+            ) : (
+              <div className="max-h-[360px] overflow-y-auto space-y-2 pr-1">
+                {wallet!.history.map((h) => (
+                  <div key={h.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#121217] border border-[#1e1e26] text-xs font-mono">
+                    <div className="min-w-0">
+                      <div className="text-zinc-300 truncate">{h.reason || h.entry_type}</div>
+                      <div className="text-zinc-500">{new Date(h.created_at).toLocaleString()}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className={h.amount_lkr < 0 ? 'text-red-300 font-bold' : 'text-emerald-300 font-bold'}>
+                        {h.amount_lkr > 0 ? '+' : ''}{Number(h.amount_lkr).toLocaleString()}
+                      </div>
+                      <div className="text-zinc-500">bal {Number(h.balance_after_lkr).toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>

@@ -424,6 +424,50 @@ class XuiClient {
   }
 
   /**
+   * Update a client. The panel's update call REPLACES the whole client (a partial body silently
+   * resets quota, limits and the enabled flag), so we read the current values and send them all back.
+   */
+  public async updateClient(
+    email: string,
+    patch: Partial<{ expiryTime: number; totalGB: number; limitIp: number; limitHwid: number; enable: boolean; comment: string }>
+  ): Promise<boolean> {
+    const cur = await this.getClientByEmail(email);
+    if (!cur) throw new Error('Client not found on the panel');
+    const body = {
+      email,
+      uuid: cur.uuid,
+      subId: cur.subId,
+      totalGB: patch.totalGB ?? cur.totalGB,
+      expiryTime: patch.expiryTime ?? cur.expiryTime,
+      limitIp: patch.limitIp ?? cur.limitIp,
+      limitHwid: patch.limitHwid ?? cur.limitHwid ?? 0,
+      enable: patch.enable ?? cur.enable,
+      comment: patch.comment ?? cur.comment ?? '',
+    };
+    const resp = await this.apiRequest<{ success: boolean; msg?: string }>(
+      `/panel/api/clients/update/${encodeURIComponent(email)}`,
+      'POST',
+      body
+    );
+    if (!resp?.success) throw new Error(`Panel rejected the update: ${resp?.msg || 'unknown'}`);
+    return true;
+  }
+
+  /**
+   * Renew: push the expiry forward by `days` (from the later of now / current expiry), switch the
+   * client back on and reset its used traffic. Returns the new expiry timestamp (ms).
+   */
+  public async extendClient(email: string, days: number): Promise<number> {
+    const cur = await this.getClientByEmail(email);
+    if (!cur) throw new Error('Client not found on the panel');
+    const base = Math.max(Date.now(), cur.expiryTime || 0);
+    const expiryTime = base + days * 24 * 60 * 60 * 1000;
+    await this.updateClient(email, { expiryTime, enable: true });
+    await this.resetClientTraffic(email);
+    return expiryTime;
+  }
+
+  /**
    * Deletes a client from 3x-ui
    */
   public async deleteClient(email: string): Promise<boolean> {

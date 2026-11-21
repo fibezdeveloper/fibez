@@ -53,8 +53,9 @@ import { AnimatedButton } from '@/components/ui/AnimatedButton';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { Counter } from '@/components/ui/Counter';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
-import { normalizeIsp, V2RayIsp } from '@/lib/v2ray-catalog';
+import { normalizeIsp, V2RayIsp, V2RAY_PLAN_TIERS, LIVE_V2RAY_PACKAGES } from '@/lib/v2ray-catalog';
 import { PRODUCTS, ProductItem } from '@/lib/products';
+import WalletAdmin from '@/components/admin/WalletAdmin';
 import DigitalProductThumbnail, { ProductBrandBadge, resolveBrandMeta } from '@/components/DigitalProductThumbnail';
 
 interface OrderItem {
@@ -285,7 +286,7 @@ const PACKAGE_PRESETS: PackagePreset[] = [
 ];
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'grant' | 'orders' | 'v2ray' | 'packages' | 'inventory' | 'tickets' | 'coupons'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'grant' | 'orders' | 'v2ray' | 'packages' | 'inventory' | 'tickets' | 'coupons' | 'wallet'>('overview');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -434,8 +435,8 @@ export default function AdminPage() {
   const [grantEmail, setGrantEmail] = useState('');
   const [grantName, setGrantName] = useState('');
   const [grantWhatsapp, setGrantWhatsapp] = useState('');
-  const [grantProductId, setGrantProductId] = useState('v2ray-dialog-zoom');
-  const [grantVariantTitle, setGrantVariantTitle] = useState('1 Month (100GB VIP)');
+  const [grantProductId, setGrantProductId] = useState('dialog-zoom-router');
+  const [grantVariantTitle, setGrantVariantTitle] = useState('Basic - 150 GB (1 Device)');
   const [grantType, setGrantType] = useState<'FREE_GIFT' | 'MANUAL_CASH' | 'STAFF_GIVEAWAY' | 'WARRANTY_REPLACEMENT'>('FREE_GIFT');
   const [grantNotes, setGrantNotes] = useState('VIP Friend Access - Enjoy!');
   const [grantCustomKey, setGrantCustomKey] = useState('');
@@ -444,6 +445,9 @@ export default function AdminPage() {
   const [grantV2rayRemark, setGrantV2rayRemark] = useState('Fibez VIP Speedline');
   const [grantV2rayQuota, setGrantV2rayQuota] = useState(100);
   const [grantV2rayDays, setGrantV2rayDays] = useState(30);
+  const [grantPlanId, setGrantPlanId] = useState<string>('basic'); // a plan tier id, or 'custom'
+  const [grantIpLimit, setGrantIpLimit] = useState(1);
+  const [grantHwidLimit, setGrantHwidLimit] = useState(0);
   const [grantLoading, setGrantLoading] = useState(false);
   const [showAdvancedV2Ray, setShowAdvancedV2Ray] = useState(false);
   const [grantSuccessData, setGrantSuccessData] = useState<any | null>(null);
@@ -469,7 +473,23 @@ export default function AdminPage() {
     return PRODUCTS.find((p) => p.id === grantProductId) || PRODUCTS[0];
   }, [grantProductId]);
 
+  // Only packages that are ENABLED in the Packages tab (with your edits and custom packages).
+  // Before the list loads, fall back to the built-in catalog.
+  const grantPackages = useMemo(
+    () => (adminPackages.length > 0 ? adminPackages.filter((p) => p.isActive) : LIVE_V2RAY_PACKAGES),
+    [adminPackages]
+  );
+  const selectedGrantPackage = useMemo(() => grantPackages.find((p: any) => p.id === grantProductId) || null, [grantPackages, grantProductId]);
+
+  // If the selected package gets disabled, move the form to the first enabled one.
+  useEffect(() => {
+    if (adminPackages.length === 0 || grantPackages.length === 0) return;
+    const isLive = LIVE_V2RAY_PACKAGES.some((p) => p.id === grantProductId) || adminPackages.some((p) => p.id === grantProductId);
+    if (isLive && !grantPackages.some((p: any) => p.id === grantProductId)) setGrantProductId(grantPackages[0].id);
+  }, [adminPackages, grantPackages, grantProductId]);
+
   const isSelectedProductV2Ray = useMemo(() => {
+    if (selectedGrantPackage) return true;
     if (!selectedGrantProduct) return false;
     return (
       selectedGrantProduct.category === 'vpn' ||
@@ -477,10 +497,35 @@ export default function AdminPage() {
       selectedGrantProduct.title.toLowerCase().includes('v2ray') ||
       selectedGrantProduct.title.toLowerCase().includes('vless')
     );
-  }, [selectedGrantProduct]);
+  }, [selectedGrantProduct, selectedGrantPackage]);
 
-  // Sync V2Ray SNI and Inbound when product selection changes
+  // Selecting one of OUR packages fills the inbound / SNI / label from the live catalog.
   useEffect(() => {
+    if (!selectedGrantPackage) return;
+    setGrantV2rayInbound(selectedGrantPackage.inboundId);
+    setGrantV2raySni(selectedGrantPackage.sni);
+    setGrantV2rayRemark(`Fibez - ${selectedGrantPackage.title}`);
+  }, [selectedGrantPackage]);
+
+  // Selecting a plan tier fills quota / device limits (Custom leaves them for you to type).
+  const handleGrantPlanChange = (planId: string) => {
+    setGrantPlanId(planId);
+    if (planId === 'custom') {
+      setGrantVariantTitle('Custom');
+      setShowAdvancedV2Ray(true);
+      return;
+    }
+    const plan = V2RAY_PLAN_TIERS.find((x) => x.id === planId);
+    if (!plan) return;
+    setGrantVariantTitle(` - ${plan.quotaLabel} (${plan.deviceLimit} Device${plan.deviceLimit > 1 ? 's' : ''})`);
+    setGrantV2rayQuota(plan.quotaGB); // 0 = unlimited
+    setGrantIpLimit(plan.deviceLimit);
+    setGrantHwidLimit(0);
+  };
+
+  // Legacy product ids only (live packages are handled above)
+  useEffect(() => {
+    if (selectedGrantPackage) return;
     if (isSelectedProductV2Ray) {
       if (grantProductId.includes('slt-meet') || grantProductId.includes('slt-zoom')) {
         setGrantV2rayInbound(1);
@@ -508,7 +553,7 @@ export default function AdminPage() {
         setGrantV2rayRemark('Fibez Universal SG VIP');
       }
     }
-  }, [grantProductId, isSelectedProductV2Ray]);
+  }, [grantProductId, isSelectedProductV2Ray, selectedGrantPackage]);
 
   // Load Data
   const refreshAllData = async () => {
@@ -616,6 +661,10 @@ export default function AdminPage() {
           recipientEmail: grantEmail,
           recipientName: grantName || grantEmail.split('@')[0],
           productId: grantProductId,
+          ...(selectedGrantPackage ? { category: 'vpn', productTitle: selectedGrantPackage.title } : {}),
+          planId: grantPlanId,
+          limitIp: grantIpLimit,
+          limitHwid: grantHwidLimit,
           variantTitle: grantVariantTitle,
           grantType,
           staffNotes: grantNotes,
@@ -1631,6 +1680,7 @@ export default function AdminPage() {
             { id: 'packages', label: 'Packages', icon: Sparkles, badge: null, color: 'text-emerald-400' },
             { id: 'inventory', label: 'Inventory', icon: Package, badge: null, color: 'text-purple-400' },
             { id: 'grant', label: 'Grant VIP', icon: Gift, badge: 'VIP', badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold', color: 'text-[#3ad389]' },
+            { id: 'wallet', label: 'Wallet', icon: Receipt, badge: null, color: 'text-yellow-400' },
             { id: 'tickets', label: 'Support', icon: LifeBuoy, badge: null, color: 'text-cyan-400' },
             { id: 'coupons', label: 'Coupons', icon: TicketPercent, badge: null, color: 'text-rose-400' },
           ]
@@ -2111,10 +2161,10 @@ export default function AdminPage() {
                       onChange={(e) => setGrantProductId(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white focus:outline-none focus:border-[#3ad389] transition-colors"
                     >
-                      <optgroup label="⚡ V2Ray High-Speed VPN Nodes">
-                        {PRODUCTS.filter((p) => p.category === 'vpn' || p.id.startsWith('v2ray')).map((p) => (
+                      <optgroup label="⚡ V2Ray Packages (live catalog)">
+                        {grantPackages.map((p: any) => (
                           <option key={p.id} value={p.id}>
-                            {p.title}
+                            {p.title}{p.serverType === 'LK_IP' ? ' - LK IP' : ''}
                           </option>
                         ))}
                       </optgroup>
@@ -2146,13 +2196,28 @@ export default function AdminPage() {
                     <label className="block text-xs font-medium text-zinc-300 mb-1.5">
                       Plan / Variant
                     </label>
-                    <input
-                      type="text"
-                      value={grantVariantTitle}
-                      onChange={(e) => setGrantVariantTitle(e.target.value)}
-                      placeholder="e.g. 1 Month (100GB VIP) or Lifetime"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#3ad389] transition-colors"
-                    />
+                    {isSelectedProductV2Ray ? (
+                      <select
+                        value={grantPlanId}
+                        onChange={(e) => handleGrantPlanChange(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white focus:outline-none focus:border-[#3ad389] transition-colors"
+                      >
+                        {V2RAY_PLAN_TIERS.map((plan) => (
+                          <option key={plan.id} value={plan.id}>
+                            {plan.label}
+                          </option>
+                        ))}
+                        <option value="custom">Custom (set GB, days, IP and device limits)</option>
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={grantVariantTitle}
+                        onChange={(e) => setGrantVariantTitle(e.target.value)}
+                        placeholder="e.g. 1 Month or Lifetime"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#3ad389] transition-colors"
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -2200,7 +2265,7 @@ export default function AdminPage() {
                       <div>
                         <div className="text-xs font-semibold text-white">Smart 3x-ui Auto-Provisioning</div>
                         <div className="text-[11px] font-mono text-zinc-400">
-                          Equinix SG3 Node • Inbound {grantV2rayInbound} • SNI: {grantV2raySni} • {grantV2rayQuota} GB ({grantV2rayDays} Days)
+                          Equinix SG3 Node • Inbound {grantV2rayInbound} • SNI: {grantV2raySni} • {grantV2rayQuota === 0 ? 'Unlimited' : ` GB`} ({grantV2rayDays} Days) • {grantIpLimit || '∞'} IP / {grantHwidLimit || '∞'} device(s)
                         </div>
                       </div>
                     </div>
@@ -2268,7 +2333,7 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                         <div>
                           <label className="block text-xs font-medium text-zinc-300 mb-1">
                             Remark / Label
@@ -2304,6 +2369,32 @@ export default function AdminPage() {
                             min="1"
                             value={grantV2rayDays}
                             onChange={(e) => setGrantV2rayDays(Number(e.target.value))}
+                            className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-xs font-mono text-white focus:outline-none focus:border-[#3ad389]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-zinc-300 mb-1">
+                            IP Limit <span className="text-zinc-500">(at once)</span>
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={grantIpLimit}
+                            onChange={(e) => setGrantIpLimit(Math.max(0, Number(e.target.value)))}
+                            className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-xs font-mono text-white focus:outline-none focus:border-[#3ad389]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-zinc-300 mb-1">
+                            HWID Limit <span className="text-zinc-500">(devices)</span>
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={grantHwidLimit}
+                            onChange={(e) => setGrantHwidLimit(Math.max(0, Number(e.target.value)))}
                             className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-xs font-mono text-white focus:outline-none focus:border-[#3ad389]"
                           />
                         </div>
@@ -5164,6 +5255,8 @@ export default function AdminPage() {
         {/* ========================================================================= */}
         {/* TAB 6: COUPONS & PROMOTIONAL DISCOUNTS */}
         {/* ========================================================================= */}
+        {activeTab === 'wallet' && <WalletAdmin />}
+
         {activeTab === 'coupons' && (
           <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-200">
             {/* Header */}

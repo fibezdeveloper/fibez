@@ -1,18 +1,17 @@
+import { rateLimit } from '@/lib/rate-limit';
 import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  buildRlsContext,
-  getVerifiedSessionUser,
-  RECENT_ORDER_COOKIE_NAME,
-  signRecentOrderToken,
-} from '@/lib/dal';
-import { withRlsTransaction } from '@/lib/db/rls';
+import { getVerifiedSessionUser, RECENT_ORDER_COOKIE_NAME, signRecentOrderToken } from '@/lib/dal';
+import { dbReady, withTransaction } from '@/lib/db/tx';
+import { dbRedeemCoupon } from '@/lib/store-db';
+import { applyLedger, applyLedgerOnce, InsufficientFundsError, findReferrerByCode, awardReferral, getBalance } from '@/lib/wallet';
+import { fulfillOrder, recordFulfilledClients } from '@/lib/fulfillment';
 import { adminStore, AdminOrder, AdminOrderItem } from '@/lib/admin-store';
 import { analyzeBankReceipt } from '@/lib/receipt-verifier';
-import { validateReferralCode, redeemUserCredits } from '@/lib/referrals';
 import { resolveServerPrice } from '@/lib/pricing';
 
-const VALID_PAYMENT_METHODS = new Set(['bank_transfer', 'crypto', 'gateway', 'staff_grant']);
+// 'staff_grant' is internal only: customers can never choose it.
+const VALID_PAYMENT_METHODS = new Set(['bank_transfer', 'crypto', 'wallet']);
 
 interface CheckoutItemInput {
   id?: string;
@@ -46,21 +45,6 @@ function isAllowedReceiptUrl(value: string): boolean {
   }
 }
 
-const checkoutHits = new Map<string, { count: number; resetAt: number }>();
-function checkoutRateLimited(ip: string): boolean {
-  const now = Date.now();
-  if (checkoutHits.size > 5000) {
-    for (const [k, v] of checkoutHits) if (v.resetAt <= now) checkoutHits.delete(k);
-  }
-  const entry = checkoutHits.get(ip);
-  if (!entry || entry.resetAt <= now) {
-    checkoutHits.set(ip, { count: 1, resetAt: now + 10 * 60 * 1000 });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > 10;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const ip =
@@ -68,7 +52,7 @@ export async function POST(request: NextRequest) {
       request.headers.get('x-real-ip')?.trim() ||
       request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
       'unknown';
-    if (checkoutRateLimited(ip)) {
+    if ((await rateLimit('checkout', ip, 10, 600)).limited) {
       return NextResponse.json(
         { error: 'Too many orders from this connection. Please wait a few minutes.' },
         { status: 429 }
@@ -102,18 +86,10 @@ export async function POST(request: NextRequest) {
       typeof body.referralCode === 'string' && body.referralCode.trim()
         ? body.referralCode.trim().toUpperCase()
         : null;
-    const renewOrderId =
-      typeof body.renewOrderId === 'string' && body.renewOrderId.trim()
-        ? body.renewOrderId.trim()
-        : null;
-    const existingUuid =
-      typeof body.existingUuid === 'string' && body.existingUuid.trim()
-        ? body.existingUuid.trim()
-        : null;
-    const creditsRedeemed =
-      typeof body.creditsRedeemed === 'number' && body.creditsRedeemed > 0
-        ? Math.floor(body.creditsRedeemed)
-        : 0;
+    // Renewals are done through /api/v2ray/renew (checked against the panel clients you own).
+    // A client-supplied existingUuid would let anyone claim another customer's config.
+    const renewOrderId: string | null = null;
+    const existingUuid: string | null = null;
     const rawReceiptUrl =
       typeof body.receiptUrl === 'string' && body.receiptUrl.trim() ? body.receiptUrl.trim() : null;
     // The slip URL is later rendered in the admin console (img / iframe), so it must be a link to
@@ -135,8 +111,12 @@ export async function POST(request: NextRequest) {
     const orderNumber = `FBZ-${randomSuffix}`;
     const orderId = `ord_${orderNumber.toLowerCase()}_${crypto.randomUUID().slice(0, 8)}`;
 
-    const paymentStatus =
-      paymentMethod === 'crypto' || receiptUrl ? 'PENDING_REVIEW' : 'PENDING_PAYMENT';
+    const isWallet = paymentMethod === 'wallet';
+    if (isWallet && (!actor || !dbReady())) {
+      return NextResponse.json({ error: 'Please sign in to pay with your wallet.' }, { status: 401 });
+    }
+    // A wallet order is paid the moment the money leaves the wallet; bank orders wait for staff review.
+    const paymentStatus = isWallet ? 'VERIFIED' : paymentMethod === 'crypto' || receiptUrl ? 'PENDING_REVIEW' : 'PENDING_PAYMENT';
     const fulfillmentStatus = 'PENDING';
 
     // Calculate totals and resolve line items
@@ -159,6 +139,7 @@ export async function POST(request: NextRequest) {
       isV2Ray: boolean;
     }[] = [];
 
+    const packageOverrides = await adminStore.getPackageOverrides();
     for (let idx = 0; idx < cart.length; idx++) {
       const item = cart[idx] || {};
       const prodId = String(item.productId || item.id || '').trim();
@@ -167,6 +148,14 @@ export async function POST(request: NextRequest) {
       if (!priced) {
         return NextResponse.json(
           { error: `Unknown or unavailable product in cart: ${prodId.slice(0, 80) || '(empty)'}` },
+          { status: 400 }
+        );
+      }
+
+      // A package you disabled in the admin Packages tab can no longer be bought.
+      if (priced.packageId && packageOverrides[priced.packageId]?.isActive === false) {
+        return NextResponse.json(
+          { error: 'This package is no longer available. Please remove it from your cart.' },
           { status: 400 }
         );
       }
@@ -198,16 +187,16 @@ export async function POST(request: NextRequest) {
     let discountLKR = 0;
     let appliedPromoCode = promoCode;
 
-    // 1. Referral discount check
-    if (referralCode) {
-      const refCheck = await validateReferralCode(referralCode);
-      // A referral code cannot be used by its own owner.
-      if (refCheck.valid && refCheck.referrerEmail?.toLowerCase() !== customerEmail.toLowerCase()) {
-        discountLKR += refCheck.discountLKR; // e.g. Rs. 50 off
+    // 1. Referral discount (friend gets Rs. 50 off). The referrer is rewarded in their WALLET later,
+    //    when the order is approved/delivered. A code cannot be used by its own owner.
+    if (referralCode && dbReady()) {
+      const referrer = await findReferrerByCode(referralCode);
+      if (referrer && referrer.email.toLowerCase() !== customerEmail.toLowerCase()) {
+        discountLKR += 50;
       }
     }
 
-    // 2. Promo Code check (FIBEZ10 = 10%, DEV20 = 20%, etc.)
+    // 2. Promo codes: built-in ones first, then coupons created in the admin Coupons tab (DB).
     if (promoCode) {
       if (promoCode === 'FIBEZ10' || promoCode === 'WELCOME') {
         discountLKR += Math.round(rawTotalLKR * 0.1);
@@ -215,21 +204,14 @@ export async function POST(request: NextRequest) {
         discountLKR += Math.round(rawTotalLKR * 0.2);
       } else if (promoCode === 'FRIEND500') {
         discountLKR += 500;
+      } else if (dbReady()) {
+        const d = await dbRedeemCoupon(promoCode, rawTotalLKR);
+        if (d === null) {
+          return NextResponse.json({ error: 'That promo code is invalid, expired or fully used.' }, { status: 400 });
+        }
+        discountLKR += d;
       }
     }
-
-    // 3. Store Credits redeemed (1 credit = 10 LKR)
-    let creditsDiscountLKR = 0;
-    // Credits belong to an ACCOUNT: only a verified signed-in user may spend their own.
-    // (Guests could previously pass any email and spend that person's credits.)
-    if (creditsRedeemed > 0 && actor) {
-      const redeemResult = await redeemUserCredits(actor.email, creditsRedeemed);
-      if (redeemResult.success) {
-        creditsDiscountLKR = redeemResult.discountLKR;
-        discountLKR += creditsDiscountLKR;
-      }
-    }
-
     const finalTotalLKR = Math.max(0, rawTotalLKR - discountLKR);
     const finalTotalUSD = Number((rawTotalUSD * (rawTotalLKR > 0 ? finalTotalLKR / rawTotalLKR : 1)).toFixed(2));
 
@@ -269,6 +251,7 @@ export async function POST(request: NextRequest) {
     const newAdminOrder: AdminOrder = {
       id: orderId,
       orderNumber,
+      userId: actor?.id ?? null,
       customerName,
       customerEmail,
       customerWhatsapp,
@@ -292,77 +275,87 @@ export async function POST(request: NextRequest) {
       items: adminOrderItems,
     };
 
-    await adminStore.addOrder(newAdminOrder);
+    let walletBalanceAfter: number | null = null;
+    let deliveredNow = false;
 
-    // Also attempt PostgreSQL RLS persistence if database is available
-    try {
-      await withRlsTransaction(
-        buildRlsContext(actor, { checkoutOrderId: orderId }),
-        async (client) => {
-          await client.query(
-            `INSERT INTO public.orders (
-               id, order_number, user_id, customer_email, customer_whatsapp, customer_name,
-               total_amount_lkr, total_amount_usd, currency, payment_method, payment_status,
-               fulfillment_status, receipt_image_url, promo_code, discount_amount_lkr
-             ) VALUES (
-               $1, $2, $3, $4, $5, $6,
-               $7, $8, 'LKR', $9, $10,
-               $11, $12, $13, $14
-             ) ON CONFLICT (id) DO NOTHING`,
-            [
-              orderId,
-              orderNumber,
-              actor?.id || null,
-              customerEmail,
-              customerWhatsapp,
-              customerName,
-              finalTotalLKR,
-              finalTotalUSD,
-              paymentMethod,
-              paymentStatus,
-              fulfillmentStatus,
-              receiptUrl,
-              appliedPromoCode,
-              discountLKR,
-            ]
-          );
-
-          for (const line of resolvedCartLines) {
-            await client.query(
-              `INSERT INTO public.order_items (
-                 id, order_id, product_id, product_title, variant_title, quantity,
-                 unit_price_lkr, unit_price_usd, subtotal_lkr, subtotal_usd,
-                 dispensed_key, key_type, guide_markdown, warranty, status
-               ) VALUES (
-                 $1, $2, $3, $4, $5, $6,
-                 $7, $8, $9, $10,
-                 $11, $12, $13, $14, $15
-               ) ON CONFLICT (id) DO NOTHING`,
-              [
-                line.id,
-                orderId,
-                line.productId,
-                line.productTitle,
-                line.variantTitle,
-                line.quantity,
-                line.unitPriceLKR,
-                line.unitPriceUSD,
-                line.subtotalLKR,
-                line.subtotalUSD,
-                null,
-                line.isV2Ray ? 'CONNECTION_CONFIG' : 'SERIAL_KEY',
-                line.guideMarkdown,
-                line.warranty,
-                'PENDING_VERIFICATION',
-              ]
-            );
+    if (isWallet && actor) {
+      // ONE transaction: take the money and create the order. Either both happen or neither does.
+      try {
+        const tx = await withTransaction(async (client) => {
+          let balanceAfter: number | null = null;
+          if (finalTotalLKR > 0) {
+            const led = await applyLedger(client, {
+              userId: actor.id,
+              type: 'PURCHASE',
+              amount: -finalTotalLKR,
+              refType: 'order',
+              refId: orderNumber,
+              reason: `Order ${orderNumber}`,
+              actorId: actor.id,
+              actorEmail: actor.email,
+              idem: `purchase:${orderId}`,
+            });
+            balanceAfter = led.balanceAfter;
           }
+          await adminStore.addOrder(newAdminOrder, client);
+          return balanceAfter;
+        });
+        walletBalanceAfter = tx;
+      } catch (err) {
+        if (err instanceof InsufficientFundsError) {
+          return NextResponse.json(
+            { error: 'Not enough wallet balance. Top up your wallet or choose bank transfer.', balanceLkr: await getBalance(actor.id), neededLkr: finalTotalLKR },
+            { status: 402 }
+          );
         }
-      );
-    } catch (dbErr: any) {
-      console.warn('Postgres checkout persistence skipped (running in local mode):', dbErr.message);
-    }
+        throw err;
+      }
 
+      // Paid: deliver right now. If delivery fails, give the money back automatically.
+      const result = await fulfillOrder(newAdminOrder);
+      if (!result.ok) {
+        if (finalTotalLKR > 0) {
+          const rev = await applyLedgerOnce({
+            userId: actor.id,
+            type: 'REVERSAL',
+            amount: finalTotalLKR,
+            refType: 'order',
+            refId: orderNumber,
+            reason: `Delivery failed for ${orderNumber}: automatic reversal`,
+            idem: `reversal:${orderId}`,
+          });
+          walletBalanceAfter = rev.balanceAfter;
+        }
+        await adminStore.updateOrderStatus(orderNumber, {
+          paymentStatus: 'REFUNDED',
+          fulfillmentStatus: 'REVOKED',
+          reviewedBy: 'system',
+          reviewNotes: `Delivery failed (${result.error}). Wallet reversed automatically.`,
+        });
+        return NextResponse.json(
+          { error: 'We could not deliver this order right now. You were NOT charged: your wallet was restored in full. Please try again shortly.', balanceLkr: walletBalanceAfter },
+          { status: result.status === 409 ? 409 : 503 }
+        );
+      }
+
+      await adminStore.updateOrderStatus(orderNumber, {
+        fulfillmentStatus: 'DELIVERED',
+        reviewedBy: 'wallet-auto',
+        reviewNotes: 'Paid from wallet and delivered automatically.',
+        itemKeys: result.itemKeys,
+        metadata: { panelClients: result.panelClients },
+      });
+      await recordFulfilledClients(newAdminOrder, result.panelClients);
+      if (referralCode) {
+        await awardReferral({ orderNumber, code: referralCode, buyerEmail: customerEmail }).catch((e) =>
+          console.error('Referral reward failed (order still delivered):', e)
+        );
+      }
+      deliveredNow = true;
+    } else {
+      // Bank transfer / crypto: the order waits for staff to verify the payment.
+      await adminStore.addOrder(newAdminOrder);
+    }
     const response = NextResponse.json({
       success: true,
       orderNumber,
@@ -372,7 +365,10 @@ export async function POST(request: NextRequest) {
       paymentMethod,
       items: adminOrderItems,
       receiptAnalysis,
-      isRenewal: Boolean(renewOrderId),
+      isRenewal: false,
+      paid: isWallet,
+      deliveredNow,
+      balanceLkr: walletBalanceAfter,
     });
 
     response.cookies.set(RECENT_ORDER_COOKIE_NAME, signRecentOrderToken(orderNumber, customerEmail), {

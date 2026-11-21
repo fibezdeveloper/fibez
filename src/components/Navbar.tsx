@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import FibezLogo from '@/components/FibezLogo';
@@ -13,8 +13,9 @@ import {
   ShoppingCart, 
   Search, 
   Globe, 
-  KeyRound, 
-  LogOut, 
+  KeyRound,
+  Wallet,
+  LogOut,
   LogIn, 
   UserPlus, 
   LayoutDashboard,
@@ -61,6 +62,25 @@ export default function Navbar(props: NavbarProps) {
   // Better Auth session hook
   const { data: session } = authClient.useSession();
 
+  // Wallet balance (server ledger) shown in the account menu
+  const [walletLkr, setWalletLkr] = useState<number | null>(null);
+  useEffect(() => {
+    if (!session?.user) {
+      setWalletLkr(null);
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/wallet', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d && typeof d.balanceLkr === 'number') setWalletLkr(d.balanceLkr);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.id]);
+
   const currentCurrency = props.currency || store?.currency || 'LKR';
   const cartCount = props.cartCount !== undefined ? props.cartCount : (store?.cartCount || 0);
 
@@ -94,6 +114,15 @@ export default function Navbar(props: NavbarProps) {
       detail: 'View purchases & codes',
       onSelect: () => {
         router.push('/vault');
+      },
+    },
+    {
+      id: 'wallet',
+      label: walletLkr === null ? 'Wallet' : `Wallet: Rs. ${walletLkr.toLocaleString()}`,
+      icon: <Wallet className="w-4 h-4 text-[#3ad389]" />,
+      detail: 'Top up, history & refunds',
+      onSelect: () => {
+        router.push('/billing');
       },
     },
     {

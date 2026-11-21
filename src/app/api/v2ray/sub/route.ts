@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { xui } from '@/lib/xui';
 import { resolvePackageProfile, buildVlessUri } from '@/lib/v2ray-inbounds';
+import { rateLimit } from '@/lib/rate-limit';
+import { requestIp } from '@/lib/trial';
 import { parseDeviceFromUserAgent, recordDeviceAccess } from '@/lib/v2ray-device-store';
 
 export async function GET(req: NextRequest) {
@@ -10,21 +12,21 @@ export async function GET(req: NextRequest) {
     const clientApp = searchParams.get('client') || 'netmod';
     const format = searchParams.get('format') || 'base64';
     const uuidParam = searchParams.get('uuid');
-    const email = searchParams.get('email') || searchParams.get('user') || searchParams.get('token') || uuidParam || '';
+
+    if ((await rateLimit('sub', requestIp(req.headers), 120, 600)).limited) {
+      return new NextResponse('Too many requests', { status: 429, headers: { 'Retry-After': '60' } });
+    }
 
     // 1. Resolve package-specific routing (port, custom SNI, and customized remark name)
     const profile = resolvePackageProfile(pkg);
 
-    // 2. A real client identifier is REQUIRED. There is no shared/fallback UUID: handing one
-    //    out would give every visitor a working paid config.
+    // 2. The client UUID is the only credential for a subscription link. Looking a line up by email
+    //    or any other guessable value would hand its UUID (= its config) to anyone who knew it.
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (uuidParam && !UUID_RE.test(uuidParam)) {
-      return new NextResponse('Invalid uuid', { status: 400 });
+    if (!uuidParam || !UUID_RE.test(uuidParam)) {
+      return new NextResponse('A valid client uuid is required', { status: 400 });
     }
-    const lookupTarget = uuidParam || email;
-    if (!lookupTarget) {
-      return new NextResponse('A client uuid or email is required', { status: 400 });
-    }
+    const lookupTarget = uuidParam;
 
     let clientUuid = uuidParam || '';
     let usage: { upload: number; download: number; total: number; expire: number } | null = null;
@@ -40,7 +42,8 @@ export async function GET(req: NextRequest) {
           total: liveClient.totalGB > 0 ? liveClient.totalGB : 0,
           expire: liveClient.expiryTime > 0 ? Math.floor(liveClient.expiryTime / 1000) : 0,
         };
-      } else if (!uuidParam) {
+      } else {
+        // Panel reachable but no such client (revoked / deleted): do not serve a dead config.
         return new NextResponse('Client not found', { status: 404 });
       }
     } catch (err) {

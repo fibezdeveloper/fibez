@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedSessionUser, getRecentOrderNumberFromRequest } from '@/lib/dal';
 import { adminStore } from '@/lib/admin-store';
 import { createPurchasedLineFromCartItem, PurchasedV2RayLine } from '@/lib/v2ray-lines';
+import { renewalQuote } from '@/lib/pricing';
+import { dbReady } from '@/lib/db/tx';
+import { getPanelClientsByUser, REFUND_WINDOW_HOURS } from '@/lib/wallet';
 
 export async function GET(req: NextRequest) {
   try {
@@ -27,6 +30,11 @@ export async function GET(req: NextRequest) {
       return false;
     });
 
+    // Panel clients we created for this account (expiry + whether a line can be renewed).
+    const pcByUuid = new Map<string, { expires_at: string | null; status: string }>();
+    if (actor && dbReady()) {
+      for (const c of await getPanelClientsByUser(actor.email).catch(() => [])) pcByUuid.set(c.uuid.toLowerCase(), c);
+    }
     const lines: PurchasedV2RayLine[] = [];
     const pendingOrders: { orderNumber: string; title: string; status: string }[] = [];
 
@@ -76,6 +84,13 @@ export async function GET(req: NextRequest) {
           });
           if (trialExpired) line.status = 'EXPIRED';
           else if (isTrial) line.status = 'TRIAL';
+          const pc = pcByUuid.get(line.uuid.toLowerCase());
+          line.expiresAt = pc?.expires_at ? new Date(pc.expires_at).toISOString() : null;
+          line.renewable = Boolean(pc && pc.status === 'ACTIVE' && renewalQuote(item.productId, 1));
+          const deliveredMs = new Date(ord.deliveredAt || ord.updatedAt).getTime();
+          const paid = ord.totalAmountLKR > 0 && !isTrial && ord.paymentMethod !== 'staff_grant';
+          line.refundable = paid && !ord.receivedConfirmedAt && Date.now() - deliveredMs < REFUND_WINDOW_HOURS * 3600 * 1000;
+          line.refundDeadline = line.refundable ? new Date(deliveredMs + REFUND_WINDOW_HOURS * 3600 * 1000).toISOString() : null;
           lines.push(line);
         }
       }

@@ -56,7 +56,7 @@ export default function CartPage() {
 
   const { data: session } = authClient.useSession();
 
-  const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'crypto' | 'gateway'>('bank_transfer');
+  const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'crypto' | 'gateway' | 'wallet'>('bank_transfer');
   const [customerEmail, setCustomerEmail] = useState(session?.user?.email || '');
   const [customerWhatsapp, setCustomerWhatsapp] = useState('');
   const [promoCode, setPromoCode] = useState('');
@@ -69,8 +69,7 @@ export default function CartPage() {
   const [referralError, setReferralError] = useState<string | null>(null);
   const [renewOrderId, setRenewOrderId] = useState<string | null>(null);
   const [existingUuid, setExistingUuid] = useState<string | null>(null);
-  const [userCredits, setUserCredits] = useState<number>(0);
-  const [useCredits, setUseCredits] = useState<boolean>(false);
+  const [walletLkr, setWalletLkr] = useState<number | null>(null);
 
   const [copiedCrypto, setCopiedCrypto] = useState(false);
   const [copiedBankAcc, setCopiedBankAcc] = useState<string | null>(null);
@@ -122,13 +121,11 @@ export default function CartPage() {
         .catch(() => {});
     }
 
-    // Fetch user's store credits balance if logged in
-    fetch('/api/referrals')
+    // Wallet balance (server ledger) if signed in
+    fetch('/api/wallet', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.profile?.storeCredits > 0) {
-          setUserCredits(data.profile.storeCredits);
-        }
+        if (data && typeof data.balanceLkr === 'number') setWalletLkr(data.balanceLkr);
       })
       .catch(() => {});
   }, []);
@@ -136,9 +133,7 @@ export default function CartPage() {
   // Discount calculation
   const promoDiscountLKR = appliedPromo ? Math.round(cartTotalLKR * (appliedPromo.percent / 100)) : 0;
   const referralDiscountLKR = appliedReferral ? appliedReferral.discountLKR : 0;
-  const maxAvailableCreditDiscount = Math.max(0, cartTotalLKR - promoDiscountLKR - referralDiscountLKR);
-  const creditsDiscountLKR = useCredits && userCredits > 0 ? Math.min(maxAvailableCreditDiscount, userCredits * 10) : 0;
-  const totalDiscountLKR = promoDiscountLKR + referralDiscountLKR + creditsDiscountLKR;
+  const totalDiscountLKR = promoDiscountLKR + referralDiscountLKR;
 
   const finalTotalLKR = Math.max(0, cartTotalLKR - totalDiscountLKR);
   const finalTotalUSD = parseFloat(
@@ -221,8 +216,6 @@ export default function CartPage() {
 
     setIsProcessing(true);
     try {
-      const creditsRedeemed = useCredits && userCredits > 0 ? Math.min(userCredits, Math.ceil(creditsDiscountLKR / 10)) : 0;
-
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -245,9 +238,6 @@ export default function CartPage() {
           customerWhatsapp: customerWhatsapp.trim() || undefined,
           promoCode: appliedPromo?.code,
           referralCode: appliedReferral?.code,
-          renewOrderId: renewOrderId || undefined,
-          existingUuid: existingUuid || undefined,
-          creditsRedeemed,
           receiptUrl: uploadedSlip,
           userId: session?.user?.id,
         }),
@@ -657,7 +647,28 @@ export default function CartPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {session?.user && (
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('wallet')}
+                  className={`p-4 rounded-[14px] border text-left transition-all cursor-pointer ${
+                    paymentMethod === 'wallet'
+                      ? 'bg-[#18181c] border-[#3ad389] shadow-lg shadow-[#3ad389]/10'
+                      : 'bg-[#121215] border-white/5 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <Sparkles className={`w-5 h-5 ${paymentMethod === 'wallet' ? 'text-[#3ad389]' : 'text-white'}`} />
+                    <span className="text-[9px] font-mono text-[#3ad389] uppercase font-bold">Instant</span>
+                  </div>
+                  <div className="text-xs font-mono font-medium text-white">Pay with Wallet</div>
+                  <div className="text-[10px] font-mono text-[#a1a4a5] mt-0.5">
+                    Balance: Rs. {walletLkr === null ? '...' : walletLkr.toLocaleString()}
+                  </div>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => setPaymentMethod('bank_transfer')}
@@ -703,6 +714,28 @@ export default function CartPage() {
                 <div className="text-[10px] font-mono text-zinc-500 mt-0.5">Visa / Mastercard / LKR</div>
               </button>
             </div>
+
+            {paymentMethod === 'wallet' && (
+              <div className="p-5 rounded-[16px] bg-[#141417] border border-[#222228] text-xs font-mono space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-white font-semibold">Wallet payment</span>
+                  <span className="text-[#3ad389]">Delivered instantly</span>
+                </div>
+                <div className="text-zinc-300">
+                  Total <span className="text-white font-bold">Rs. {finalTotalLKR.toLocaleString()}</span> · Balance{' '}
+                  <span className="text-white font-bold">Rs. {walletLkr === null ? '...' : walletLkr.toLocaleString()}</span>
+                </div>
+                {walletLkr !== null && walletLkr < finalTotalLKR && (
+                  <div className="text-amber-300">
+                    Not enough balance (short by Rs. {(finalTotalLKR - walletLkr).toLocaleString()}).{' '}
+                    <Link href="/billing" className="underline text-white">Top up your wallet</Link>
+                  </div>
+                )}
+                <div className="text-[11px] text-zinc-500">
+                  The money leaves your wallet only if delivery succeeds. If something fails, it is returned automatically.
+                </div>
+              </div>
+            )}
 
             {/* Bank Transfer Details View */}
             {paymentMethod === 'bank_transfer' && (
@@ -987,31 +1020,6 @@ export default function CartPage() {
               )}
             </div>
 
-            {/* Fibez Store Credits Redemption */}
-            {userCredits > 0 && (
-              <div className="p-3.5 rounded-xl bg-[#121815] border border-[#3ad389]/30 text-xs font-mono">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#3ad389]" />
-                    <span className="text-white font-medium">Fibez Store Credits</span>
-                  </div>
-                  <span className="text-[#3ad389] font-bold">{userCredits} Credits</span>
-                </div>
-                <div className="text-[11px] text-zinc-400 mt-1">
-                  1 credit = Rs. 10. Balance: Rs. {userCredits * 10}
-                </div>
-                <label className="mt-2.5 flex items-center gap-2 text-xs text-white cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={useCredits}
-                    onChange={(e) => setUseCredits(e.target.checked)}
-                    className="w-4 h-4 rounded accent-[#3ad389]"
-                  />
-                  <span>Redeem Store Credits (-Rs. {creditsDiscountLKR})</span>
-                </label>
-              </div>
-            )}
-
             {/* Breakdown */}
             <div className="space-y-3 text-xs font-mono">
               <div className="flex justify-between">
@@ -1028,12 +1036,6 @@ export default function CartPage() {
                 <div className="flex justify-between text-amber-400">
                   <span>Referral Discount</span>
                   <span>-Rs. {referralDiscountLKR.toLocaleString()}</span>
-                </div>
-              )}
-              {useCredits && creditsDiscountLKR > 0 && (
-                <div className="flex justify-between text-[#3ad389]">
-                  <span>Store Credits Redeemed</span>
-                  <span>-Rs. {creditsDiscountLKR.toLocaleString()}</span>
                 </div>
               )}
               <div className="flex justify-between">

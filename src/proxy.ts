@@ -17,6 +17,24 @@ export default async function proxy(req: NextRequest) {
     return res;
   }
 
+  // 0. CSRF defence in depth: a state-changing API call must come from our own pages. Browsers always
+  //    send Origin on cross-site POSTs; server-to-server callers (no Origin) are still allowed.
+  if (pathname.startsWith('/api/') && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    const origin = req.headers.get('origin');
+    const site = req.headers.get('sec-fetch-site');
+    let bad = site === 'cross-site';
+    if (origin) {
+      try {
+        bad = new URL(origin).host !== (req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.host);
+      } catch {
+        bad = true;
+      }
+    }
+    if (bad) {
+      return NextResponse.json({ error: 'Cross-site request blocked' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
+    }
+  }
+
   // 1. Pre-launch lock, enforced on the server before any page or API route runs.
   //    Only an HMAC-signed, expiring, HttpOnly token minted by /api/unlock passes.
   if (isSiteLocked() && !isLockExempt(pathname)) {

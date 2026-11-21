@@ -1,3 +1,4 @@
+import { rateLimit } from '@/lib/rate-limit';
 import net from 'net';
 import tls from 'tls';
 import { NextRequest, NextResponse } from 'next/server';
@@ -17,24 +18,6 @@ import { xui } from '@/lib/xui';
  */
 
 const PROBE_TIMEOUT_MS = 5000;
-const MAX_PER_WINDOW = 15;
-const WINDOW_MS = 10 * 60 * 1000;
-const hits = new Map<string, { count: number; resetAt: number }>();
-
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  if (hits.size > 5000) {
-    for (const [k, v] of hits) if (v.resetAt <= now) hits.delete(k);
-  }
-  const entry = hits.get(ip);
-  if (!entry || entry.resetAt <= now) {
-    hits.set(ip, { count: 1, resetAt: now + WINDOW_MS });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > MAX_PER_WINDOW;
-}
-
 interface ParsedConfig {
   protocol: string;
   host: string;
@@ -129,7 +112,7 @@ export async function POST(req: NextRequest) {
       req.headers.get('x-real-ip')?.trim() ||
       req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
       'unknown';
-    if (rateLimited(ip)) {
+    if ((await rateLimit('linecheck', ip, 15, 600)).limited) {
       return NextResponse.json(
         { success: false, error: 'Too many checks. Please wait a few minutes and try again.' },
         { status: 429 }

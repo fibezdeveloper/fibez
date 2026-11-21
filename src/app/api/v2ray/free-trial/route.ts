@@ -1,8 +1,12 @@
+import { rateLimit } from '@/lib/rate-limit';
 import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import QRCode from 'qrcode';
 import { buildRlsContext, requireAuth, adminSql } from '@/lib/dal';
 import { canonicalEmail, hashSignal, requestIp } from '@/lib/trial';
+import { dbReady } from '@/lib/db/tx';
+import { tryClaimTrialDb, releaseTrialClaimDb, userHasTrial } from '@/lib/wallet';
+import { recordFulfilledClients } from '@/lib/fulfillment';
 import { withRlsTransaction } from '@/lib/db/rls';
 import { xui } from '@/lib/xui';
 import { resolvePackageProfile, buildVlessUri, PACKAGE_ROUTING_PROFILES } from '@/lib/v2ray-inbounds';
@@ -23,6 +27,12 @@ export async function POST(req: NextRequest) {
       );
     }
     const actor = authResult.user;
+    if (
+      (await rateLimit('trial-user', actor.id, 5, 3600)).limited ||
+      (await rateLimit('trial-ip', requestIp(req.headers), 15, 3600)).limited
+    ) {
+      return NextResponse.json({ success: false, error: 'Too many attempts. Please try again later.' }, { status: 429 });
+    }
 
     const body = await req.json().catch(() => ({}));
     const rawPackageId = typeof body.packageId === 'string' ? body.packageId.trim() : '';
@@ -137,19 +147,20 @@ export async function POST(req: NextRequest) {
 
     // 3b. Atomically reserve the trial: one per account, email (gmail aliases collapsed), device,
     //     and at most 3 per IP per 30 days (mobile networks share IPs, so not just 1).
-    const claim = await adminStore.tryClaimTrial(
-      {
-        userId: actor.id,
-        email: actor.email,
-        canonicalEmail: canonicalEmail(actor.email),
-        ip: claimIp,
-        deviceId,
-        fpHash,
-        uaHash: hashSignal((req.headers.get('user-agent') || '') + (req.headers.get('accept-language') || '')),
-        orderNumber,
-      },
-      { maxPerIp: 3, ipWindowDays: 30 }
-    );
+    const claimInput = {
+      userId: actor.id,
+      email: actor.email,
+      canonicalEmail: canonicalEmail(actor.email),
+      ip: claimIp,
+      deviceId,
+      fpHash,
+      uaHash: hashSignal((req.headers.get('user-agent') || '') + (req.headers.get('accept-language') || '')),
+      orderNumber,
+    };
+    // Uniqueness is enforced by the database itself (unique indexes), not by app code.
+    const claim = dbReady()
+      ? await tryClaimTrialDb(claimInput, { maxPerIp: 3, ipWindowDays: 30 })
+      : await adminStore.tryClaimTrial(claimInput, { maxPerIp: 3, ipWindowDays: 30 });
     if (!claim.ok) {
       const msg =
         claim.reason === 'DEVICE'
@@ -183,7 +194,7 @@ export async function POST(req: NextRequest) {
     } catch (xuiErr) {
       // Never hand out a trial config that does not exist on the panel.
       console.error('3x-ui free trial provisioning failed:', xuiErr);
-      await adminStore.releaseTrialClaim(claim.claimId); // nothing was delivered, so give the trial back
+      if (dbReady()) await releaseTrialClaimDb(claim.claimId); else await adminStore.releaseTrialClaim(claim.claimId); // nothing was delivered, so give the trial back
       return NextResponse.json(
         { success: false, error: 'The trial server is busy right now. Please try again in a few minutes.' },
         { status: 502 }
@@ -219,6 +230,8 @@ export async function POST(req: NextRequest) {
       orderNumber,
       customerName: actor.name || actor.email.split('@')[0],
       customerEmail: actor.email,
+      userId: actor.id,
+      deliveredAt: new Date().toISOString(),
       totalAmountLKR: 0,
       totalAmountUSD: 0,
       currency: 'LKR',

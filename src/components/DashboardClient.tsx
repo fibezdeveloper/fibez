@@ -725,9 +725,9 @@ export default function DashboardClient({
             >
               <Gift className="w-3.5 h-3.5 text-amber-400" />
               <span>Referrals &amp; Rewards</span>
-              {referralProfile?.storeCredits > 0 && (
+              {referralProfile?.balanceLkr > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[#3ad389] text-black font-bold">
-                  {referralProfile.storeCredits}
+                  Rs. {referralProfile.balanceLkr}
                 </span>
               )}
             </button>
@@ -981,25 +981,25 @@ export default function DashboardClient({
                 <div className="p-5 rounded-2xl bg-[#0c1f15] border border-[#3ad389]/30 shadow-lg shadow-[#3ad389]/5">
                   <div className="text-xs font-mono text-[#3ad389] uppercase tracking-wider mb-1 flex items-center gap-1.5 font-bold">
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Store Credits Balance</span>
+                    <span>Wallet Balance</span>
                   </div>
                   <div className="text-3xl font-mono font-bold text-white">
-                    {referralProfile?.storeCredits || 0}
+                    Rs. {(referralProfile?.balanceLkr || 0).toLocaleString()}
                   </div>
                   <div className="text-xs text-zinc-300 mt-1 font-mono">
-                    = Rs. {((referralProfile?.storeCredits || 0) * 10).toLocaleString()} LKR value
+                    Spend it at checkout with &quot;Pay with wallet&quot;
                   </div>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-[#111114] border border-white/10">
                   <div className="text-xs font-mono text-zinc-400 uppercase tracking-wider mb-1">
-                    Friends Invited
+                    Bonus Per Friend
                   </div>
                   <div className="text-3xl font-mono font-bold text-white">
-                    {referralProfile?.invitedCount || 0}
+                    Rs. {referralProfile?.rewardPerFriendLkr || 100}
                   </div>
                   <div className="text-[11px] text-zinc-400 mt-1">
-                    People who clicked your link
+                    Paid to your wallet per verified first order
                   </div>
                 </div>
 
@@ -1020,10 +1020,10 @@ export default function DashboardClient({
                     Total Lifetime Earned
                   </div>
                   <div className="text-3xl font-mono font-bold text-amber-400">
-                    {referralProfile?.totalEarnedCredits || 0}
+                    Rs. {(referralProfile?.totalEarnedLkr || 0).toLocaleString()}
                   </div>
                   <div className="text-[11px] text-zinc-400 mt-1">
-                    Credits earned since joining
+                    Referral bonuses earned
                   </div>
                 </div>
               </div>
@@ -1037,7 +1037,7 @@ export default function DashboardClient({
                       <span>Your Unique Referral Link</span>
                     </h3>
                     <p className="text-xs text-zinc-400 mt-0.5">
-                      Friends get <strong className="text-white">Rs. 50 OFF</strong> their purchase, and you earn <strong className="text-[#3ad389]">10 Store Credits (Rs. 100)</strong> for every verified order!
+                      Friends get <strong className="text-white">Rs. 50 OFF</strong> their purchase, and you earn <strong className="text-[#3ad389]">Rs. 100 in your wallet</strong> for every friend&apos;s verified first order!
                     </p>
                   </div>
                   <div className="font-mono text-xs px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold self-start sm:self-auto">
@@ -1127,9 +1127,9 @@ export default function DashboardClient({
 
                   <div className="p-3 rounded-xl bg-[#141417] border border-white/5 space-y-1">
                     <div className="font-mono text-[10px] text-sky-400 uppercase font-bold">Step 3</div>
-                    <div className="font-semibold text-white">Earn 10 Store Credits</div>
+                    <div className="font-semibold text-white">Earn Rs. 100</div>
                     <p className="text-[11px] text-zinc-400 leading-relaxed">
-                      As soon as their order is verified, 10 Fibez Credits (Rs. 100) are automatically credited to your vault!
+                      As soon as their order is verified, Rs. 100 is credited to your wallet. Wallet money can be spent in the store but not withdrawn.
                     </p>
                   </div>
                 </div>
@@ -1140,7 +1140,7 @@ export default function DashboardClient({
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[#3ad389]" />
                   <span className="text-zinc-300">
-                    Store Credits are redeemable directly in your <Link href="/cart" className="text-white underline font-semibold">Shopping Cart</Link> for instant discounts.
+                    Your wallet is at <Link href="/billing" className="text-white underline font-semibold">Billing</Link>. Pay with it in the <Link href="/cart" className="text-white underline font-semibold">Shopping Cart</Link> or renew a line in one click.
                   </span>
                 </div>
                 <Link
@@ -1154,11 +1154,11 @@ export default function DashboardClient({
               {/* History Table */}
               <div className="p-6 rounded-2xl bg-[#0c0c0e] border border-[#1f1f23] space-y-4">
                 <h4 className="text-sm font-semibold text-white">
-                  Credits Activity History
+                  Referral Earnings
                 </h4>
                 {(!referralProfile?.history || referralProfile.history.length === 0) ? (
                   <div className="py-8 text-center text-xs text-zinc-500 font-mono">
-                    No referral activity yet. Share your invite link to start earning Fibez store credits!
+                    No referral activity yet. Share your invite link to start earning wallet money!
                   </div>
                 ) : (
                   <div className="divide-y divide-white/5 font-mono text-xs">
@@ -1171,7 +1171,7 @@ export default function DashboardClient({
                           </div>
                         </div>
                         <div className="font-bold text-sm text-[#3ad389]">
-                          +{h.creditsDelta} Credits
+                          +Rs. {(h.creditsDelta * 10).toLocaleString()}
                         </div>
                       </div>
                     ))}

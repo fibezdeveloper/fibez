@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import QRCode from 'qrcode';
 import { authClient } from '@/lib/auth-client';
+import LineActions from '@/components/v2ray/LineActions';
 import { buildVlessUri, parseVlessUri } from '@/lib/v2ray-inbounds';
 import { AnimatedButton } from '@/components/ui/AnimatedButton';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
@@ -151,6 +152,8 @@ export default function V2RayDashboardPage() {
   const [pendingOrders, setPendingOrders] = useState<{ orderNumber: string; title: string; status: string }[]>([]);
   const { data: session } = authClient.useSession();
   const [profile, setProfile] = useState<{ referralCode: string; referralLink: string; creditValueLKR: number } | null>(null);
+  const [walletLkr, setWalletLkr] = useState(0);
+  const [reloadKey, setReloadKey] = useState(0);
   const [activeLineId, setActiveLineId] = useState<string>('');
   const [selectedPackageId, setSelectedPackageId] = useState<string>('');
   const [selectedClient, setSelectedClient] = useState<'netmod' | 'v2box'>('netmod');
@@ -365,6 +368,11 @@ export default function V2RayDashboardPage() {
       .catch(() => {})
       .finally(() => setLinesLoaded(true));
 
+    fetch('/api/wallet', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && typeof d.balanceLkr === 'number' && setWalletLkr(d.balanceLkr))
+      .catch(() => {});
+
     fetch('/api/referrals', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -377,7 +385,7 @@ export default function V2RayDashboardPage() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [reloadKey]);
   // Handler to switch between user's purchased lines
   const handleSelectLine = (lineId: string) => {
     setActiveLineId(lineId);
@@ -862,9 +870,9 @@ export default function V2RayDashboardPage() {
                   <Wallet className="w-5 h-5 text-[#3ad389]" />
                 </div>
                 <div>
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Store Credit</div>
+                  <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Wallet Balance</div>
                   <div className="text-xl font-bold font-mono text-white mt-0.5 flex items-baseline gap-1.5">
-                    <span>Rs {(profile?.creditValueLKR ?? 0).toFixed(2)}</span>
+                    <span>Rs {walletLkr.toLocaleString()}</span>
                     <span className="text-[11px] font-normal text-zinc-400">LKR</span>
                   </div>
                 </div>
@@ -1163,6 +1171,8 @@ export default function V2RayDashboardPage() {
                   </Link>
                 </div>
               </div>
+
+              <LineActions line={activePurchasedLine} onChanged={() => setReloadKey((k) => k + 1)} />
 
               {/* Package Metadata Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5">

@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { sql as adminSql } from '@/lib/db';
 import { PRODUCTS } from '@/lib/products';
 import type { ReferralUserRecord } from '@/lib/referrals';
+import * as db from '@/lib/store-db';
 
 export interface AdminOrderItem {
   id: string;
@@ -30,7 +31,7 @@ export interface AdminOrder {
   totalAmountLKR: number;
   totalAmountUSD: number;
   currency: 'LKR' | 'USD';
-  paymentMethod: 'bank_transfer' | 'crypto' | 'gateway' | 'staff_grant';
+  paymentMethod: 'bank_transfer' | 'crypto' | 'gateway' | 'staff_grant' | 'wallet';
   paymentStatus: 'PENDING_PAYMENT' | 'PENDING_REVIEW' | 'VERIFIED' | 'FAILED' | 'REFUNDED';
   fulfillmentStatus: 'PENDING' | 'PROCESSING' | 'MINTED' | 'DELIVERED' | 'REVOKED';
   receiptImageUrl?: string | null;
@@ -44,6 +45,11 @@ export interface AdminOrder {
   existingUuid?: string | null;
   referralCode?: string | null;
   referralCreditsAwarded?: number;
+  userId?: string | null;
+  /** When the product was delivered (starts the refund window). */
+  deliveredAt?: string | null;
+  /** Customer confirmed they received it and it works (closes the refund window). */
+  receivedConfirmedAt?: string | null;
   /** Server-side bookkeeping, e.g. the 3x-ui clients created for this order (so they can be revoked). */
   metadata?: { panelClients?: { email: string; uuid: string }[]; [k: string]: unknown };
   receiptAnalysis?: any;
@@ -480,17 +486,21 @@ class AdminStore {
   // ---- Orders -------------------------------------------------------------
 
   public async getOrders(): Promise<AdminOrder[]> {
+    if (adminSql) return db.dbGetOrders();
     const { state } = await this.read();
     return [...state.orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   public async getOrder(orderIdOrNumber: string): Promise<AdminOrder | undefined> {
+    if (adminSql) return db.dbGetOrder(orderIdOrNumber);
     const { state } = await this.read();
     const query = orderIdOrNumber.trim().toUpperCase();
     return state.orders.find((o) => o.id === orderIdOrNumber || o.orderNumber.toUpperCase() === query);
   }
 
-  public async addOrder(order: AdminOrder): Promise<AdminOrder> {
+  /** Pass a transaction client to create the order in the same transaction as a wallet debit. */
+  public async addOrder(order: AdminOrder, client?: import('@neondatabase/serverless').PoolClient): Promise<AdminOrder> {
+    if (adminSql) return db.dbAddOrder(order, client);
     await this.mutate((s) => {
       s.orders.unshift(order);
     });
@@ -510,6 +520,7 @@ class AdminStore {
       metadata?: AdminOrder['metadata'];
     }
   ): Promise<AdminOrder | null> {
+    if (adminSql) return db.dbUpdateOrderStatus(orderIdOrNumber, updates);
     const query = orderIdOrNumber.trim().toUpperCase();
     return this.mutate((s) => {
       const order = s.orders.find((o) => o.id === orderIdOrNumber || o.orderNumber.toUpperCase() === query);
@@ -538,9 +549,21 @@ class AdminStore {
     });
   }
 
+  /** Customer confirms receipt (closes the refund window). */
+  public async confirmReceived(orderNumber: string, email: string): Promise<boolean> {
+    if (adminSql) return db.dbConfirmReceived(orderNumber, email);
+    return this.mutate((s) => {
+      const o = s.orders.find((x) => x.orderNumber.toUpperCase() === orderNumber.toUpperCase() && x.customerEmail.toLowerCase() === email.toLowerCase());
+      if (!o || o.receivedConfirmedAt) return false;
+      o.receivedConfirmedAt = new Date().toISOString();
+      return true;
+    });
+  }
+
   // ---- Inventory ----------------------------------------------------------
 
   public async getInventory(): Promise<AdminInventoryItem[]> {
+    if (adminSql) return db.dbGetInventory();
     const { state } = await this.read();
     return [...state.inventory];
   }
@@ -553,6 +576,7 @@ class AdminStore {
     batchRef?: string
   ): Promise<number> {
     const batch = batchRef || `BATCH-${Date.now().toString().slice(-6)}`;
+    if (adminSql) return db.dbAddInventoryBatch(productId, productTitle, stockType, rawKeys, batch);
     return this.mutate((s) => {
       let count = 0;
       for (const key of rawKeys) {
@@ -579,6 +603,7 @@ class AdminStore {
     orderId: string,
     email: string
   ): Promise<AdminInventoryItem | null> {
+    if (adminSql) return db.dbDispenseStockItem(productId, orderId, email);
     return this.mutate((s) => {
       const item = s.inventory.find(
         (i) => (i.productId === productId || i.productId.includes(productId)) && i.status === 'AVAILABLE'
@@ -592,6 +617,7 @@ class AdminStore {
   }
 
   public async deleteInventoryItem(id: string): Promise<boolean> {
+    if (adminSql) return db.dbDeleteInventoryItem(id);
     return this.mutate((s) => {
       const prev = s.inventory.length;
       s.inventory = s.inventory.filter((i) => i.id !== id);
@@ -600,12 +626,14 @@ class AdminStore {
   }
 
   public async clearAllInventory(): Promise<void> {
+    if (adminSql) return db.dbClearInventory();
     await this.mutate((s) => {
       s.inventory = [];
     });
   }
 
   public async resetInventoryToSeed(): Promise<void> {
+    if (adminSql) return db.dbClearInventory(); // seed stock is demo data: never load it into a live database
     await this.mutate((s) => {
       // Seed stock contains demo placeholder keys: never load them into a live database.
       s.inventory = adminSql ? [] : getSeedInventory();
@@ -613,6 +641,7 @@ class AdminStore {
   }
 
   public async clearDispensedInventory(): Promise<number> {
+    if (adminSql) return db.dbClearDispensed();
     return this.mutate((s) => {
       const prev = s.inventory.length;
       s.inventory = s.inventory.filter((i) => i.status !== 'DISPENSED');
@@ -623,6 +652,7 @@ class AdminStore {
   // ---- Coupons ------------------------------------------------------------
 
   public async getCoupons(): Promise<AdminPromoCode[]> {
+    if (adminSql) return db.dbGetCoupons();
     const { state } = await this.read();
     return [...state.coupons];
   }
@@ -630,6 +660,7 @@ class AdminStore {
   public async addCoupon(
     coupon: Omit<AdminPromoCode, 'id' | 'timesUsed' | 'createdAt'>
   ): Promise<AdminPromoCode> {
+    if (adminSql) return db.dbAddCoupon(coupon);
     const newCoupon: AdminPromoCode = {
       ...coupon,
       id: `cpn_${crypto.randomUUID().slice(0, 8)}`,
@@ -644,6 +675,7 @@ class AdminStore {
   }
 
   public async toggleCoupon(id: string): Promise<boolean> {
+    if (adminSql) return db.dbToggleCoupon(id);
     return this.mutate((s) => {
       const cpn = s.coupons.find((c) => c.id === id);
       if (!cpn) return false;
@@ -653,6 +685,7 @@ class AdminStore {
   }
 
   public async deleteCoupon(id: string): Promise<boolean> {
+    if (adminSql) return db.dbDeleteCoupon(id);
     return this.mutate((s) => {
       const prev = s.coupons.length;
       s.coupons = s.coupons.filter((c) => c.id !== id);

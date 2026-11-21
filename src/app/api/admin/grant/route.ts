@@ -2,7 +2,10 @@ import { requireRole } from '@/lib/dal';
 import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { xui } from '@/lib/xui';
-import { resolvePackageProfile, buildVlessUri } from '@/lib/v2ray-inbounds';
+import { buildVlessUri, INBOUND_DEFINITIONS } from '@/lib/v2ray-inbounds';
+import { resolveV2RayProvisioning } from '@/lib/pricing';
+import { dbReady } from '@/lib/db/tx';
+import { recordPanelClients } from '@/lib/wallet';
 import { PRODUCTS } from '@/lib/products';
 import { sql as adminSql } from '@/lib/db';
 import { adminStore } from '@/lib/admin-store';
@@ -54,30 +57,56 @@ export async function POST(req: NextRequest) {
 
     let dispensedPayload = customKey;
     let clientUuid: string | null = null;
+    let grantPanelClient: { email: string; uuid: string; inboundId: number; expiresAt: Date } | null = null;
     let keyType = 'SERIAL_KEY';
 
     // 1. If V2Ray, automatically provision on 3x-ui
     if (isV2Ray) {
       keyType = 'CONNECTION_CONFIG';
-      const profile = resolvePackageProfile(productId);
-      const targetInbound = Number(body.v2rayInboundId) || profile.inboundId;
-      const targetSni = body.v2raySni || profile.sni;
-      const targetRemark = body.v2rayRemark || `${profile.remarkName} (VIP Gift)`;
-      const quotaGb = Number(body.quotaGb) || 100;
-      const validityDays = Number(body.validityDays) || 30;
+      // Start from the package's own inbound / port / SNI (and admin edits), then apply the
+      // admin's explicit choices from the Grant form.
+      const spec = resolveV2RayProvisioning(productId, {
+        overrides: await adminStore.getPackageOverrides(),
+        customPackages: await adminStore.getCustomPackages(),
+      });
+      const num = (v: unknown, fallback: number, min: number, max: number) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? Math.min(max, Math.max(min, Math.round(n))) : fallback;
+      };
 
-      const generatedUuid = crypto.randomUUID();
+      const targetInbound = num(body.v2rayInboundId, spec.inboundId, 1, 50);
+      // The port MUST follow the inbound the client is created on.
+      const targetPort = INBOUND_DEFINITIONS[targetInbound]?.port ?? spec.port;
+      const targetSni = typeof body.v2raySni === 'string' && body.v2raySni.trim() ? body.v2raySni.trim().slice(0, 100) : spec.sni;
+      const targetRemark =
+        typeof body.v2rayRemark === 'string' && body.v2rayRemark.trim()
+          ? body.v2rayRemark.trim().slice(0, 100)
+          : `${spec.remarkName} (VIP Gift)`;
+      const quotaGb = num(body.quotaGb, Math.round(spec.totalBytes / 1073741824), 0, 100000); // 0 = unlimited
+      const validityDays = num(body.validityDays, 30, 1, 3650);
+      const limitIp = num(body.limitIp, 2, 0, 50); // concurrent IPs, 0 = unlimited
+      const limitHwid = num(body.limitHwid, 0, 0, 50); // registered devices, 0 = no HWID limit
+
+      let generatedUuid: string;
+      const grantClientEmail = `${orderNumber}_${recipientEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').slice(0, 10)}`;
       try {
         const liveClient = await xui.createClient({
-          email: `${orderNumber}_${recipientEmail.split('@')[0].slice(0, 10)}`,
-          uuid: generatedUuid,
+          email: grantClientEmail,
           inboundId: targetInbound,
-          totalGB: quotaGb > 0 ? quotaGb * 1024 * 1024 * 1024 : 0,
+          totalGB: quotaGb * 1024 * 1024 * 1024,
           expiryDays: validityDays,
-          limitIp: 2,
+          limitIp,
+          ...(limitHwid > 0 ? { limitHwid } : {}),
           comment: `Staff Gift to ${recipientName} (${recipientEmail}) - ${staffNotes}`,
         });
+        generatedUuid = liveClient.uuid;
         clientUuid = liveClient.uuid;
+        grantPanelClient = {
+          email: grantClientEmail,
+          uuid: liveClient.uuid,
+          inboundId: targetInbound,
+          expiresAt: new Date(Date.now() + validityDays * 86400000),
+        };
       } catch (xuiErr) {
         // Never hand out a config that does not exist on the panel.
         console.error('3x-ui provisioning failed, grant aborted:', xuiErr);
@@ -88,28 +117,24 @@ export async function POST(req: NextRequest) {
       }
 
       dispensedPayload = buildVlessUri({
-        uuid: clientUuid,
-        host: xui.getPublicHost(),
-        port: profile.port,
+        uuid: generatedUuid,
+        host: spec.host || xui.getPublicHost(),
+        port: targetPort,
         sni: targetSni,
         remark: targetRemark,
       });
     } else {
-      // Non-V2Ray product: check if manual key provided, otherwise generate clean license / activation credential
+      // Real stock only: the key you typed, otherwise one from Inventory. Keys are never invented.
       if (!dispensedPayload) {
-        if (product.category === 'software') {
-          keyType = 'ACCOUNT_CREDENTIALS';
-          if (product.id.includes('canva')) {
-            dispensedPayload = `https://www.canva.com/brand/join?token=fbz_vip_${crypto.randomBytes(8).toString('hex')}&team=fibez_pro`;
-          } else if (product.id.includes('capcut')) {
-            dispensedPayload = `Account: user_${recipientEmail.split('@')[0]}@fibez.store | Pass: CapCutPro#${crypto.randomInt(1000, 9999)}`;
-          } else {
-            dispensedPayload = `LICENSE-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-          }
-        } else {
-          keyType = 'SERIAL_KEY';
-          dispensedPayload = `FBZ-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+        const inv = await adminStore.dispenseStockItem(product.id, orderId, recipientEmail);
+        if (!inv) {
+          return NextResponse.json(
+            { success: false, error: `No stock available for "${product.title}". Add stock in Inventory, or type the key in the override box.` },
+            { status: 409 }
+          );
         }
+        dispensedPayload = inv.keyPayload;
+        keyType = inv.stockType;
       }
     }
 
@@ -126,6 +151,8 @@ export async function POST(req: NextRequest) {
       paymentMethod: 'staff_grant',
       paymentStatus: 'VERIFIED',
       fulfillmentStatus: 'DELIVERED',
+      deliveredAt: new Date().toISOString(),
+      metadata: grantPanelClient ? { panelClients: [{ email: grantPanelClient.email, uuid: grantPanelClient.uuid }] } : undefined,
       grantType: grantType as any,
       reviewedBy: 'Fibez Administrator',
       reviewNotes: `Granted by Admin: [${grantType}] ${staffNotes}`,
@@ -150,37 +177,19 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    // 3. Persist order into Postgres if database is configured
-    if (adminSql) {
-      try {
-        await adminSql`
-          INSERT INTO public.orders (
-            id, order_number, user_id, customer_email, customer_name,
-            total_amount_lkr, total_amount_usd, currency, payment_method,
-            payment_status, fulfillment_status, review_notes, created_at, updated_at
-          ) VALUES (
-            ${orderId}, ${orderNumber}, NULL, ${recipientEmail}, ${recipientName},
-            0, 0.00, 'LKR', 'admin_grant',
-            'VERIFIED', 'DELIVERED', ${`Granted by Admin: [${grantType}] ${staffNotes}`}, NOW(), NOW()
-          )
-        `;
-
-        await adminSql`
-          INSERT INTO public.order_items (
-            id, order_id, product_id, product_title, variant_title,
-            quantity, unit_price_lkr, unit_price_usd, subtotal_lkr, subtotal_usd,
-            dispensed_key, key_type, guide_markdown, warranty, status, created_at
-          ) VALUES (
-            ${itemId}, ${orderId}, ${product.id}, ${product.title}, ${variantTitle},
-            1, 0, 0.00, 0, 0.00,
-            ${dispensedPayload}, ${keyType},
-            ${product.guideMarkdown || 'Admin direct fulfillment'},
-            ${product.warranty || 'Staff Verified Guarantee'}, 'DELIVERED', NOW()
-          )
-        `;
-      } catch (dbErr) {
-        console.warn('Database logging error for admin grant:', dbErr);
-      }
+    // 3. Remember the panel client so the line can be revoked / renewed later
+    if (grantPanelClient && dbReady()) {
+      await recordPanelClients([
+        {
+          orderNumber,
+          itemId,
+          userEmail: recipientEmail,
+          email: grantPanelClient.email,
+          uuid: grantPanelClient.uuid,
+          inboundId: grantPanelClient.inboundId,
+          expiresAt: grantPanelClient.expiresAt,
+        },
+      ]).catch((e) => console.warn('Panel client not recorded:', e));
     }
 
     return NextResponse.json({
