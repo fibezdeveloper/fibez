@@ -19,6 +19,7 @@ import {
   Filter
 } from 'lucide-react';
 import type { TicketAttachment } from '@/lib/ticket-attachments';
+import LinkifiedText from '@/components/LinkifiedText';
 import {
   AttachButton,
   AttachmentDropArea,
@@ -439,7 +440,7 @@ export default function TicketCenter({
                     </div>
 
                     {msg.message && (
-                      <p className="text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                      <p className="text-zinc-200 leading-relaxed whitespace-pre-wrap break-words"><LinkifiedText text={msg.message} /></p>
                     )}
                     <AttachmentGallery attachments={msg.attachments} />
                   </div>
