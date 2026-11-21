@@ -97,7 +97,8 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
       }
       className={cn(
         'group inline-flex items-center justify-center relative overflow-hidden font-medium cursor-pointer select-none',
-        'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3ad389]/50',
+        'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2',
+        variant === 'blue' ? 'focus-visible:ring-[#3b82f6]/60' : 'focus-visible:ring-[#3ad389]/50',
         'disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed',
         sizeClasses[size],
         selectedVariant.base,

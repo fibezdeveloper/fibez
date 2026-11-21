@@ -333,7 +333,7 @@ export default function V2RayPackageCard({
                           onClick={() => setServerType(o.id as 'standard' | 'lk_ip')}
                           className={`text-left p-3 rounded-xl border transition-colors cursor-pointer ${
                             serverType === o.id
-                              ? 'bg-[#3ad389]/10 border-[#3ad389]'
+                              ? 'bg-[#2563eb]/10 border-[#3b82f6]'
                               : 'bg-[#111116] border-[#202028] hover:border-zinc-600'
                           }`}
                         >
@@ -357,21 +357,21 @@ export default function V2RayPackageCard({
                           type="button"
                           onClick={() => setSelectedPlanId(tier.id)}
                           className={`w-full text-left p-3 rounded-xl border transition-colors cursor-pointer flex items-center gap-3 ${
-                            selected ? 'bg-[#3ad389]/10 border-[#3ad389]' : 'bg-[#111116] border-[#202028] hover:border-zinc-600'
+                            selected ? 'bg-[#2563eb]/10 border-[#3b82f6]' : 'bg-[#111116] border-[#202028] hover:border-zinc-600'
                           }`}
                         >
                           <span
                             className={`w-4 h-4 rounded-full border shrink-0 flex items-center justify-center ${
-                              selected ? 'border-[#3ad389] bg-[#3ad389]' : 'border-zinc-600'
+                              selected ? 'border-[#3b82f6] bg-[#3b82f6]' : 'border-zinc-600'
                             }`}
                           >
-                            {selected && <span className="w-1.5 h-1.5 rounded-full bg-black" />}
+                            {selected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm font-semibold text-white capitalize">{tier.name.toLowerCase()}</span>
                               {tier.badge && (
-                                <span className="px-1.5 rounded text-[9px] font-mono font-bold bg-[#3ad389]/15 text-[#3ad389] border border-[#3ad389]/25">
+                                <span className="px-1.5 rounded text-[9px] font-mono font-bold bg-[#2563eb]/20 text-[#7aa2ff] border border-[#3b82f6]/30">
                                   {tier.badge}
                                 </span>
                               )}
@@ -405,12 +405,12 @@ export default function V2RayPackageCard({
                           onClick={() => setSelectedMonths(d.months)}
                           className={`py-2 rounded-xl border text-center transition-colors cursor-pointer ${
                             selected
-                              ? 'bg-[#3ad389] border-[#3ad389] text-black'
+                              ? 'bg-[#2563eb] border-[#3b82f6] text-white'
                               : 'bg-[#111116] border-[#202028] text-zinc-200 hover:border-zinc-600'
                           }`}
                         >
                           <div className="text-sm font-bold">{d.months}</div>
-                          <div className={`text-[10px] ${selected ? 'text-black/70' : d.discountPercent > 0 ? 'text-[#3ad389]' : 'text-zinc-500'}`}>
+                          <div className={`text-[10px] ${selected ? 'text-white/80' : d.discountPercent > 0 ? 'text-[#7aa2ff]' : 'text-zinc-500'}`}>
                             {d.discountPercent > 0 ? `save ${d.discountPercent}%` : d.months === 1 ? 'month' : 'months'}
                           </div>
                         </button>
@@ -432,7 +432,7 @@ export default function V2RayPackageCard({
                     </div>
                   </div>
                   <div className="text-right text-[11px]">
-                    {totalSavingsLKR > 0 && <div className="text-[#3ad389] font-semibold">You save Rs {totalSavingsLKR.toLocaleString()}</div>}
+                    {totalSavingsLKR > 0 && <div className="text-[#7aa2ff] font-semibold">You save Rs {totalSavingsLKR.toLocaleString()}</div>}
                     <div className="text-zinc-500">≈ ${(totalPriceLKR / 305).toFixed(2)} USD</div>
                   </div>
                 </div>
@@ -440,7 +440,7 @@ export default function V2RayPackageCard({
                 <button
                   type="button"
                   onClick={handleInstantBuy}
-                  className="w-full py-3 rounded-xl bg-[#3ad389] hover:bg-[#32be7a] text-black font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  className="w-full py-3 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <span>Buy now</span>
                   <ArrowRight className="w-4 h-4" />
