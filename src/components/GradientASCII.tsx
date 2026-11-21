@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './GradientASCII.css';
 
 export interface GradientASCIIProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -486,6 +486,8 @@ export default function GradientASCII({
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wakeRef = useRef<(() => void) | null>(null);
+  // Bumped when the browser drops the WebGL context (GPU reset, too many contexts): remounts a fresh canvas.
+  const [epoch, setEpoch] = useState(0);
   const palette = (Array.isArray(colors) && colors.length ? colors : DEFAULT_COLORS).slice(0, MAX_COLORS);
   const settings = {
     colors: palette.length > 1 ? palette : [palette[0], palette[0]],
@@ -526,6 +528,11 @@ export default function GradientASCII({
       stencil: false
     });
     if (!container || !canvas || !gl) return undefined;
+    const onContextLost = (event: Event) => {
+      event.preventDefault();
+      window.setTimeout(() => setEpoch((e) => e + 1), 150);
+    };
+    canvas.addEventListener('webglcontextlost', onContextLost);
 
     const field = link(gl, FIELD);
     const halo = link(gl, HALO);
@@ -708,7 +715,7 @@ export default function GradientASCII({
       const s = settingsRef.current;
       view.width = Math.max(1, container.clientWidth);
       view.height = Math.max(1, container.clientHeight);
-      view.ratio = Math.min(s.dpr || window.devicePixelRatio || 1, 2);
+      view.ratio = Math.min(s.dpr || window.devicePixelRatio || 1, 1.5);
       canvas.width = Math.max(1, Math.round(view.width * view.ratio));
       canvas.height = Math.max(1, Math.round(view.height * view.ratio));
       sizeTarget(
@@ -842,6 +849,7 @@ export default function GradientASCII({
     wakeRef.current = wake;
 
     return () => {
+      canvas.removeEventListener('webglcontextlost', onContextLost);
       disposed = true;
       cancelAnimationFrame(raf);
       wakeRef.current = null;
@@ -863,7 +871,7 @@ export default function GradientASCII({
       });
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  }, []);
+  }, [epoch]);
 
   useEffect(() => {
     wakeRef.current?.();
@@ -876,7 +884,7 @@ export default function GradientASCII({
       style={style}
       {...rest}
     >
-      <canvas ref={canvasRef} className="gradient-ascii-canvas" aria-hidden="true" />
+      <canvas key={epoch} ref={canvasRef} className="gradient-ascii-canvas" aria-hidden="true" />
     </div>
   );
 }

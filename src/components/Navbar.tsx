@@ -113,19 +113,15 @@ export default function Navbar(props: NavbarProps) {
   // Which sections are open (Admin -> Site pages) and which shop products are visible. Display only:
   // the pages and APIs enforce the same switches on the server.
   const [pageFlags, setPageFlags] = useState<{ shop: boolean; v2ray: boolean; tickets: boolean; docs: boolean; faq: boolean; infrastructure: boolean } | null>(null);
-  const [visibleIds, setVisibleIds] = useState<Set<string> | null>(null);
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
   useEffect(() => {
     let cancelled = false;
     fetch('/api/site-pages', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (!cancelled && d?.pages) setPageFlags(d.pages);
-      })
-      .catch(() => {});
-    fetch('/api/products', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!cancelled && Array.isArray(d?.products)) setVisibleIds(new Set(d.products.map((p: any) => String(p.id))));
+        if (cancelled || !d) return;
+        if (d.pages) setPageFlags(d.pages);
+        if (Array.isArray(d.hiddenProducts)) setHiddenIds(new Set(d.hiddenProducts.map((x: unknown) => String(x))));
       })
       .catch(() => {});
     return () => {
@@ -134,7 +130,7 @@ export default function Navbar(props: NavbarProps) {
   }, []);
   const shopOpen = pageFlags ? pageFlags.shop : true;
   const productVisible = (id: string, category: string) =>
-    category === 'vpn' ? (pageFlags ? pageFlags.v2ray : true) : shopOpen && (!visibleIds || visibleIds.has(id));
+    category === 'vpn' ? (pageFlags ? pageFlags.v2ray : true) : shopOpen && !hiddenIds.has(id);
 
   const currentCurrency = props.currency || store?.currency || 'LKR';
   const cartCount = props.cartCount !== undefined ? props.cartCount : (store?.cartCount || 0);
@@ -415,7 +411,7 @@ export default function Navbar(props: NavbarProps) {
     }
 
     return resultCards.slice(0, 3);
-  }, [searchQuery, pageFlags, visibleIds]);
+  }, [searchQuery, pageFlags, hiddenIds]);
 
   // Full-width search bar taking up the whole top bar when search is active
   const searchBarElement = (

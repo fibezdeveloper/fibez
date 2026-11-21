@@ -13,6 +13,8 @@ import FlexCarousel, { FlexCarouselItem } from '@/components/FlexCarousel';
 import V2RayPackageCard from '@/components/v2ray/V2RayPackageCard';
 import { LIVE_V2RAY_PACKAGES, V2RayPackageDef } from '@/lib/v2ray-catalog';
 import { Meteors } from '@/components/ui/meteors';
+import PageBackdrop from '@/components/PageBackdrop';
+import useDevicePerf from '@/lib/use-device-perf';
 
 const SPEEDTEST_ITEMS: FlexCarouselItem[] = [
   {
@@ -103,6 +105,7 @@ function TrialUrlTrigger({ onOpen }: { onOpen: () => void }) {
 
 export default function V2RayPage() {
   const router = useRouter();
+  const perf = useDevicePerf();
   const { currency, formatPrice, addToCart, setIsCartOpen } = useStore();
 
   const [activeIspFilter, setActiveIspFilter] = useState<string>('all');
@@ -198,9 +201,10 @@ export default function V2RayPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#070709] text-zinc-300 relative overflow-hidden">
-      {/* Ambient Page-Level Falling Meteors */}
-      <Meteors number={18} />
+    <div className="min-h-screen bg-[#070709] text-zinc-300 relative isolate overflow-hidden">
+      <PageBackdrop />
+      {/* Ambient falling meteors (fewer on weaker devices, none with reduced motion) */}
+      <Meteors number={Math.min(18, perf.meteorCount)} />
       
       {/* Toast Notice when item added */}
       {addedItemNotice && (
