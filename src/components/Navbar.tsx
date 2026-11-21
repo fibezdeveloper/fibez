@@ -248,42 +248,72 @@ export default function Navbar(props: NavbarProps) {
     : (cartCount > 0 ? `Cart (${cartCount})` : 'Account');
 
   // Three clear groups: what to buy, your account, and help. Each page appears once.
-  const navItems: CardNavItem[] = [
-    {
-      label: shopOpen ? 'Shop' : 'V2Ray',
-      description: shopOpen ? 'Browse everything we sell.' : 'High-speed VLESS VPN for Sri Lanka.',
-      links: [
-        ...(shopOpen ? [{ label: 'All Products', href: '/catalog' }] : []),
-        { label: 'VLESS VPN Packages', href: '/v2ray' },
-        ...(shopOpen
-          ? [
-              { label: 'Gift Cards & Gaming', href: '/catalog?category=giftcard' },
-              { label: 'Subscriptions & Software', href: '/catalog?category=subscription' },
-            ]
-          : [{ label: '24-Hour Free Trial', href: '/v2ray' }]),
-      ]
-    },
-    {
+  // The menu adapts to what is switched on:
+  //  - everything on: Shop, My Account, Help
+  //  - V2Ray only (shop off): V2Ray, My Account, plus a Support card only when it has 2+ links
+  const v2rayOpen = pageFlags ? pageFlags.v2ray : true;
+  const ticketsOpen = pageFlags ? pageFlags.tickets : true;
+  const whatsapp = { label: 'WhatsApp Support', href: 'https://wa.me/94771234567' };
+  const navItems: CardNavItem[] = (() => {
+    const account: CardNavItem = {
       label: 'My Account',
       description: 'Orders, lines and money.',
       links: [
         { label: 'Orders & Keys', href: '/vault' },
-        { label: 'V2Ray Dashboard', href: '/v2ray/dashboard' },
+        ...(v2rayOpen ? [{ label: 'V2Ray Dashboard', href: '/v2ray/dashboard' }] : []),
         { label: 'Wallet & Top-up', href: '/billing' },
         { label: 'Cart', href: '/cart' },
-      ]
-    },
-    {
-      label: 'Help',
-      description: 'Setup guides and support.',
+      ],
+    };
+
+    if (shopOpen) {
+      return [
+        {
+          label: 'Shop',
+          description: 'Browse everything we sell.',
+          links: [
+            { label: 'All Products', href: '/catalog' },
+            ...(v2rayOpen ? [{ label: 'VLESS VPN Packages', href: '/v2ray' }] : []),
+            { label: 'Gift Cards & Gaming', href: '/catalog?category=giftcard' },
+            { label: 'Subscriptions & Software', href: '/catalog?category=subscription' },
+          ],
+        },
+        account,
+        {
+          label: 'Help',
+          description: 'Setup guides and support.',
+          links: [
+            ...(v2rayOpen
+              ? [
+                  { label: 'Setup Guide (NetMod / v2rayNG)', href: '/v2ray/guide' },
+                  { label: 'VLESS Line Check', href: '/v2ray#line-check' },
+                ]
+              : []),
+            ...(ticketsOpen ? [{ label: 'Support Tickets', href: '/tickets' }] : []),
+            whatsapp,
+          ],
+        },
+      ];
+    }
+
+    // Shop off: V2Ray holds everything about the product, Support is its own small card.
+    const v2rayCard: CardNavItem = {
+      label: 'V2Ray',
+      description: 'High-speed VLESS VPN for Sri Lanka.',
       links: [
+        { label: 'VLESS VPN Packages', href: '/v2ray' },
+        { label: '24-Hour Free Trial', href: '/v2ray' },
         { label: 'Setup Guide (NetMod / v2rayNG)', href: '/v2ray/guide' },
         { label: 'VLESS Line Check', href: '/v2ray#line-check' },
-        ...(!pageFlags || pageFlags.tickets ? [{ label: 'Support Tickets', href: '/tickets' }] : []),
-        { label: 'WhatsApp Support', href: 'https://wa.me/94771234567' },
-      ]
+      ],
+    };
+    const supportLinks = [...(ticketsOpen ? [{ label: 'Support Tickets', href: '/tickets' }] : []), whatsapp];
+    if (supportLinks.length < 2) {
+      // Only WhatsApp left: fold it into the V2Ray card instead of a card with one link.
+      return [{ ...v2rayCard, links: [...(v2rayCard.links || []), whatsapp] }, account];
     }
-  ];
+    return [v2rayCard, account, { label: 'Support', description: 'Real people, quick replies.', links: supportLinks }];
+  })();
 
   // Clean 3-Card Default Search Suggestions
   const defaultSearchCards: CardNavItem[] = [

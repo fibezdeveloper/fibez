@@ -203,7 +203,7 @@ export default function CardNav({
   stagger = 0.12,
   bounce = 0.2,
   speed = 1,
-  cardHeight = 176,
+  cardHeight = 0,
   maxWidth = 1080,
   scrolled = false,
   accentColor,
