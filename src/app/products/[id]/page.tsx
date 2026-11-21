@@ -485,7 +485,7 @@ function ProductDetailContent({
                   <div className="space-y-2.5 text-xs text-zinc-300">
                     <div className="flex items-start gap-2.5">
                       <CheckCircle2 className="w-4 h-4 text-[#3ad389] shrink-0 mt-0.5" />
-                      <span><strong>100 GB Monthly High-Speed Traffic:</strong> Hosted on 10 Gbps Tier-1 Singapore Equinix servers for low ping and zero buffering.</span>
+                      <span><strong>100 GB Monthly High-Speed Traffic:</strong> Hosted on Singapore servers.</span>
                     </div>
 
                     <div className="flex items-start gap-2.5">

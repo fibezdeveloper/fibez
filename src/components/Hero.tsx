@@ -100,16 +100,16 @@ export default function Hero({
             {/* Minimal Metrics Row */}
             <div className="grid grid-cols-3 gap-6 pt-6 border-t border-[#292d30] w-full max-w-lg backdrop-blur-xs">
               <div>
-                <div className="font-mono text-xl text-white font-medium">50+</div>
-                <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">Products in stock</div>
+                <div className="font-mono text-xl text-white font-medium">LKR</div>
+                <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">Bank transfer &amp; wallet</div>
               </div>
               <div>
                 <div className="font-mono text-xl text-white font-medium">Instant</div>
                 <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">Email &amp; vault delivery</div>
               </div>
               <div>
-                <div className="font-mono text-xl text-white font-medium">100%</div>
-                <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">Warranty protected</div>
+                <div className="font-mono text-xl text-white font-medium">24h</div>
+                <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">Replacement guarantee</div>
               </div>
             </div>
 

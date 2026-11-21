@@ -481,7 +481,7 @@ export default function V2RayDashboardPage() {
 
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadedImagePreview && !downloadInput) return;
+    if (!uploadedImagePreview || !downloadInput || !pingInput) return;
     setIsSubmittingReview(true);
     setTimeout(() => {
       let ispCat: SpeedtestReview['ispCategory'] = 'Other';
@@ -493,18 +493,17 @@ export default function V2RayDashboardPage() {
 
       const newRev: SpeedtestReview = {
         id: `rev-client-${Date.now()}`,
-        clientName: clientNameInput.trim() || 'Verified Client',
+        clientName: clientNameInput.trim() || 'Customer',
         isp: ispInput,
         ispCategory: ispCat,
         packageTitle: packageInput,
-        downloadMbps: parseFloat(downloadInput) || 85.4,
-        uploadMbps: 24.0,
-        pingMs: parseInt(pingInput, 10) || 18,
+        downloadMbps: parseFloat(downloadInput),
+        pingMs: parseInt(pingInput, 10),
         rating: ratingInput,
-        comment: commentInput.trim() || 'Verified high-speed connection through Fibez Singapore VLESS gateway.',
+        comment: commentInput.trim(),
         date: 'Just now',
-        imageSrc: uploadedImagePreview || '/speedtests/speedtest-1.jpeg',
-        verified: true,
+        imageSrc: uploadedImagePreview || '',
+        verified: false,
       };
 
       setReviews((prev) => [newRev, ...prev]);

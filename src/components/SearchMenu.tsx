@@ -236,7 +236,7 @@ export default function SearchMenu({
                               {priceFormatted}
                             </div>
                             <div className="text-[10px] font-mono text-zinc-400">
-                              Instant ({product.stockCount} in stock)
+                              Instant delivery
                             </div>
                           </div>
                           <ArrowRight

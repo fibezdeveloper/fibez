@@ -62,7 +62,7 @@ export default function CatalogSection({
               description: p.description || baseProd?.description || '',
               priceUSD: Number(p.priceUSD ?? p.price_usd ?? baseProd?.priceUSD ?? 0),
               priceLKR: Number(p.priceLKR ?? p.price_lkr ?? baseProd?.priceLKR ?? 0),
-              stockCount: Number(p.stockCount ?? p.stock_count ?? baseProd?.stockCount ?? 10),
+              stockCount: Number(p.stockCount ?? p.stock_count ?? baseProd?.stockCount ?? 1),
               badge: p.badge || baseProd?.badge || undefined,
               isInstant: p.isInstant ?? p.is_instant ?? baseProd?.isInstant ?? true,
               durations: p.durations || baseProd?.durations || [],
@@ -194,7 +194,7 @@ export default function CatalogSection({
                 : (fallbackProd?.priceUSD ?? 10);
               const stockVal = Number.isFinite(product.stockCount)
                 ? product.stockCount
-                : (fallbackProd?.stockCount ?? 10);
+                : (fallbackProd?.stockCount ?? 1);
 
               return (
                 <div
@@ -215,7 +215,7 @@ export default function CatalogSection({
                       {/* Stock Status Pill */}
                       <div className="inline-flex items-center gap-1.5 font-mono text-[11px] text-zinc-400">
                         <span className={`w-1.5 h-1.5 rounded-full ${stockVal > 0 ? 'bg-[#3ad389]' : 'bg-zinc-600'}`} />
-                        <span>{stockVal > 0 ? `${stockVal} In Stock` : 'Out of Stock'}</span>
+                        <span>{stockVal > 0 ? 'In Stock' : 'Out of Stock'}</span>
                       </div>
                     </div>
 

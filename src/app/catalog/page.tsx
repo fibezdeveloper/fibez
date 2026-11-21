@@ -88,7 +88,7 @@ function CatalogContent() {
               description: p.description || baseProd?.description || '',
               priceUSD: Number(p.priceUSD ?? p.price_usd ?? baseProd?.priceUSD ?? 0),
               priceLKR: Number(p.priceLKR ?? p.price_lkr ?? baseProd?.priceLKR ?? 0),
-              stockCount: Number(p.stockCount ?? p.stock_count ?? baseProd?.stockCount ?? 10),
+              stockCount: Number(p.stockCount ?? p.stock_count ?? baseProd?.stockCount ?? 1),
               badge: p.badge || baseProd?.badge || undefined,
               isInstant: p.isInstant ?? p.is_instant ?? baseProd?.isInstant ?? true,
               durations: p.durations || baseProd?.durations || [],
@@ -325,7 +325,7 @@ function CatalogContent() {
               : (fallbackProd?.priceUSD ?? 10);
             const stockVal = Number.isFinite(product.stockCount)
               ? product.stockCount
-              : (fallbackProd?.stockCount ?? 10);
+              : (fallbackProd?.stockCount ?? 1);
 
             const priceFormatted =
               currency === 'USD'
@@ -360,7 +360,7 @@ function CatalogContent() {
                         ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20'
                         : 'text-zinc-500 bg-white/5 border-white/10'
                     }`}>
-                      {stockVal > 0 ? `${stockVal} In Stock` : 'Out of Stock'}
+                      {stockVal > 0 ? 'In Stock' : 'Out of Stock'}
                     </span>
                   </div>
 

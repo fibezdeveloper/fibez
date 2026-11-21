@@ -185,11 +185,11 @@ export default function V2RayPage() {
     },
     {
       q: 'How fast is delivery?',
-      a: 'Delivery is 100% instant and automated. Once payment or checkout is confirmed, your VLESS config link and QR code are generated and sent to your email in seconds, and also displayed in your Key Vault.',
+      a: 'Delivery is instant and automated. Once payment or checkout is confirmed, your VLESS config link and QR code are generated and sent to your email in seconds, and also displayed in your Key Vault.',
     },
     {
       q: 'How fast are your VLESS nodes?',
-      a: 'Our Singapore Tier-1 nodes feature 10 Gbps symmetric uplinks with sub-20ms ping to Sri Lanka. Customers regularly achieve 200+ Mbps on SLT Fiber and 80+ Mbps on Dialog 4G, as shown in our live Speedtest showcase above.',
+      a: 'Speed depends on your ISP, package and signal. Our nodes are hosted in Singapore; see the speedtest screenshots above for results from real connections.',
     },
     {
       q: 'Can I share the connection via Wi-Fi hotspot to my PC or TV?',

@@ -255,7 +255,7 @@ function getSeedOrders(): AdminOrder[] {
       fulfillmentStatus: 'DELIVERED',
       grantType: 'FREE_GIFT',
       reviewedBy: 'Akain (Administrator)',
-      reviewNotes: 'VIP Friend node grant with Singapore Equinix 10Gbps line.',
+      reviewNotes: 'VIP Friend node grant.',
       createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
       updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
       items: [

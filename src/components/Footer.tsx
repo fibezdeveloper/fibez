@@ -138,7 +138,7 @@ export default function Footer() {
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-zinc-400 hover:text-white hover:border-white/20 transition-all"
               >
                 <span className="w-2 h-2 rounded-full bg-[#3ad389] animate-pulse" />
-                <span>All systems operational · High-speed VLESS VPN</span>
+                <span>High-speed VLESS VPN · Sri Lanka</span>
               </Link>
             </div>
           </div>

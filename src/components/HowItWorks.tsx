@@ -11,7 +11,7 @@ const STEPS = [
     title: 'Choose Product & Plan',
     description:
       'Pick any VLESS VPN package, official gift card, streaming subscription, game top-up, or software license and add it to your cart.',
-    detail: '50+ Digital Products',
+    detail: 'Gift cards, games, subscriptions & VPN',
   },
   {
     step: '02',

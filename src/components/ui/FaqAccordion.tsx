@@ -33,7 +33,7 @@ const DEFAULT_FIBEZ_FAQS: FaqItem[] = [
   },
   {
     question: "What happens if a node or my digital account credentials degrade?",
-    answer: "Every active subscription includes a 100% active uptime guarantee. If a network pathway ever degrades, you can trigger an automated replacement key or refresh your inbound configuration node directly inside your Key Vault or Support Ticket Center.",
+    answer: "If a line stops working or a pathway degrades, open a support ticket from your Key Vault or Support Ticket Center and we will replace or fix it within the 24-hour replacement window.",
   },
   {
     question: "Can I connect multiple devices simultaneously?",

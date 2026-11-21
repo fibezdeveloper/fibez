@@ -203,8 +203,6 @@ export default function V2RayThumbnail({
         </div>
 
         <div className="text-zinc-300 font-mono flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-md">
-          <span className="text-[#3ad389] font-bold">{isLkIp ? '22ms' : '18ms'}</span>
-          <span className="text-zinc-500">•</span>
           <span>{isLkIp ? '🇱🇰 Sri Lanka IP' : 'Equinix SG3'}</span>
         </div>
       </div>

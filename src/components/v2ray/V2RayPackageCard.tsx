@@ -125,7 +125,6 @@ export default function V2RayPackageCard({
       isps: [pkg.isp as any],
       sniMasquerade: pkg.sni,
       location: serverType === 'lk_ip' ? 'Sri Lanka' : 'Singapore SG3',
-      pingMs: serverType === 'lk_ip' ? 22 : 18,
     };
 
     addToCart(productItem, 0, pkg.isp);
@@ -293,7 +292,7 @@ export default function V2RayPackageCard({
                   }`}
                 >
                   <Zap className="w-3 h-3 text-[#3ad389]" />
-                  <span>Standard SG (18ms)</span>
+                  <span>Standard SG</span>
                 </button>
 
                 <button

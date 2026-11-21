@@ -235,9 +235,7 @@ export function SiteLockCountdown() {
 
         {/* Feature Badges */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-2 max-w-xl text-[11px] font-mono text-zinc-400">
-          <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10">⚡ 948 Mbps Download</span>
           <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10">🛡️ VLESS Reality TLS</span>
-          <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10">🌐 Singapore 35ms Ping</span>
           <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10">🎮 Instant Game Keys</span>
         </div>
       </main>
