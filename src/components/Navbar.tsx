@@ -291,7 +291,7 @@ export default function Navbar(props: NavbarProps) {
             ...(v2rayOpen
               ? [
                   { label: 'Setup Guide (NetMod / v2rayNG)', href: '/v2ray/guide' },
-                  { label: 'VLESS Line Check', href: '/v2ray#line-check' },
+                  { label: 'VLESS Line Check', href: '/v2ray/line-check' },
                 ]
               : []),
             ...(ticketsOpen ? [{ label: 'Support Tickets', href: '/tickets' }] : []),
@@ -309,7 +309,7 @@ export default function Navbar(props: NavbarProps) {
         { label: 'VLESS VPN Packages', href: '/v2ray' },
         { label: '24-Hour Free Trial', href: '/v2ray' },
         { label: 'Setup Guide (NetMod / v2rayNG)', href: '/v2ray/guide' },
-        { label: 'VLESS Line Check', href: '/v2ray#line-check' },
+        { label: 'VLESS Line Check', href: '/v2ray/line-check' },
       ],
     };
     const supportLinks = [

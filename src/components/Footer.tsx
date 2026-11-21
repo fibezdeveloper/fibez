@@ -170,7 +170,7 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/v2ray#line-check" className="text-zinc-400 hover:text-white transition-colors">
+                  <Link href="/v2ray/line-check" className="text-zinc-400 hover:text-white transition-colors">
                     Line Check Diagnostic
                   </Link>
                 </li>
@@ -231,7 +231,7 @@ export default function Footer() {
                 </li>)}
                 <li>
                   <Link href="/dashboard" className="text-zinc-400 hover:text-white transition-colors">
-                    Console Portal
+                    My Account
                   </Link>
                 </li>
               </ul>

@@ -157,7 +157,7 @@ export default function V2RayGuidePage() {
             </a>
 
             <Link
-              href="/v2ray#line-check"
+              href="/v2ray/line-check"
               className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 font-mono text-xs flex items-center gap-1.5 transition-all"
             >
               <Activity className="w-3.5 h-3.5 text-[#3ad389]" />
@@ -483,7 +483,7 @@ export default function V2RayGuidePage() {
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <Link
-              href="/v2ray#line-check"
+              href="/v2ray/line-check"
               className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-semibold flex items-center gap-1.5 transition-all shadow"
             >
               <span>{copy.troubleshootLineCheck}</span>

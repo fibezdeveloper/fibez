@@ -111,7 +111,7 @@ export default function InfrastructurePage() {
           <div className="text-xs font-mono text-[#a1a4a5] uppercase mb-1">VLESS Line Diagnostic</div>
           <div className="text-white font-mono text-lg font-bold">Real-Time Test</div>
           <div className="text-[11px] font-mono text-zinc-400 mt-1">
-            <Link href="/v2ray#line-check" className="hover:underline text-white">
+            <Link href="/v2ray/line-check" className="hover:underline text-white">
               Open Line Check Tool →
             </Link>
           </div>

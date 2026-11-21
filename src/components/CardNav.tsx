@@ -156,7 +156,7 @@ const DEFAULT_ITEMS: CardNavItem[] = [
     description: 'Get fast help from our team.',
     links: [
       { label: 'Support Tickets', href: '/tickets' },
-      { label: 'VLESS Line Check', href: '/v2ray#line-check' },
+      { label: 'VLESS Line Check', href: '/v2ray/line-check' },
       { label: 'WhatsApp Support', href: 'https://wa.me/94771234567' }
     ]
   }
