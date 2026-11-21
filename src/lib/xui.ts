@@ -496,6 +496,76 @@ class XuiClient {
       return false;
     }
   }
+
+  // ---------------------------------------------------------------- live usage / connections
+
+  /** IPs this client has connected from (panel IP log): [{ ip, time }]. */
+  public async getClientIps(email: string): Promise<{ ip: string; time: string }[]> {
+    try {
+      const r = await this.apiRequest<any>(`/panel/api/clients/ips/${encodeURIComponent(email)}`, 'POST');
+      const obj = r?.obj;
+      if (!Array.isArray(obj)) return [];
+      return obj
+        .map((e: any) =>
+          typeof e === 'string'
+            ? { ip: e.split(' ')[0], time: '' }
+            : { ip: String(e?.ip || ''), time: String(e?.time || '') }
+        )
+        .filter((e) => e.ip);
+    } catch {
+      return [];
+    }
+  }
+
+  /** Registered hardware IDs (devices) for this client. Shape depends on the panel build, so keep it loose. */
+  public async getClientHwids(email: string): Promise<Record<string, unknown>[]> {
+    try {
+      const r = await this.apiRequest<any>(`/panel/api/clients/hwids/${encodeURIComponent(email)}`, 'POST');
+      const obj = r?.obj;
+      if (!Array.isArray(obj)) return [];
+      return obj.map((o: any) => (o && typeof o === 'object' ? o : { hwid: String(o) }));
+    } catch {
+      return [];
+    }
+  }
+
+  /** Emails of clients with a live connection right now. */
+  public async getOnlineEmails(): Promise<string[]> {
+    try {
+      const r = await this.apiRequest<any>('/panel/api/clients/onlines', 'POST');
+      return Array.isArray(r?.obj) ? r.obj.map((e: unknown) => String(e)) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /** Raw per-client traffic row: cumulative up/down bytes plus lastOnline / lastSubFetch (ms epoch). */
+  public async getClientTrafficRow(
+    email: string
+  ): Promise<{ up: number; down: number; lastOnline: number; lastSubFetch: number } | null> {
+    try {
+      const r = await this.apiRequest<any>(`/panel/api/clients/traffic/${encodeURIComponent(email)}`, 'GET');
+      const t = r?.obj;
+      if (!t) return null;
+      return {
+        up: Number(t.up) || 0,
+        down: Number(t.down) || 0,
+        lastOnline: Number(t.lastOnline) || 0,
+        lastSubFetch: Number(t.lastSubFetch) || 0,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /** Cumulative traffic for every client (one call), used by the daily usage snapshot. */
+  public async listAllClientTraffic(): Promise<{ email: string; up: number; down: number }[]> {
+    const r = await this.apiRequest<any>('/panel/api/clients/list', 'GET');
+    const list: any[] = Array.isArray(r?.obj) ? r.obj : [];
+    return list
+      .filter((c) => c?.email)
+      .map((c) => ({ email: String(c.email), up: Number(c.traffic?.up) || 0, down: Number(c.traffic?.down) || 0 }));
+  }
 }
 
 export const xui = new XuiClient();

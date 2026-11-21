@@ -88,6 +88,8 @@ export function isLockExempt(pathname: string): boolean {
     pathname === '/lock' ||
     pathname === '/unlock' ||
     pathname === '/api/unlock' ||
+    // Vercel Cron cannot hold the unlock cookie; the route itself requires CRON_SECRET.
+    pathname === '/api/cron/usage-snapshot' ||
     pathname.startsWith('/_next/')
   );
 }

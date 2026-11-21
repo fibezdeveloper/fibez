@@ -3,7 +3,6 @@ import { xui } from '@/lib/xui';
 import { resolvePackageProfile, buildVlessUri } from '@/lib/v2ray-inbounds';
 import { rateLimit } from '@/lib/rate-limit';
 import { requestIp } from '@/lib/trial';
-import { parseDeviceFromUserAgent, recordDeviceAccess } from '@/lib/v2ray-device-store';
 
 export async function GET(req: NextRequest) {
   try {
@@ -55,17 +54,6 @@ export async function GET(req: NextRequest) {
 
     if (!clientUuid) {
       return new NextResponse('Client not found', { status: 404 });
-    }
-
-    // 2.5 Record device access telemetry from connecting client
-    try {
-      const userAgent = req.headers.get('user-agent');
-      const forwardedFor = req.headers.get('x-forwarded-for') || '';
-      const clientIp = forwardedFor.split(',')[0].trim() || '112.134.88.24';
-      const detectedDevice = parseDeviceFromUserAgent(userAgent, clientIp, profile.ispTag);
-      recordDeviceAccess(clientUuid, detectedDevice);
-    } catch (e) {
-      console.warn('Failed to record device telemetry:', e);
     }
 
     // 3. Build the customized VLESS configuration URI

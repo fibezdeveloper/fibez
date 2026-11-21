@@ -73,19 +73,11 @@ interface V2RayPackage {
   configUri: string;
 }
 
-interface ConnectedDevice {
-  id: string;
-  name: string;
-  type: 'pc' | 'phone';
-  clientApp: string;
+interface LineConnection {
   ip: string;
-  isp: string;
-  dataUsedGB: number;
-  currentDownloadMbps: number;
-  currentUploadMbps: number;
-  status: 'active' | 'idle';
+  isp: string | null;
   lastSeen: string;
-  isCurrentDevice?: boolean;
+  status: 'online' | 'seen';
 }
 
 export interface SpeedtestReview {
@@ -133,8 +125,6 @@ const ALL_PACKAGES: V2RayPackage[] = LIVE_V2RAY_PACKAGES.map((pkg) => {
 
 const PACKAGES: V2RayPackage[] = ALL_PACKAGES;
 
-// Devices come only from live telemetry; nothing is pre-filled.
-const INITIAL_DEVICES: ConnectedDevice[] = [];
 
 const EMPTY_LINE: PurchasedV2RayLine = {
   id: 'none', orderNumber: '', packageId: '', title: 'No active line', isp: '', ispTag: '', sni: '', port: 443,
@@ -160,20 +150,17 @@ export default function V2RayDashboardPage() {
   const [activeTab, setActiveTab] = useState<'config' | 'usage' | 'reviews'>('config');
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [devices, setDevices] = useState<ConnectedDevice[]>(INITIAL_DEVICES);
-  const [kickedDeviceId, setKickedDeviceId] = useState<string | null>(null);
+  // Real data from the panel (via /api/v2ray/telemetry); nothing is pre-filled.
+  const [connections, setConnections] = useState<LineConnection[]>([]);
+  const [registeredDevices, setRegisteredDevices] = useState<Record<string, unknown>[]>([]);
+  const [limits, setLimits] = useState<{ ip: number; hwid: number }>({ ip: 0, hwid: 0 });
+  const [lastOnlineMs, setLastOnlineMs] = useState<number>(0);
+  const [liveEnabled, setLiveEnabled] = useState<boolean | null>(null);
+  const [usageHistory, setUsageHistory] = useState<{
+    series: { date: string; downGB: number; upGB: number; known: boolean }[];
+    trackingSince: string | null;
+  }>({ series: [], trackingSince: null });
 
-  // Latency & Ping state
-  const [serverPing, setServerPing] = useState<number>(18);
-  const [isPinging, setIsPinging] = useState<boolean>(false);
-
-  // Server Speedtest state
-  const [isTestingSpeed, setIsTestingSpeed] = useState<boolean>(false);
-  const [speedtestStep, setSpeedtestStep] = useState<'idle' | 'ping' | 'download' | 'upload' | 'done'>('idle');
-  const [testDownMbps, setTestDownMbps] = useState<number>(948.5);
-  const [testUpMbps, setTestUpMbps] = useState<number>(912.8);
-  const [lastSpeedtestTime, setLastSpeedtestTime] = useState<string>('Just now');
-  
   // QR Code Modal State
   const [activeQrPackage, setActiveQrPackage] = useState<V2RayPackage | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -206,38 +193,6 @@ export default function V2RayDashboardPage() {
   const [customQuotaGB, setCustomQuotaGB] = useState<number | null>(null);
   const [customExpiryTime, setCustomExpiryTime] = useState<number | null>(null);
 
-  // Client-side detection of current browsing device (mobile phone vs PC / Mac)
-  const detectCurrentBrowserDevice = (): { name: string; type: 'pc' | 'phone'; clientApp: string } => {
-    if (typeof window === 'undefined') {
-      return { name: 'Windows 11 Workstation', type: 'pc', clientApp: 'NetMod Syna (This Device)' };
-    }
-    const ua = navigator.userAgent.toLowerCase();
-    
-    if (/iphone|ipod/.test(ua)) {
-      return { name: 'Apple iPhone (iOS)', type: 'phone', clientApp: 'V2Box iOS (This Device)' };
-    }
-    if (/ipad/.test(ua)) {
-      return { name: 'Apple iPad Pro', type: 'phone', clientApp: 'V2Box iPadOS (This Device)' };
-    }
-    if (/android/.test(ua)) {
-      let name = 'Android Smartphone';
-      if (/samsung|sm-/.test(ua)) name = 'Samsung Galaxy Device';
-      else if (/pixel/.test(ua)) name = 'Google Pixel';
-      else if (/xiaomi|redmi/.test(ua)) name = 'Xiaomi / Redmi Phone';
-      return { name, type: 'phone', clientApp: 'v2rayNG (This Device)' };
-    }
-    if (/macintosh|mac os x/.test(ua)) {
-      return { name: 'MacBook Pro / macOS', type: 'pc', clientApp: 'V2Box / Clash Mac (This Device)' };
-    }
-    if (/windows/.test(ua)) {
-      return { name: 'Windows 11 Workstation', type: 'pc', clientApp: 'NetMod Syna v1.9.4 (This Device)' };
-    }
-    if (/linux/.test(ua)) {
-      return { name: 'Linux Workstation', type: 'pc', clientApp: 'Sing-Box / NetMod (This Device)' };
-    }
-    return { name: 'Personal Device', type: 'pc', clientApp: 'NetMod Syna (This Device)' };
-  };
-
   // Fetch telemetry for current client / server (synced with 3x-ui Singapore node)
   const fetchTelemetryForClient = async (identifier?: string) => {
     try {
@@ -245,7 +200,6 @@ export default function V2RayDashboardPage() {
       const res = await fetch(`/api/v2ray/telemetry${q}`);
       const data = await res.json();
       if (data?.success) {
-        if (data.server?.pingMs) setServerPing(data.server.pingMs);
         if (data.server?.host) setLiveServerHost(data.server.host);
         if (data.client) {
           if (data.client.usedGB !== undefined) setLiveUsageGB(data.client.usedGB);
@@ -256,22 +210,12 @@ export default function V2RayDashboardPage() {
           if (data.client.email && !customClientEmail) setCustomClientEmail(data.client.email);
           if (data.client.clientRemark && !customClientRemark) setCustomClientRemark(data.client.clientRemark);
         }
-        if (data.devices && Array.isArray(data.devices)) {
-          const browserDev = detectCurrentBrowserDevice();
-          const enriched = data.devices.map((d: ConnectedDevice, idx: number) => {
-            if (idx === 0) {
-              return {
-                ...d,
-                name: browserDev.name,
-                type: browserDev.type,
-                clientApp: browserDev.clientApp,
-                isCurrentDevice: true,
-              };
-            }
-            return d;
-          });
-          setDevices(enriched);
-        }
+        setConnections(Array.isArray(data.connections) ? data.connections : []);
+        setRegisteredDevices(Array.isArray(data.registeredDevices) ? data.registeredDevices : []);
+        if (data.limits) setLimits({ ip: Number(data.limits.ip) || 0, hwid: Number(data.limits.hwid) || 0 });
+        setLastOnlineMs(Number(data.lastOnline) || 0);
+        if (data.client) setLiveEnabled(data.client.enable !== false);
+        if (data.usageHistory) setUsageHistory(data.usageHistory);
       }
     } catch (err) {
       console.warn('Failed to fetch client telemetry:', err);
@@ -449,51 +393,33 @@ export default function V2RayDashboardPage() {
     };
   }, [activePurchasedLine, customClientUuid, customVlessUri, customClientRemark, liveServerHost]);
 
-  // Aggregate device usage metrics
+  // Quota and usage come from the panel. 0 = unlimited (never invent a limit).
   const totalLimitGB = useMemo(() => {
     if (activePurchasedLine.quotaGB && activePurchasedLine.quotaGB > 0) return activePurchasedLine.quotaGB;
-    if (customQuotaGB) return customQuotaGB;
-    if (isTrialClient) return 10;
-    return 100;
-  }, [activePurchasedLine, customQuotaGB, isTrialClient]);
+    return customQuotaGB && customQuotaGB > 0 ? customQuotaGB : 0;
+  }, [activePurchasedLine, customQuotaGB]);
 
-  const totalUsedGB = useMemo(() => {
-    if (liveUsageGB !== null) return liveUsageGB;
-    return Number(devices.reduce((acc, d) => acc + d.dataUsedGB, 0).toFixed(1));
-  }, [devices, liveUsageGB]);
-  const usagePercentage = Math.min(100, Math.round((totalUsedGB / totalLimitGB) * 100));
+  const totalUsedGB = liveUsageGB ?? 0;
+  const usagePercentage = totalLimitGB > 0 ? Math.min(100, Math.round((totalUsedGB / totalLimitGB) * 100)) : 0;
 
-  const totalDownMbps = useMemo(() => {
-    return Number(devices.reduce((acc, d) => acc + d.currentDownloadMbps, 0).toFixed(1));
-  }, [devices]);
-  const totalUpMbps = useMemo(() => {
-    return Number(devices.reduce((acc, d) => acc + d.currentUploadMbps, 0).toFixed(1));
-  }, [devices]);
+  // Days until the line expires (null = no expiry set)
+  const expiryDaysLeft = useMemo(() => {
+    if (!customExpiryTime || customExpiryTime <= 0) return null;
+    return Math.ceil((customExpiryTime - (mountedTime || Date.now())) / 86400000);
+  }, [customExpiryTime, mountedTime]);
 
   // Windster 7-Day Usage Telemetry for Client Dashboard
   const [clientUsageRange, setClientUsageRange] = useState<'7d' | '30d'>('7d');
 
+  // Real daily usage derived from stored panel snapshots (see /api/cron/usage-snapshot).
   const clientTelemetryChartData: ChartDataPoint[] = useMemo(() => {
     const days = clientUsageRange === '7d' ? 7 : 14;
-    const list: ChartDataPoint[] = [];
-    const now = mountedTime > 0 ? new Date(mountedTime) : new Date(1732000000000);
-    const baseDown = (totalUsedGB || 32) / days;
-    const baseUp = baseDown * 0.28;
-    const factors = [0.65, 0.92, 1.15, 0.84, 1.28, 1.05, 1.34, 0.78, 1.12, 1.22, 0.95, 1.18, 0.88, 1.2];
-
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
-      const factor = factors[i % factors.length];
-      list.push({
-        date: dateStr,
-        primaryValue: Number((baseDown * factor).toFixed(1)),
-        secondaryValue: Number((baseUp * factor).toFixed(1)),
-      });
-    }
-    return list;
-  }, [clientUsageRange, totalUsedGB, mountedTime]);
+    return usageHistory.series.slice(-days).map((d) => ({
+      date: new Date(`${d.date}T00:00:00`).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }),
+      primaryValue: d.downGB,
+      secondaryValue: d.upGB,
+    }));
+  }, [clientUsageRange, usageHistory]);
 
   // Dynamic subscription URL tailored to the user's purchased package
   // Dynamic subscription URL tailored to the user's purchased package and connected credentials
@@ -532,97 +458,6 @@ export default function V2RayDashboardPage() {
     } catch (err) {
       console.error('Failed to generate QR code:', err);
     }
-  };
-
-  // Ping Server test - real telemetry round-trip to Singapore node
-  const handlePingServer = async () => {
-    setIsPinging(true);
-    const start = performance.now();
-    try {
-      const q = customClientUuid ? `?uuid=${encodeURIComponent(customClientUuid)}` : '';
-      const res = await fetch(`/api/v2ray/telemetry${q}`, { cache: 'no-store' });
-      const duration = Math.round(performance.now() - start);
-      const data = await res.json();
-      if (data?.server?.pingMs) {
-        setServerPing(data.server.pingMs);
-      } else {
-        setServerPing(Math.max(14, Math.min(duration, 75)));
-      }
-      if (data?.client) {
-        if (data.client.usedGB !== undefined) setLiveUsageGB(data.client.usedGB);
-        if (data.client.totalGB !== undefined) setCustomQuotaGB(data.client.totalGB);
-        if (data.client.isTrial !== undefined) setIsTrialClient(data.client.isTrial);
-        if (data.client.expiryTime) setCustomExpiryTime(data.client.expiryTime);
-      }
-    } catch {
-      const jitter = Math.floor(Math.random() * 4) - 2;
-      setServerPing(Math.max(15, 18 + jitter));
-    } finally {
-      setIsPinging(false);
-    }
-  };
-
-  // Run Server Speedtest - benchmarks Singapore gateway and syncs line
-  const handleRunSpeedtest = async () => {
-    if (isTestingSpeed) return;
-    setIsTestingSpeed(true);
-    
-    // Step 1: Real Ping Check
-    setSpeedtestStep('ping');
-    const startPing = performance.now();
-    try {
-      const q = customClientUuid ? `?uuid=${encodeURIComponent(customClientUuid)}` : '';
-      const res = await fetch(`/api/v2ray/telemetry${q}`, { cache: 'no-store' });
-      const duration = Math.round(performance.now() - startPing);
-      const data = await res.json();
-      if (data?.server?.pingMs) {
-        setServerPing(data.server.pingMs);
-      } else {
-        setServerPing(Math.max(15, Math.min(duration, 70)));
-      }
-      if (data?.client?.usedGB !== undefined) {
-        setLiveUsageGB(data.client.usedGB);
-      }
-    } catch {
-      setServerPing(17);
-    }
-    await new Promise((r) => setTimeout(r, 450));
-
-    // Step 2: Download benchmark
-    setSpeedtestStep('download');
-    let down = 540.0;
-    for (let i = 0; i < 5; i++) {
-      down += Math.floor(Math.random() * 90) + 20;
-      setTestDownMbps(Number(down.toFixed(1)));
-      await new Promise((r) => setTimeout(r, 200));
-    }
-    const finalDown = Number((945 + Math.random() * 15).toFixed(1));
-    setTestDownMbps(finalDown);
-
-    // Step 3: Upload benchmark
-    setSpeedtestStep('upload');
-    let up = 460.0;
-    for (let i = 0; i < 5; i++) {
-      up += Math.floor(Math.random() * 95) + 20;
-      setTestUpMbps(Number(up.toFixed(1)));
-      await new Promise((r) => setTimeout(r, 200));
-    }
-    const finalUp = Number((912 + Math.random() * 12).toFixed(1));
-    setTestUpMbps(finalUp);
-
-    // Step 4: Done
-    setSpeedtestStep('done');
-    setLastSpeedtestTime('Tested just now');
-    setIsTestingSpeed(false);
-  };
-
-  // Disconnect/Kick device
-  const handleDisconnectDevice = (deviceId: string) => {
-    setKickedDeviceId(deviceId);
-    setTimeout(() => {
-      setDevices((prev) => prev.filter((d) => d.id !== deviceId));
-      setKickedDeviceId(null);
-    }, 600);
   };
 
   // Image dropzone handlers
@@ -800,34 +635,6 @@ export default function V2RayDashboardPage() {
             </p>
           </div>
 
-          {/* Quick Metrics Header Strip: Server Latency with Embedded Ping Button */}
-          <div className="flex items-center gap-3">
-            <div className="px-3.5 py-2 rounded-[12px] bg-[#0c0c0e] border border-[#1f1f23] flex items-center justify-between gap-4 shadow-sm">
-              <div className="flex items-center gap-2.5">
-                <Zap className="w-3.5 h-3.5 text-[#ffca16]" />
-                <div className="text-left">
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Fastest Latency</div>
-                  <div className="text-xs font-medium text-white flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${isPinging ? 'bg-amber-400 animate-ping' : 'bg-[#3ad389]'}`} />
-                    <span>{isPinging ? 'Pinging...' : `${serverPing}ms (Singapore)`}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Compact In-Card Ping Button */}
-              <AnimatedButton
-                variant="default"
-                size="sm"
-                onClick={handlePingServer}
-                disabled={isPinging}
-                title="Ping Singapore Node"
-                className="py-1 px-2.5 text-[11px] font-mono text-zinc-300 hover:text-white"
-              >
-                <RefreshCw className={`w-3 h-3 ${isPinging ? 'animate-spin text-[#3ad389]' : 'text-zinc-400'}`} />
-                <span>Ping</span>
-              </AnimatedButton>
-            </div>
-          </div>
         </div>
 
         {/* ======================================================== */}
@@ -941,87 +748,56 @@ export default function V2RayDashboardPage() {
         </section>
 
         {/* ======================================================== */}
-        {/* 1. V2RAY SERVER SPEEDTEST & UPLINK (Placed ABOVE Onlink) */}
+        {/* 1. LINE STATUS (live from the panel)                      */}
         {/* ======================================================== */}
         <section className="mt-8 p-6 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[10px] bg-[#16161a] border border-[#26262b] flex items-center justify-center text-[#3ad389]">
-                <Activity className={`w-5 h-5 ${isTestingSpeed ? 'animate-pulse text-[#ffca16]' : ''}`} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-medium text-white">V2Ray Server Speedtest &amp; Uplink</h3>
-                  <span className="px-2 py-0.5 rounded-full bg-[#3ad389]/10 text-[#3ad389] text-[10px] font-mono border border-[#3ad389]/20 font-medium">
-                    10 Gbps
-                  </span>
-                </div>
-                <p className="text-xs text-[#a1a4a5] mt-0.5">
-                  Real-time server throughput benchmark from Singapore node to Sri Lankan ISPs ({lastSpeedtestTime})
-                </p>
-              </div>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-[10px] bg-[#16161a] border border-[#26262b] flex items-center justify-center text-[#3ad389]">
+              <Activity className="w-5 h-5" />
             </div>
-
-            <AnimatedButton
-              variant="default"
-              size="md"
-              onClick={handleRunSpeedtest}
-              disabled={isTestingSpeed}
-              className="font-mono text-xs text-white shadow-sm self-start sm:self-auto"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isTestingSpeed ? 'animate-spin text-[#3ad389]' : 'text-zinc-400'}`} />
-              <span>{isTestingSpeed ? 'Benchmarking Server...' : 'Run Server Speedtest'}</span>
-            </AnimatedButton>
+            <div>
+              <h3 className="text-base font-medium text-white">Line status</h3>
+              <p className="text-xs text-[#a1a4a5] mt-0.5">Read directly from the V2Ray panel for your line.</p>
+            </div>
           </div>
 
-          {/* Speedtest Live Gauge Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {/* Download */}
             <div className="p-4 rounded-[14px] bg-[#070709] border border-[#1b1b20]">
-              <div className="flex items-center gap-1.5 text-xs font-mono text-zinc-400">
-                <ArrowDown className={`w-3.5 h-3.5 ${speedtestStep === 'download' ? 'text-amber-400 animate-bounce' : 'text-[#3ad389]'}`} />
-                <span>Server Download</span>
+              <div className="text-xs font-mono text-zinc-400">Status</div>
+              <div className="text-xl font-mono font-semibold text-white mt-1">
+                {liveEnabled === null ? '—' : !liveEnabled ? 'Disabled' : expiryDaysLeft !== null && expiryDaysLeft <= 0 ? 'Expired' : connections.some((c) => c.status === 'online') ? 'Online' : 'Idle'}
               </div>
-              <div className="text-xl sm:text-2xl font-mono font-semibold text-white mt-1 flex items-baseline gap-1">
-                <AnimatedNumber value={testDownMbps} /> <span className="text-xs font-normal text-zinc-500">Mbps</span>
+              <div className="text-[10px] font-mono text-zinc-500 mt-0.5">
+                {lastOnlineMs ? `Last online ${new Date(lastOnlineMs).toLocaleString()}` : 'No connection seen yet'}
               </div>
-              <div className="text-[10px] font-mono text-zinc-500 mt-0.5">Direct Tier-1 BGP</div>
             </div>
-
-            {/* Upload */}
             <div className="p-4 rounded-[14px] bg-[#070709] border border-[#1b1b20]">
-              <div className="flex items-center gap-1.5 text-xs font-mono text-zinc-400">
-                <ArrowUp className={`w-3.5 h-3.5 ${speedtestStep === 'upload' ? 'text-amber-400 animate-bounce' : 'text-[#3ad389]'}`} />
-                <span>Server Upload</span>
+              <div className="text-xs font-mono text-zinc-400">Data used</div>
+              <div className="text-xl font-mono font-semibold text-white mt-1">
+                {liveUsageGB === null ? '—' : `${liveUsageGB} GB`}
               </div>
-              <div className="text-xl sm:text-2xl font-mono font-semibold text-white mt-1 flex items-baseline gap-1">
-                <AnimatedNumber value={testUpMbps} /> <span className="text-xs font-normal text-zinc-500">Mbps</span>
+              <div className="text-[10px] font-mono text-zinc-500 mt-0.5">
+                {customQuotaGB === null ? '' : customQuotaGB === 0 ? 'Unlimited plan' : `of ${customQuotaGB} GB`}
               </div>
-              <div className="text-[10px] font-mono text-zinc-500 mt-0.5">Symmetric Ingress</div>
             </div>
-
-            {/* Latency */}
             <div className="p-4 rounded-[14px] bg-[#070709] border border-[#1b1b20]">
-              <div className="flex items-center gap-1.5 text-xs font-mono text-zinc-400">
-                <Zap className="w-3.5 h-3.5 text-[#ffca16]" />
-                <span>Ping to LK</span>
+              <div className="text-xs font-mono text-zinc-400">Expires</div>
+              <div className="text-xl font-mono font-semibold text-white mt-1">
+                {expiryDaysLeft === null ? 'No expiry' : expiryDaysLeft <= 0 ? 'Expired' : `${expiryDaysLeft} day${expiryDaysLeft === 1 ? '' : 's'}`}
               </div>
-              <div className="text-xl sm:text-2xl font-mono font-semibold text-white mt-1 flex items-baseline gap-1">
-                <AnimatedNumber value={serverPing} /> <span className="text-xs font-normal text-zinc-500">ms</span>
+              <div className="text-[10px] font-mono text-zinc-500 mt-0.5">
+                {customExpiryTime ? new Date(customExpiryTime).toLocaleDateString() : ''}
               </div>
-              <div className="text-[10px] font-mono text-[#3ad389] mt-0.5">Sub-20ms Direct</div>
             </div>
-
-            {/* Port & Jitter */}
             <div className="p-4 rounded-[14px] bg-[#070709] border border-[#1b1b20]">
-              <div className="flex items-center gap-1.5 text-xs font-mono text-zinc-400">
-                <Server className="w-3.5 h-3.5 text-zinc-400" />
-                <span>Port Capacity</span>
+              <div className="text-xs font-mono text-zinc-400">Devices</div>
+              <div className="text-xl font-mono font-semibold text-white mt-1">
+                {registeredDevices.length}
+                {limits.hwid > 0 ? ` / ${limits.hwid}` : ''}
               </div>
-              <div className="text-xl sm:text-2xl font-mono font-semibold text-white mt-1">
-                10 <span className="text-xs font-normal text-zinc-500">Gbps</span>
+              <div className="text-[10px] font-mono text-zinc-500 mt-0.5">
+                {limits.ip > 0 ? `${limits.ip} IP${limits.ip > 1 ? 's' : ''} at a time` : 'No IP limit'}
               </div>
-              <div className="text-[10px] font-mono text-zinc-500 mt-0.5">0.8ms Jitter</div>
             </div>
           </div>
         </section>
@@ -1051,7 +827,7 @@ export default function V2RayDashboardPage() {
             <Gauge className="w-4 h-4 text-[#3ad389]" />
             <span>Usage &amp; Devices</span>
             <span className="ml-1 px-1.5 py-0.5 rounded-full bg-[#3ad389]/10 text-[#3ad389] text-[10px] border border-[#3ad389]/20">
-              {devices.length} Live
+              {connections.filter((c) => c.status === 'online').length} Online
             </span>
           </button>
 
@@ -1193,7 +969,7 @@ export default function V2RayDashboardPage() {
                 <div className="p-3.5 rounded-[12px] bg-[#070709] border border-[#1b1b20]">
                   <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Node &amp; Uplink</div>
                   <div className="text-xs font-mono font-medium text-white mt-1">
-                    {activePurchasedLine.serverType === 'LK_IP' ? '🇱🇰 lk-rv2ray.fibez.store (LK IP)' : '🇸🇬 rv2ray.fibez.store (10 Gbps)'}
+                    {activePurchasedLine.serverType === 'LK_IP' ? '🇱🇰 lk-rv2ray.fibez.store (LK IP)' : '🇸🇬 rv2ray.fibez.store'}
                   </div>
                 </div>
 
@@ -1430,41 +1206,21 @@ export default function V2RayDashboardPage() {
                 <div>
                   <div className="flex items-center gap-2 text-xs font-mono text-[#3ad389] uppercase tracking-wider mb-1">
                     <Gauge className="w-3.5 h-3.5" />
-                    <span>Real-Time Bandwidth &amp; Account Quota</span>
+                    <span>Account Quota</span>
                   </div>
                   <h3 className="text-2xl font-normal text-white">
-                    {totalUsedGB} GB <span className="text-sm font-normal text-zinc-400">used of {totalLimitGB} GB total</span>
+                    {totalUsedGB} GB <span className="text-sm font-normal text-zinc-400">{totalLimitGB > 0 ? `used of ${totalLimitGB} GB total` : 'used · unlimited plan'}</span>
                   </h3>
                 </div>
 
                 <div className="flex items-center gap-6">
                   <div className="text-left">
                     <div className="flex items-center gap-1.5 text-xs font-mono text-zinc-400">
-                      <ArrowDown className="w-3.5 h-3.5 text-[#3ad389]" />
-                      <span>Live Download</span>
-                    </div>
-                    <div className="text-lg font-mono font-semibold text-white mt-0.5">
-                      {totalDownMbps} Mbps
-                    </div>
-                  </div>
-
-                  <div className="text-left">
-                    <div className="flex items-center gap-1.5 text-xs font-mono text-zinc-400">
-                      <ArrowUp className="w-3.5 h-3.5 text-[#3ad389]" />
-                      <span>Live Upload</span>
-                    </div>
-                    <div className="text-lg font-mono font-semibold text-white mt-0.5">
-                      {totalUpMbps} Mbps
-                    </div>
-                  </div>
-
-                  <div className="text-left border-l border-[#1f1f23] pl-6">
-                    <div className="flex items-center gap-1.5 text-xs font-mono text-zinc-400">
                       <Clock className="w-3.5 h-3.5 text-[#ffca16]" />
                       <span>Plan Validity</span>
                     </div>
                     <div className="text-lg font-mono font-semibold text-white mt-0.5">
-                      24 Days Left
+                      {expiryDaysLeft === null ? 'No expiry' : expiryDaysLeft <= 0 ? 'Expired' : `${expiryDaysLeft} day${expiryDaysLeft === 1 ? '' : 's'} left`}
                     </div>
                   </div>
                 </div>
@@ -1479,137 +1235,106 @@ export default function V2RayDashboardPage() {
               </div>
 
               <div className="flex items-center justify-between text-xs font-mono text-zinc-400 mt-2.5">
-                <span>{usagePercentage}% Quota Consumed</span>
-                <span>{(totalLimitGB - totalUsedGB).toFixed(1)} GB Remaining</span>
+                <span>{totalLimitGB > 0 ? `${usagePercentage}% Quota Consumed` : 'No data cap'}</span>
+                <span>{totalLimitGB > 0 ? `${Math.max(0, totalLimitGB - totalUsedGB).toFixed(1)} GB Remaining` : ''}</span>
               </div>
             </div>
 
-            {/* Windster Area Chart for Client Telemetry */}
-            <WindsterAreaChart
-              title="7-Day Data Consumption History"
-              subtitle="Personal tunnel bandwidth breakdown (Downlink vs Uplink) on Singapore Equinix SG3"
-              data={clientTelemetryChartData}
-              primaryName="Downlink"
-              secondaryName="Uplink"
-              primaryColor="#3ad389"
-              secondaryColor="#06b6d4"
-              unit="GB"
-              trendText={`+${((totalUsedGB / totalLimitGB) * 12).toFixed(1)}% this week`}
-              trendPositive={true}
-              timeRanges={[
-                { label: 'Last 7 Days', value: '7d' },
-                { label: 'Last 14 Days', value: '30d' },
-              ]}
-              activeRange={clientUsageRange}
-              onRangeChange={(r) => setClientUsageRange(r as any)}
-            />
+            {/* Daily data usage (real: derived from stored panel snapshots) */}
+            {usageHistory.series.some((d) => d.known) ? (
+              <WindsterAreaChart
+                title="Data usage per day"
+                subtitle={`Download vs upload from the V2Ray panel${usageHistory.trackingSince ? ` · tracked since ${usageHistory.trackingSince}` : ''}`}
+                data={clientTelemetryChartData}
+                primaryName="Download"
+                secondaryName="Upload"
+                primaryColor="#3ad389"
+                secondaryColor="#06b6d4"
+                unit="GB"
+                trendText={`${clientTelemetryChartData.reduce((sum, d) => sum + d.primaryValue + (d.secondaryValue ?? 0), 0).toFixed(1)} GB in range`}
+                trendPositive={true}
+                timeRanges={[
+                  { label: 'Last 7 Days', value: '7d' },
+                  { label: 'Last 14 Days', value: '30d' },
+                ]}
+                activeRange={clientUsageRange}
+                onRangeChange={(r) => setClientUsageRange(r as any)}
+              />
+            ) : (
+              <div className="p-6 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23]">
+                <h3 className="text-lg font-medium text-white">Data usage per day</h3>
+                <p className="text-xs text-[#a1a4a5] mt-2 leading-relaxed">
+                  The panel only reports your total so far, so the daily history is built from a snapshot we take each
+                  night. {usageHistory.trackingSince ? `Tracking started ${usageHistory.trackingSince}; the chart appears after the next snapshot.` : "Tracking starts now; the chart appears after tomorrow's snapshot."}
+                </p>
+              </div>
+            )}
 
-            {/* Devices Using His V2Ray Link */}
+            {/* Connections (real: panel IP log) and registered devices */}
             <div className="p-6 rounded-[20px] bg-[#0c0c0e] border border-[#1f1f23]">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-[#18181c]">
-                <div>
-                  <h3 className="text-lg font-medium text-white flex items-center gap-2">
-                    <span>Devices Using Your V2Ray Link</span>
-                    <span className="px-2 py-0.5 rounded-full bg-[#3ad389]/10 text-[#3ad389] text-xs font-mono border border-[#3ad389]/20">
-                      {devices.length} / 5 Devices Connected
-                    </span>
-                  </h3>
-                  <p className="text-xs text-[#a1a4a5] mt-1">
-                    Below are the devices currently connected using your personal V2Ray credentials and their active bandwidth.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#3ad389] animate-pulse" />
-                  <span className="text-xs font-mono text-zinc-400">Live Device Monitoring</span>
-                </div>
+              <div className="mb-5 pb-4 border-b border-[#18181c]">
+                <h3 className="text-lg font-medium text-white flex items-center gap-2">
+                  <span>Connections</span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#3ad389]/10 text-[#3ad389] text-xs font-mono border border-[#3ad389]/20">
+                    {connections.filter((c) => c.status === 'online').length} online
+                  </span>
+                </h3>
+                <p className="text-xs text-[#a1a4a5] mt-1">
+                  IP addresses the panel has seen on your line. The panel does not report device names or per-device speed.
+                </p>
               </div>
 
-              {/* Device Cards List */}
               <div className="space-y-3">
-                {devices.map((device) => {
-                  const isKicking = kickedDeviceId === device.id;
-                  const isActive = device.status === 'active';
-
-                  return (
-                    <div
-                      key={device.id}
-                      className={`p-4 rounded-[14px] bg-[#070709] border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-                        isKicking ? 'opacity-40 scale-95 border-red-500/50' : 'border-[#1b1b20] hover:border-zinc-500/50'
-                      }`}
-                    >
-                      {/* Left: Device Info */}
-                      <div className="flex items-start sm:items-center gap-3.5">
-                        <div className="w-10 h-10 rounded-[10px] bg-[#141418] border border-[#24242a] flex items-center justify-center text-zinc-300 shrink-0">
-                          {device.type === 'pc' ? (
-                            <Laptop className="w-5 h-5 text-[#3ad389]" />
-                          ) : (
-                            <Smartphone className="w-5 h-5 text-zinc-300" />
-                          )}
-                        </div>
-
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-sm font-medium text-white">{device.name}</h4>
-                            <span className={`px-2 py-0.5 rounded-[6px] text-[10px] font-mono flex items-center gap-1 ${
-                              isActive
-                                ? 'bg-[#3ad389]/10 text-[#3ad389] border border-[#3ad389]/20'
-                                : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                            }`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-[#3ad389]' : 'bg-zinc-500'}`} />
-                              {isActive ? 'Active Now' : 'Idle'}
-                            </span>
-                            {device.isCurrentDevice && (
-                              <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">
-                                This Device
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] font-mono text-zinc-400">
-                            <span>{device.clientApp}</span>
-                            <span>•</span>
-                            <span>{device.isp}</span>
-                            <span>•</span>
-                            <span className="text-zinc-500">IP: {device.ip}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right: Bandwidth & Action */}
-                      <div className="flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 border-[#151518]">
-                        <div className="text-left md:text-right">
-                          <div className="text-[10px] font-mono text-zinc-400 uppercase">Data Used</div>
-                          <div className="text-xs font-mono font-medium text-white">
-                            {device.dataUsedGB} GB
-                          </div>
-                        </div>
-
-                        <div className="text-left md:text-right">
-                          <div className="text-[10px] font-mono text-zinc-400 uppercase">Current Speed</div>
-                          <div className="text-xs font-mono font-medium text-[#3ad389]">
-                            {device.currentDownloadMbps > 0 ? `↓ ${device.currentDownloadMbps} Mbps` : '0 Mbps'}
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => handleDisconnectDevice(device.id)}
-                          disabled={isKicking}
-                          title="Revoke session for this device"
-                          className="px-3 py-1.5 rounded-[8px] bg-[#141418] hover:bg-red-500/10 hover:border-red-500/40 border border-[#24242a] text-zinc-400 hover:text-red-400 font-mono text-xs flex items-center gap-1.5 transition-all"
+                {connections.map((c) => (
+                  <div
+                    key={c.ip}
+                    className="p-4 rounded-[14px] bg-[#070709] border border-[#1b1b20] flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-mono text-white">{c.ip}</span>
+                        <span
+                          className={`px-2 py-0.5 rounded-[6px] text-[10px] font-mono flex items-center gap-1 ${
+                            c.status === 'online'
+                              ? 'bg-[#3ad389]/10 text-[#3ad389] border border-[#3ad389]/20'
+                              : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                          }`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Disconnect</span>
-                        </button>
+                          <span className={`w-1.5 h-1.5 rounded-full ${c.status === 'online' ? 'bg-[#3ad389]' : 'bg-zinc-500'}`} />
+                          {c.status === 'online' ? 'Online now' : 'Seen'}
+                        </span>
+                      </div>
+                      <div className="text-[11px] font-mono text-zinc-500 mt-1">
+                        {c.isp ? `Likely ${c.isp}` : 'Carrier unknown'}
                       </div>
                     </div>
-                  );
-                })}
-
-                {devices.length === 0 && (
-                  <div className="text-center py-8 text-zinc-500 text-xs font-mono">
-                    No active devices connected right now. Import your config to start tunneling.
+                    <div className="text-[11px] font-mono text-zinc-400">{c.lastSeen ? `Last seen ${c.lastSeen}` : ''}</div>
                   </div>
+                ))}
+                {connections.length === 0 && (
+                  <div className="text-center py-6 text-zinc-500 text-xs font-mono">
+                    No connections recorded yet. Import your config and connect to see it here.
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-[#18181c]">
+                <div className="text-sm font-medium text-white mb-2">
+                  Registered devices {limits.hwid > 0 ? `(${registeredDevices.length} of ${limits.hwid})` : `(${registeredDevices.length})`}
+                </div>
+                {registeredDevices.length === 0 ? (
+                  <p className="text-xs text-zinc-500 font-mono">
+                    {limits.hwid > 0 ? 'No device has registered with this line yet.' : 'This line has no device limit.'}
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {registeredDevices.map((d, i) => (
+                      <li key={i} className="text-xs font-mono text-zinc-300 px-3 py-2 rounded-lg bg-[#070709] border border-[#1b1b20] break-all">
+                        {String(d.deviceModel || d.name || d.model || d.hwid || d.id || `Device ${i + 1}`)}
+                        {d.os ? ` · ${String(d.os)}` : ''}
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </div>

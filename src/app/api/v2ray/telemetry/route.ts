@@ -3,7 +3,8 @@ import { xui, XuiInboundSummary } from '@/lib/xui';
 import { getVerifiedSessionUser } from '@/lib/dal';
 import { adminStore } from '@/lib/admin-store';
 import { parseVlessUri } from '@/lib/v2ray-inbounds';
-import { getDevicesForClient } from '@/lib/v2ray-device-store';
+import { getDailyUsage, recordSnapshots } from '@/lib/usage';
+import { ispFromIp } from '@/lib/isp';
 
 export async function GET(req: NextRequest) {
   const startTime = Date.now();
@@ -84,12 +85,8 @@ export async function GET(req: NextRequest) {
       try {
         const client = await xui.getClient(targetIdentifier);
         if (client) {
-          const totalGB =
-            client.totalGB > 0
-              ? Number((client.totalGB / (1024 * 1024 * 1024)).toFixed(1))
-              : client.email?.includes('trial_')
-              ? 10
-              : 100;
+          // 0 means UNLIMITED on the panel: never invent a quota.
+          const totalGB = client.totalGB > 0 ? Number((client.totalGB / (1024 * 1024 * 1024)).toFixed(1)) : 0;
 
           const usedGB = client.usedTraffic
             ? Number((client.usedTraffic / (1024 * 1024 * 1024)).toFixed(2))
@@ -97,13 +94,14 @@ export async function GET(req: NextRequest) {
 
           const isTrial =
             client.email?.includes('trial_') ||
-            totalGB <= 15 ||
+            (totalGB > 0 && totalGB <= 15) ||
             (clientMetadata?.orderNumber && clientMetadata.orderNumber.startsWith('FBZ-TRL-'));
 
           clientTraffic = {
             email: client.email,
             uuid: client.uuid,
             totalGB,
+            unlimited: totalGB === 0,
             usedGB,
             upBytes: client.up || 0,
             downBytes: client.down || 0,
@@ -119,10 +117,61 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // 4. Real connection data from the panel + stored daily usage history
+    let connections: {
+      ip: string;
+      isp: string | null;
+      lastSeen: string;
+      status: 'online' | 'seen';
+    }[] = [];
+    let registeredDevices: Record<string, unknown>[] = [];
+    let usageHistory: { series: { date: string; downGB: number; upGB: number; known: boolean }[]; trackingSince: string | null } = {
+      series: [],
+      trackingSince: null,
+    };
+    let lastOnline = 0;
+    let limitIp = 0;
+    let limitHwid = 0;
+
+    if (clientTraffic?.email) {
+      const email: string = clientTraffic.email;
+      const [full, ips, hwids, onlines, row] = await Promise.all([
+        xui.getClient(email).catch(() => null),
+        xui.getClientIps(email),
+        xui.getClientHwids(email),
+        xui.getOnlineEmails(),
+        xui.getClientTrafficRow(email),
+      ]);
+      const isOnline = onlines.some((e) => e.toLowerCase() === email.toLowerCase());
+      connections = ips
+        .sort((a, b) => b.time.localeCompare(a.time))
+        .map((e, i) => ({
+          ip: e.ip,
+          isp: ispFromIp(e.ip),
+          lastSeen: e.time,
+          status: i === 0 && isOnline ? ('online' as const) : ('seen' as const),
+        }));
+      registeredDevices = hwids;
+      lastOnline = row?.lastOnline || 0;
+      limitIp = full?.limitIp ?? 0;
+      limitHwid = full?.limitHwid ?? 0;
+
+      if (row) {
+        // Keep the history fresh: store today's cumulative reading, then derive daily usage.
+        try {
+          await recordSnapshots([{ email, up: row.up, down: row.down }]);
+        } catch (e) {
+          console.warn('usage snapshot failed:', e);
+        }
+      }
+      try {
+        usageHistory = await getDailyUsage(email, 14);
+      } catch (e) {
+        console.warn('usage history failed:', e);
+      }
+    }
+
     const elapsed = Date.now() - startTime;
-    // Real round-trip latency to Singapore gateway node
-    const pingMs = Math.min(35, Math.max(16, 17 + Math.floor(elapsed / 10)));
-    const devices = getDevicesForClient(targetIdentifier, clientTraffic?.clientRemark || 'Dialog');
 
     return NextResponse.json({
       success: true,
@@ -130,8 +179,7 @@ export async function GET(req: NextRequest) {
       server: {
         host: xui.getPublicHost(),
         location: 'Singapore Equinix SG3',
-        portCapacity: '10 Gbps',
-        pingMs,
+        panelMs: elapsed,
         inbounds: inbounds.map((inb) => ({
           id: inb.id,
           port: inb.port,
@@ -143,7 +191,11 @@ export async function GET(req: NextRequest) {
         })),
       },
       client: clientTraffic,
-      devices,
+      connections,
+      registeredDevices,
+      limits: { ip: limitIp, hwid: limitHwid },
+      lastOnline,
+      usageHistory,
     });
   } catch (error: any) {
     console.error('Telemetry error:', error);
