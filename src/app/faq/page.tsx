@@ -1,5 +1,6 @@
 'use client';
 
+import { useSiteFlag } from '@/lib/use-site-flags';
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { 
@@ -56,6 +57,9 @@ const ALL_FAQS: FaqItem[] = [
 ];
 
 export default function FaqPage() {
+  const docsOn = useSiteFlag('docs');
+  const ticketsOn = useSiteFlag('tickets');
+  const whatsappOn = useSiteFlag('whatsapp');
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredFaqs = useMemo(() => {
@@ -74,8 +78,12 @@ export default function FaqPage() {
       <div className="flex items-center gap-2 text-xs font-mono text-[#a1a4a5] mb-8">
         <Link href="/" className="hover:text-white transition-colors">Home</Link>
         <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
-        <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
-        <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
+        {docsOn && (
+          <>
+            <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
+            <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
+          </>
+        )}
         <span className="text-white">FAQ</span>
       </div>
 
@@ -143,6 +151,7 @@ export default function FaqPage() {
 
       {/* Direct Assistance CTA Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-8 border-t border-[#1f1f23]">
+        {docsOn && (
         <div className="p-5 rounded-2xl bg-[#0c0c0e] border border-white/10 space-y-2">
           <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[#3ad389]">
             <Zap className="w-4 h-4" />
@@ -159,7 +168,9 @@ export default function FaqPage() {
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
+        )}
 
+        {ticketsOn && (
         <div className="p-5 rounded-2xl bg-[#0c0c0e] border border-white/10 space-y-2">
           <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[#3ad389]">
             <LifeBuoy className="w-4 h-4" />
@@ -176,7 +187,9 @@ export default function FaqPage() {
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
+        )}
 
+        {whatsappOn && (
         <div className="p-5 rounded-2xl bg-[#0c0c0e] border border-white/10 space-y-2">
           <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[#3ad389]">
             <MessageSquare className="w-4 h-4" />
@@ -195,6 +208,7 @@ export default function FaqPage() {
             <ExternalLink className="w-3 h-3" />
           </a>
         </div>
+        )}
       </div>
     </div>
   );

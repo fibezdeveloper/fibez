@@ -1,5 +1,6 @@
 'use client';
 
+import { useSiteFlag } from '@/lib/use-site-flags';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import QRCode from 'qrcode';
@@ -41,6 +42,7 @@ interface PendingReceipt {
 }
 
 export default function VaultDashboard() {
+  const shopOn = useSiteFlag('shop');
   const { data: session } = authClient.useSession();
   const [verifiedUser, setVerifiedUser] = useState<{
     id: string;
@@ -288,8 +290,8 @@ export default function VaultDashboard() {
                     : 'Please sign in or enter your Order Number above.'}
                 </p>
                 <div className="pt-2 flex justify-center gap-3">
-                  <Link href="/catalog" className="btn-action-resend text-xs !py-2 !px-4">
-                    <span>Browse Store</span>
+                  <Link href={shopOn ? '/catalog' : '/v2ray'} className="btn-action-resend text-xs !py-2 !px-4">
+                    <span>{shopOn ? 'Browse Store' : 'Browse V2Ray'}</span>
                     <span>›</span>
                   </Link>
                   {!session?.user && (

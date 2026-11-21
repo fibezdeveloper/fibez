@@ -1,5 +1,6 @@
 'use client';
 
+import { useSiteFlag } from '@/lib/use-site-flags';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
@@ -23,6 +24,7 @@ import { EncryptedText } from '@/components/ui/encrypted-text';
 import { cn } from '@/lib/utils';
 
 export default function DocsPage() {
+  const whatsappOn = useSiteFlag('whatsapp');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     'v2ray-android': true,
@@ -125,15 +127,17 @@ export default function DocsPage() {
               Our infrastructure engineers are online 24/7 on WhatsApp and Discord.
             </p>
             <div className="pt-1 flex flex-col gap-1.5">
-              <a
-                href="https://wa.me/94771234567"
-                target="_blank"
-                rel="noreferrer"
-                className="text-white hover:underline flex items-center justify-between"
-              >
-                <span>WhatsApp Engineer</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
+              {whatsappOn && (
+                <a
+                  href="https://wa.me/94771234567"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white hover:underline flex items-center justify-between"
+                >
+                  <span>WhatsApp Engineer</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
               <a
                 href="https://discord.gg/fibez"
                 target="_blank"

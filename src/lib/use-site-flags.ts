@@ -7,6 +7,7 @@ export type SiteFlags = {
   docs: boolean;
   faq: boolean;
   infrastructure: boolean;
+  whatsapp: boolean;
   lk_ip: boolean;
 };
 
@@ -45,4 +46,13 @@ export function useSiteFlags(): SiteFlags | null {
     };
   }, []);
   return flags;
+}
+
+/**
+ * One switch. True until the flags load (so links do not flicker away on every page),
+ * then follows what the owner chose in Admin -> Site pages.
+ */
+export function useSiteFlag(key: keyof SiteFlags): boolean {
+  const flags = useSiteFlags();
+  return flags ? flags[key] !== false : true;
 }

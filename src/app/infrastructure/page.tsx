@@ -1,11 +1,13 @@
 'use client';
 
+import { useSiteFlag } from '@/lib/use-site-flags';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import TechText from '@/components/TechText';
 import { ChevronRight, CheckCircle2, Activity, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export default function InfrastructurePage() {
+  const shopOn = useSiteFlag('shop');
   const [storeOnline, setStoreOnline] = useState<boolean | null>(null);
   const [productCount, setProductCount] = useState<number | null>(null);
   const [responseMs, setResponseMs] = useState<number | null>(null);
@@ -154,12 +156,14 @@ export default function InfrastructurePage() {
           <span>View VLESS VPN Packages</span>
           <ArrowRight className="w-4 h-4" />
         </Link>
-        <Link
-          href="/catalog"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#141417] border border-[#26262b] hover:border-white/30 text-white text-xs font-semibold uppercase tracking-wider transition-all"
-        >
-          <span>Browse All Store Products</span>
-        </Link>
+        {shopOn && (
+          <Link
+            href="/catalog"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#141417] border border-[#26262b] hover:border-white/30 text-white text-xs font-semibold uppercase tracking-wider transition-all"
+          >
+            <span>Browse All Store Products</span>
+          </Link>
+        )}
       </div>
     </div>
   );

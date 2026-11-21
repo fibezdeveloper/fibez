@@ -1,5 +1,6 @@
 'use client';
 
+import { useSiteFlag } from '@/lib/use-site-flags';
 import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,6 +14,7 @@ import { useStore } from '@/lib/store-context';
 import { ArrowRight, ShoppingBag, KeyRound, ShieldCheck, LifeBuoy } from 'lucide-react';
 
 export default function HomePage() {
+  const ticketsOn = useSiteFlag('tickets');
   const router = useRouter();
   const { currency } = useStore();
 
@@ -113,7 +115,7 @@ export default function HomePage() {
               </p>
             </Link>
 
-            <Link
+{ticketsOn && (            <Link
               href="/tickets"
               className="group p-6 rounded-[16px] bg-[#0c0c0e] border border-[#1f1f23] hover:border-white/30 hover:bg-[#111114] transition-all block relative overflow-hidden"
             >
@@ -127,7 +129,7 @@ export default function HomePage() {
               <p className="text-xs text-[#a1a4a5] mt-1.5 leading-relaxed">
                 Open a support ticket, check NetMod &amp; v2rayNG setup steps, or get replacement warranty help.
               </p>
-            </Link>
+            </Link>)}
           </div>
         </div>
       </section>

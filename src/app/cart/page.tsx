@@ -1,5 +1,6 @@
 'use client';
 
+import { useSiteFlag } from '@/lib/use-site-flags';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -39,6 +40,7 @@ import {
 } from 'lucide-react';
 
 export default function CartPage() {
+  const shopOn = useSiteFlag('shop');
   const router = useRouter();
   const { 
     cart, 
@@ -357,10 +359,10 @@ export default function CartPage() {
           <span>to get started.</span>
         </div>
         <Link
-          href="/catalog"
+          href={shopOn ? '/catalog' : '/v2ray'}
           className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold uppercase tracking-wider transition-all"
         >
-          <span>Explore Product Catalog</span>
+          <span>{shopOn ? 'Explore Product Catalog' : 'Browse V2Ray Packages'}</span>
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
@@ -399,7 +401,7 @@ export default function CartPage() {
       <div className="flex items-center gap-2 text-xs font-mono text-[#a1a4a5] mb-8">
         <Link href="/" className="hover:text-white transition-colors">Home</Link>
         <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
-        <Link href="/catalog" className="hover:text-white transition-colors">Catalog</Link>
+        <Link href={shopOn ? '/catalog' : '/v2ray'} className="hover:text-white transition-colors">{shopOn ? 'Catalog' : 'V2Ray'}</Link>
         <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
         <span className="text-white">Shopping Cart ({cartCount})</span>
       </div>
@@ -628,10 +630,10 @@ export default function CartPage() {
             {/* Cart Actions */}
             <div className="flex items-center justify-between pt-2">
               <Link
-                href="/catalog"
+                href={shopOn ? '/catalog' : '/v2ray'}
                 className="text-xs font-mono text-[#a1a4a5] hover:text-white transition-colors flex items-center gap-1.5"
               >
-                <span>← Add more items from Catalog</span>
+                <span>{shopOn ? '← Add more items from Catalog' : '← Add more V2Ray plans'}</span>
               </Link>
             </div>
           </div>

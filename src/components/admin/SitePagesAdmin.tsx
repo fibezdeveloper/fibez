@@ -12,7 +12,7 @@ interface Def {
 const PRESETS: { label: string; hint: string; flags: Flags }[] = [
   {
     label: 'V2Ray only',
-    hint: 'Only the V2Ray store and dashboard are open. Everything else shows Coming soon.',
+    hint: 'Only the V2Ray store and dashboard are open. Shop, tickets, FAQ and docs disappear.',
     flags: { shop: false, v2ray: true, tickets: false, docs: false, faq: false, infrastructure: false },
   },
   {
@@ -79,8 +79,8 @@ export default function SitePagesAdmin() {
       <div>
         <h1 className="text-xl font-semibold text-white">Site pages</h1>
         <p className="text-xs text-zinc-500 mt-1">
-          Choose which parts of the website visitors can open. Switched-off sections show a Coming soon page and cannot
-          be bought from. Staff accounts always see everything.
+          Choose which parts of the website visitors can open. Switched-off sections do not exist for visitors: the page gives a 404 and every
+          link to it is hidden. Staff accounts always see everything, and you can switch a section back on any time.
         </p>
       </div>
 
@@ -116,7 +116,7 @@ export default function SitePagesAdmin() {
                   on ? 'bg-[#3ad389]' : 'bg-zinc-800'
                 }`}
                 aria-pressed={on}
-                title={on ? 'Open to visitors' : 'Coming soon'}
+                title={on ? 'Open to visitors' : 'Hidden from visitors'}
               >
                 <span
                   className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-black shadow transition-transform ${

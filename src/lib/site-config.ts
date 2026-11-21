@@ -11,6 +11,7 @@ export const PAGE_DEFS = [
   { key: 'docs', label: 'Docs', description: 'Documentation pages' },
   { key: 'faq', label: 'FAQ', description: 'Frequently asked questions' },
   { key: 'infrastructure', label: 'Infrastructure', description: 'Service status page' },
+  { key: 'whatsapp', label: 'WhatsApp support', description: 'Show WhatsApp contact links (menu, footer, help pages). Off = no WhatsApp links anywhere.' },
   { key: 'lk_ip', label: 'Sri Lanka IP option', description: 'Offer the Sri Lanka IP choice (+Rs 300) when buying a V2Ray plan. Off = Singapore only.' },
 ] as const;
 
@@ -24,6 +25,7 @@ export const DEFAULT_FLAGS: PageFlags = {
   docs: true,
   faq: true,
   infrastructure: true,
+  whatsapp: true,
   lk_ip: false, // hidden until the Sri Lanka IP gateway is ready
 };
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useSiteFlag } from '@/lib/use-site-flags';
 import React from 'react';
 import Link from 'next/link';
 import { 
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 
 export default function RefundPolicyPage() {
+  const whatsappOn = useSiteFlag('whatsapp');
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-24 pb-32">
       {/* Breadcrumb */}
@@ -151,15 +153,17 @@ export default function RefundPolicyPage() {
             <Mail className="w-3.5 h-3.5" />
             <span>Email support@fibez.store</span>
           </a>
-          <a
-            href="https://wa.me/94771234567"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-xs uppercase tracking-wider hover:bg-white/10 transition-colors"
-          >
-            <span>Live WhatsApp Desk</span>
-            <ArrowRight className="w-3.5 h-3.5 text-zinc-400" />
-          </a>
+          {whatsappOn && (
+            <a
+              href="https://wa.me/94771234567"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-xs uppercase tracking-wider hover:bg-white/10 transition-colors"
+            >
+              <span>Live WhatsApp Desk</span>
+              <ArrowRight className="w-3.5 h-3.5 text-zinc-400" />
+            </a>
+          )}
         </div>
       </div>
 

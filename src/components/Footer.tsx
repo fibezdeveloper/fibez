@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import FibezLogo from '@/components/FibezLogo';
 import { useStore, SocialLinkConfig } from '@/lib/store-context';
+import { useSiteFlags } from '@/lib/use-site-flags';
 import { 
   Landmark, 
   ShieldCheck, 
@@ -84,7 +85,10 @@ function SocialIcon({ platform }: { platform: SocialLinkConfig['platform'] }) {
 
 export default function Footer() {
   const { socialLinks } = useStore();
-  const enabledSocials = socialLinks.filter((s) => s.enabled);
+  const flags = useSiteFlags();
+  // Until the flags load everything shows, so links do not pop in; a switched-off section is hidden for good.
+  const on = (k: 'shop' | 'tickets' | 'faq' | 'infrastructure' | 'whatsapp') => (flags ? flags[k] !== false : true);
+  const enabledSocials = socialLinks.filter((s) => s.enabled && (s.platform !== 'whatsapp' || on('whatsapp')));
 
   return (
     <footer className="w-full bg-[#070709] border-t border-[#1b1c20] pt-16 pb-20 sm:pb-16 text-zinc-400 relative">
@@ -100,7 +104,9 @@ export default function Footer() {
             </Link>
 
             <p className="text-sm text-zinc-400 leading-relaxed max-w-sm">
-              Instant gift cards, streaming &amp; AI subscriptions, game top-ups, and high-speed VLESS VPN — optimised for SLT, Dialog, Hutch &amp; Airtel.
+              {on('shop')
+                ? 'Instant gift cards, streaming & AI subscriptions, game top-ups, and high-speed VLESS VPN — optimised for SLT, Dialog, Hutch & Airtel.'
+                : 'High-speed VLESS VPN for Sri Lanka — optimised for SLT, Dialog, Hutch & Airtel.'}
             </p>
 
             {/* Configurable Social Media Links (Enabled via Owner Dashboard) */}
@@ -133,13 +139,20 @@ export default function Footer() {
 
             {/* Edge SLA Telemetry Indicator */}
             <div className="pt-2">
-              <Link
-                href="/infrastructure"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-zinc-400 hover:text-white hover:border-white/20 transition-all"
-              >
-                <span className="w-2 h-2 rounded-full bg-[#3ad389] animate-pulse" />
-                <span>High-speed VLESS VPN · Sri Lanka</span>
-              </Link>
+              {on('infrastructure') ? (
+                <Link
+                  href="/infrastructure"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-zinc-400 hover:text-white hover:border-white/20 transition-all"
+                >
+                  <span className="w-2 h-2 rounded-full bg-[#3ad389] animate-pulse" />
+                  <span>High-speed VLESS VPN · Sri Lanka</span>
+                </Link>
+              ) : (
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-zinc-400">
+                  <span className="w-2 h-2 rounded-full bg-[#3ad389] animate-pulse" />
+                  <span>High-speed VLESS VPN · Sri Lanka</span>
+                </span>
+              )}
             </div>
           </div>
 
@@ -168,11 +181,11 @@ export default function Footer() {
                     NetMod Setup Guide
                   </Link>
                 </li>
-                <li>
+{on('shop') && (                <li>
                   <Link href="/catalog" className="text-zinc-400 hover:text-white transition-colors">
                     Products Catalog
                   </Link>
-                </li>
+                </li>)}
                 <li>
                   <Link href="/vault" className="text-zinc-400 hover:text-white transition-colors">
                     Key Vault &amp; Orders
@@ -192,12 +205,12 @@ export default function Footer() {
                 Support
               </div>
               <ul className="space-y-2.5 text-sm">
-                <li>
+{on('tickets') && (                <li>
                   <Link href="/tickets" className="text-zinc-400 hover:text-white transition-colors">
                     Support Tickets
                   </Link>
-                </li>
-                <li>
+                </li>)}
+{on('whatsapp') && (                <li>
                   <a 
                     href="https://wa.me/94771234567" 
                     target="_blank" 
@@ -207,17 +220,17 @@ export default function Footer() {
                     <span>WhatsApp Desk</span>
                     <ArrowUpRight className="w-3 h-3 text-zinc-500" />
                   </a>
-                </li>
-                <li>
+                </li>)}
+{on('infrastructure') && (                <li>
                   <Link href="/infrastructure" className="text-zinc-400 hover:text-white transition-colors">
                     ISP DPI Routing
                   </Link>
-                </li>
-                <li>
+                </li>)}
+{on('faq') && (                <li>
                   <Link href="/faq" className="text-zinc-400 hover:text-white transition-colors">
                     FAQs &amp; Help
                   </Link>
-                </li>
+                </li>)}
                 <li>
                   <Link href="/dashboard" className="text-zinc-400 hover:text-white transition-colors">
                     Console Portal

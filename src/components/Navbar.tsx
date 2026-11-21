@@ -112,7 +112,7 @@ export default function Navbar(props: NavbarProps) {
 
   // Which sections are open (Admin -> Site pages) and which shop products are visible. Display only:
   // the pages and APIs enforce the same switches on the server.
-  const [pageFlags, setPageFlags] = useState<{ shop: boolean; v2ray: boolean; tickets: boolean; docs: boolean; faq: boolean; infrastructure: boolean } | null>(null);
+  const [pageFlags, setPageFlags] = useState<{ shop: boolean; v2ray: boolean; tickets: boolean; docs: boolean; faq: boolean; infrastructure: boolean; whatsapp: boolean } | null>(null);
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
   useEffect(() => {
     let cancelled = false;
@@ -175,12 +175,16 @@ export default function Navbar(props: NavbarProps) {
           divider: true,
           onSelect: () => router.push('/dashboard'),
         },
-        {
-          id: 'tickets',
-          label: 'Support',
-          icon: <LifeBuoy className="w-4 h-4 text-zinc-300" />,
-          onSelect: () => router.push('/tickets'),
-        },
+        ...(!pageFlags || pageFlags.tickets
+          ? [
+              {
+                id: 'tickets',
+                label: 'Support',
+                icon: <LifeBuoy className="w-4 h-4 text-zinc-300" />,
+                onSelect: () => router.push('/tickets'),
+              },
+            ]
+          : []),
         ...(isStaff
           ? [
               {
@@ -253,6 +257,7 @@ export default function Navbar(props: NavbarProps) {
   //  - V2Ray only (shop off): V2Ray, My Account, plus a Support card only when it has 2+ links
   const v2rayOpen = pageFlags ? pageFlags.v2ray : true;
   const ticketsOpen = pageFlags ? pageFlags.tickets : true;
+  const whatsappOpen = pageFlags ? pageFlags.whatsapp !== false : true;
   const whatsapp = { label: 'WhatsApp Support', href: 'https://wa.me/94771234567' };
   const navItems: CardNavItem[] = (() => {
     const account: CardNavItem = {
@@ -290,10 +295,10 @@ export default function Navbar(props: NavbarProps) {
                 ]
               : []),
             ...(ticketsOpen ? [{ label: 'Support Tickets', href: '/tickets' }] : []),
-            whatsapp,
+            ...(whatsappOpen ? [whatsapp] : []),
           ],
         },
-      ];
+      ].filter((c) => (c.links || []).length > 0);
     }
 
     // Shop off: V2Ray holds everything about the product, Support is its own small card.
@@ -307,10 +312,13 @@ export default function Navbar(props: NavbarProps) {
         { label: 'VLESS Line Check', href: '/v2ray#line-check' },
       ],
     };
-    const supportLinks = [...(ticketsOpen ? [{ label: 'Support Tickets', href: '/tickets' }] : []), whatsapp];
+    const supportLinks = [
+      ...(ticketsOpen ? [{ label: 'Support Tickets', href: '/tickets' }] : []),
+      ...(whatsappOpen ? [whatsapp] : []),
+    ];
     if (supportLinks.length < 2) {
-      // Only WhatsApp left: fold it into the V2Ray card instead of a card with one link.
-      return [{ ...v2rayCard, links: [...(v2rayCard.links || []), whatsapp] }, account];
+      // One support link left: fold it into the V2Ray card instead of a card with one link.
+      return [{ ...v2rayCard, links: [...(v2rayCard.links || []), ...supportLinks] }, account];
     }
     return [v2rayCard, account, { label: 'Support', description: 'Real people, quick replies.', links: supportLinks }];
   })();
@@ -378,7 +386,9 @@ export default function Navbar(props: NavbarProps) {
           label: 'No Exact Matches',
           description: `No products matching "${searchQuery}". Press Enter to search catalog.`,
           links: [
-            { label: `Search for "${searchQuery}" in full catalog ›`, href: `/catalog?q=${encodeURIComponent(searchQuery)}` }
+            shopOpen
+              ? { label: `Search for "${searchQuery}" in full catalog ›`, href: `/catalog?q=${encodeURIComponent(searchQuery)}` }
+              : { label: 'See all V2Ray packages ›', href: '/v2ray' }
           ]
         }
       ];
@@ -435,7 +445,9 @@ export default function Navbar(props: NavbarProps) {
         description: `Direct results for "${searchQuery}"`,
         links: [
           ...matches.slice(0, 4).map(m => ({ label: m.title, href: `/products/${m.id}` })),
-          { label: `View all results for "${searchQuery}" in Catalog ›`, href: `/catalog?q=${encodeURIComponent(searchQuery)}` }
+          shopOpen
+            ? { label: `View all results for "${searchQuery}" in Catalog ›`, href: `/catalog?q=${encodeURIComponent(searchQuery)}` }
+            : { label: 'See all V2Ray packages ›', href: '/v2ray' }
         ]
       });
     }
@@ -457,12 +469,12 @@ export default function Navbar(props: NavbarProps) {
           } else if (e.key === 'Enter') {
             e.preventDefault();
             if (searchQuery.trim()) {
-              router.push(`/catalog?q=${encodeURIComponent(searchQuery.trim())}`);
+              router.push(shopOpen ? `/catalog?q=${encodeURIComponent(searchQuery.trim())}` : '/v2ray');
               setIsSearchOpen(false);
             }
           }
         }}
-        placeholder="Search VLESS VPN, Steam, Netflix, ChatGPT, Free Fire..."
+        placeholder={shopOpen ? 'Search VLESS VPN, Steam, Netflix, ChatGPT, Free Fire...' : 'Search V2Ray packages...'}
         className="flex-1 bg-transparent text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none font-sans"
         autoFocus
       />

@@ -1,5 +1,6 @@
 'use client';
 
+import { useSiteFlag } from '@/lib/use-site-flags';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { ValidRole, VerifiedSessionUser } from '@/lib/dal';
@@ -114,6 +115,7 @@ export default function DashboardClient({
 }: {
   currentUser: VerifiedSessionUser;
 }) {
+  const shopOn = useSiteFlag('shop');
   const canAccessAdmin = currentUser.role === 'admin' || currentUser.role === 'owner';
   const canAccessOwner = currentUser.role === 'owner';
 
@@ -1144,10 +1146,10 @@ export default function DashboardClient({
                   </span>
                 </div>
                 <Link
-                  href="/catalog"
+                  href={shopOn ? '/catalog' : '/v2ray'}
                   className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium transition-colors"
                 >
-                  Shop Now →
+                  {shopOn ? 'Shop Now →' : 'Buy V2Ray →'}
                 </Link>
               </div>
 
@@ -1196,9 +1198,11 @@ export default function DashboardClient({
                   <KeyRound className="w-6 h-6 text-zinc-400 mx-auto" />
                   <p className="text-sm text-zinc-300">No purchased products or configs found for {currentUser.email}.</p>
                   <div className="flex justify-center gap-3 pt-1">
-                    <Link href="/catalog" className="px-4 py-2 rounded-xl bg-white text-black font-mono text-xs font-semibold">
-                      Browse Catalog
-                    </Link>
+                    {shopOn && (
+                      <Link href="/catalog" className="px-4 py-2 rounded-xl bg-white text-black font-mono text-xs font-semibold">
+                        Browse Catalog
+                      </Link>
+                    )}
                     <Link href="/v2ray" className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-xs">
                       Free VLESS Trial
                     </Link>

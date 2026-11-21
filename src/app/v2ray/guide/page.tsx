@@ -1,5 +1,6 @@
 'use client';
 
+import { useSiteFlag } from '@/lib/use-site-flags';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PRODUCTS, ProductItem } from '@/lib/products';
@@ -40,6 +41,7 @@ const CLIENT_HASH_MAP: Record<string, ClientTabId> = {
 };
 
 export default function V2RayGuidePage() {
+  const ticketsOn = useSiteFlag('tickets');
   const [lang, setLang] = useState<GuideLang>('en');
   const [activeClientTab, setActiveClientTab] = useState<ClientTabId>('netmod-pc');
   const [liveProducts, setLiveProducts] = useState<ProductItem[]>([]);
@@ -488,12 +490,14 @@ export default function V2RayGuidePage() {
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
 
-            <Link
-              href="/tickets"
-              className="px-4 py-2 rounded-xl bg-black hover:bg-white/10 border border-white/15 text-zinc-200 text-xs font-mono transition-all"
-            >
-              {copy.troubleshootTicket}
-            </Link>
+            {ticketsOn && (
+              <Link
+                href="/tickets"
+                className="px-4 py-2 rounded-xl bg-black hover:bg-white/10 border border-white/15 text-zinc-200 text-xs font-mono transition-all"
+              >
+                {copy.troubleshootTicket}
+              </Link>
+            )}
           </div>
         </section>
       </div>

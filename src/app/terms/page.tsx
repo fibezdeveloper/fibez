@@ -1,10 +1,12 @@
 'use client';
 
+import { useSiteFlag } from '@/lib/use-site-flags';
 import React from 'react';
 import Link from 'next/link';
 import { ChevronRight, FileText, ShieldCheck, Scale, ArrowRight } from 'lucide-react';
 
 export default function TermsPage() {
+  const whatsappOn = useSiteFlag('whatsapp');
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-24 pb-32">
       {/* Breadcrumb */}
@@ -126,7 +128,7 @@ export default function TermsPage() {
             <span>Contact & Inquiries</span>
           </h2>
           <p>
-            If you have any questions regarding these terms, contact our legal desk at <span className="font-mono text-white">legal@fibez.net</span> or via <a href="https://wa.me/94771234567" className="text-[#ffffff] hover:underline">WhatsApp Support</a>.
+            If you have any questions regarding these terms, contact our legal desk at <span className="font-mono text-white">legal@fibez.net</span> {whatsappOn && (<>or via <a href="https://wa.me/94771234567" className="text-[#ffffff] hover:underline">WhatsApp Support</a></>)}.
           </p>
         </section>
 
