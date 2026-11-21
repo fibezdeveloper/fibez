@@ -13,7 +13,7 @@ import FlexCarousel, { FlexCarouselItem } from '@/components/FlexCarousel';
 import V2RayPackageCard from '@/components/v2ray/V2RayPackageCard';
 import { LIVE_V2RAY_PACKAGES, V2RayPackageDef } from '@/lib/v2ray-catalog';
 import { Meteors } from '@/components/ui/meteors';
-import PageBackdrop from '@/components/PageBackdrop';
+import PredictiveArcBackground from '@/components/PredictiveArcBackground';
 import useDevicePerf from '@/lib/use-device-perf';
 
 const SPEEDTEST_ITEMS: FlexCarouselItem[] = [
@@ -202,7 +202,7 @@ export default function V2RayPage() {
 
   return (
     <div className="min-h-screen bg-[#070709] text-zinc-300 relative isolate overflow-hidden">
-      <PageBackdrop />
+      <PredictiveArcBackground />
       {/* Ambient falling meteors (fewer on weaker devices, none with reduced motion) */}
       <Meteors number={Math.min(18, perf.meteorCount)} />
       
