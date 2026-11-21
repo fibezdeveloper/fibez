@@ -552,7 +552,7 @@ export default function BillingPage() {
               { name: 'BASIC', price: 'Rs 250', quota: '150 GB', devs: '1 Device', node: 'Shared 5421' },
               { name: 'STANDARD', price: 'Rs 500', quota: '250 GB', devs: '1 Device', node: 'Shared 5421' },
               { name: 'PREMIUM', price: 'Rs 800', quota: '500 GB', devs: '2 Devices', node: 'Shared 5421' },
-              { name: 'PRIVATE VIP', price: 'Rs 1,500', quota: 'Unlimited', devs: '3 Devices', node: 'Dedicated 8253' },
+              { name: 'PRIVATE VIP', price: 'Rs 1,200', quota: 'Unlimited', devs: '3 Devices', node: 'Dedicated 8253' },
               { name: 'STREAMING DUAL', price: 'Rs 2,000', quota: 'Unlimited', devs: '3 Devices (2 Configs)', node: 'Dedicated 8253' },
             ].map((p) => (
               <div key={p.name} className="p-3.5 rounded-xl bg-[#121217] border border-[#1e1e26] space-y-2">
