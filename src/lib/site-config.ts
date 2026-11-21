@@ -5,6 +5,7 @@ import { sql } from '@/lib/db';
  * server (owner) connection. Staff always see every page; visitors see "coming soon" for switched-off ones.
  */
 export const PAGE_DEFS = [
+  { key: 'home', label: 'Home page', description: 'The landing page. With the shop off it shows V2Ray content only. Off = visitors go straight to the V2Ray page.' },
   { key: 'shop', label: 'Shop', description: 'Catalog, product pages and checkout of gift cards, games, subscriptions and software' },
   { key: 'v2ray', label: 'V2Ray store', description: 'V2Ray packages, free trial and the V2Ray dashboard' },
   { key: 'tickets', label: 'Support tickets', description: 'Customer support ticket centre' },
@@ -19,6 +20,7 @@ export type PageKey = (typeof PAGE_DEFS)[number]['key'];
 export type PageFlags = Record<PageKey, boolean>;
 
 export const DEFAULT_FLAGS: PageFlags = {
+  home: true,
   shop: true,
   v2ray: true,
   tickets: true,

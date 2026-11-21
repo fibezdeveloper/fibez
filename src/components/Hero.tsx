@@ -11,8 +11,11 @@ import { AnimatedButton } from '@/components/ui/AnimatedButton';
 
 export default function Hero({
   onExploreCatalog,
+  v2rayOnly = false,
 }: {
   onExploreCatalog?: () => void;
+  /** Shop switched off: V2Ray-only copy and buttons, nothing that points at the catalog. */
+  v2rayOnly?: boolean;
 }) {
   return (
     <section className="relative w-full pt-16 pb-20 md:pt-24 md:pb-32 overflow-hidden bg-black">
@@ -58,7 +61,7 @@ export default function Hero({
             <h1 className="font-serif text-[52px] sm:text-[68px] lg:text-[80px] leading-[1.08] tracking-[-0.01em] text-white font-normal drop-shadow-sm select-none">
               <span className="block">
                 <FlipText duration={2.2} delay={0.1}>
-                  Digital products,
+                  {v2rayOnly ? 'High-speed VPN,' : 'Digital products,'}
                 </FlipText>
               </span>
               <span className="block italic font-normal text-[#f0f0f0]">
@@ -71,29 +74,42 @@ export default function Hero({
             {/* Sub-headline with Staggered Word Slide-in Animation */}
             <p className="text-[17px] sm:text-[19px] leading-[1.5] text-[#a1a4a5] max-w-xl font-normal">
               <TextAnimation delay={0.6} divideBy="word">
-                Instant gift cards, streaming subscriptions, game top-ups, software keys, and high-speed VLESS VPN — sent straight to your email and vault.
+                {v2rayOnly
+                  ? 'VLESS VPN built for Sri Lankan networks. Pick a plan or claim a free 24-hour trial — your config is sent straight to your email and vault.'
+                  : 'Instant gift cards, streaming subscriptions, game top-ups, software keys, and high-speed VLESS VPN — sent straight to your email and vault.'}
               </TextAnimation>
             </p>
 
             {/* CTAs */}
             <div className="flex flex-wrap items-center gap-4 pt-2">
-              <AnimatedButton
-                onClick={onExploreCatalog || (() => {
-                  document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
-                })}
-                className="bg-white text-black font-semibold text-[15px] px-6 py-2.5 rounded-full border-none shadow-[0_0_24px_rgba(255,255,255,0.2)] hover:bg-[#eaeaea] [--shine:rgba(0,0,0,0.5)] cursor-pointer"
-              >
-                <span>Shop All Products</span>
-                <span className="text-sm ml-1">›</span>
-              </AnimatedButton>
+              {v2rayOnly ? (
+                <AnimatedButton
+                  as="a"
+                  href="/v2ray"
+                  className="bg-white text-black font-semibold text-[15px] px-6 py-2.5 rounded-full border-none shadow-[0_0_24px_rgba(255,255,255,0.2)] hover:bg-[#eaeaea] [--shine:rgba(0,0,0,0.5)] cursor-pointer"
+                >
+                  <span>Browse V2Ray Plans</span>
+                  <span className="text-sm ml-1">›</span>
+                </AnimatedButton>
+              ) : (
+                <AnimatedButton
+                  onClick={onExploreCatalog || (() => {
+                    document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+                  })}
+                  className="bg-white text-black font-semibold text-[15px] px-6 py-2.5 rounded-full border-none shadow-[0_0_24px_rgba(255,255,255,0.2)] hover:bg-[#eaeaea] [--shine:rgba(0,0,0,0.5)] cursor-pointer"
+                >
+                  <span>Shop All Products</span>
+                  <span className="text-sm ml-1">›</span>
+                </AnimatedButton>
+              )}
 
               <AnimatedButton
                 as="a"
-                href="/v2ray"
+                href={v2rayOnly ? '/v2ray/line-check' : '/v2ray'}
                 className="text-[15px] px-5 py-2.5 text-[#f0f0f0] backdrop-blur-md bg-black/60 border border-[#292d30] hover:border-[#464a4d] rounded-full gap-2"
               >
                 <ShieldCheck className="w-4 h-4 text-[#3ad389]" />
-                <span>High-Speed VLESS VPN</span>
+                <span>{v2rayOnly ? 'Check Your Line' : 'High-Speed VLESS VPN'}</span>
               </AnimatedButton>
             </div>
 
@@ -109,7 +125,7 @@ export default function Hero({
               </div>
               <div>
                 <div className="font-mono text-xl text-white font-medium">24h</div>
-                <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">Replacement guarantee</div>
+                <div className="text-xs text-[#a1a4a5] font-sans mt-0.5">{v2rayOnly ? 'Free trial' : 'Replacement guarantee'}</div>
               </div>
             </div>
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 export type SiteFlags = {
+  home: boolean;
   shop: boolean;
   v2ray: boolean;
   tickets: boolean;

@@ -31,7 +31,26 @@ const STEPS = [
   },
 ];
 
-export default function HowItWorks() {
+const V2RAY_STEPS = [
+  {
+    step: '01',
+    icon: ShoppingBag,
+    title: 'Choose Your Plan',
+    description: 'Pick the VLESS package that matches your SIM or broadband, or start with the free 24-hour trial.',
+    detail: 'SLT, Dialog, Hutch & Airtel',
+  },
+  STEPS[1],
+  {
+    step: '03',
+    icon: MailCheck,
+    title: 'Instant Email & Vault Delivery',
+    description: 'Your VLESS config link and QR code are sent to your email and unlocked inside your Key Vault.',
+    detail: 'Delivered in Seconds',
+  },
+];
+
+export default function HowItWorks({ v2rayOnly = false }: { v2rayOnly?: boolean }) {
+  const steps = v2rayOnly ? V2RAY_STEPS : STEPS;
   return (
     <section id="how-it-works" className="w-full py-24 bg-black border-t border-[#292d30]">
       <div className="max-w-[1200px] mx-auto px-6">
@@ -61,7 +80,7 @@ export default function HowItWorks() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {STEPS.map((item) => {
+          {steps.map((item) => {
             const Icon = item.icon;
             return (
               <div
