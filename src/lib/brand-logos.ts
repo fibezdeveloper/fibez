@@ -47,4 +47,7 @@ export const BRAND_LOGOS: Record<string, BrandLogoAsset> = {
   "VALORANT POINTS": { src: "/brands/valorant.svg", kind: "icon", label: "VALORANT", color: "#FA4454" },
   "XBOX GAME PASS": { src: "/brands/xbox.svg", kind: "icon", label: "XBOX", color: "#107C10" },
   "YOUTUBE PREMIUM": { src: "/brands/youtube.svg", kind: "icon", label: "YouTube", color: "#FF0000" },
+  "CLASH ROYALE": { src: "/brands/clashroyale.png", kind: "full", label: "", color: "#000000" },
+  "FREE FIRE DIAMONDS": { src: "/brands/freefire.svg", kind: "full", label: "", color: "#000000" },
+  "STUMBLE GUYS": { src: "/brands/stumbleguys.jpg", kind: "icon", label: "STUMBLE GUYS", color: "#E8590C" },
 };

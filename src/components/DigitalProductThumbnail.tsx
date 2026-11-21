@@ -1227,7 +1227,7 @@ function BrandLogoImage({ asset }: { asset: BrandLogoAsset }) {
   return (
     <div className="flex items-center gap-2">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={asset.src} alt="" draggable={false} className="h-8 w-auto max-w-[44px] object-contain" />
+      <img src={asset.src} alt="" draggable={false} className="h-8 w-auto max-w-[44px] object-contain rounded-md" />
       <span className="font-sans font-extrabold text-xl tracking-tight leading-none" style={{ color: asset.color }}>
         {asset.label}
       </span>
