@@ -1108,21 +1108,31 @@ export default function AdminPage() {
 
   // Toggle Package Active State
   const handleTogglePackageActive = async (id: string) => {
+    const current = adminPackages.find((p) => p.id === id);
+    if (!current) return;
+    const next = !current.isActive;
+    const setActive = (value: boolean) =>
+      setAdminPackages((list) => list.map((p) => (p.id === id ? { ...p, isActive: value } : p)));
+
+    // Optimistic: flip the switch instantly, send the explicit target state (not a blind toggle, so a
+    // double click cannot flip it twice), and revert only if the server refuses.
+    setActive(next);
     try {
       setPackageSavingId(id);
       const res = await fetch('/api/admin/packages', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, action: 'toggle_active' }),
+        body: JSON.stringify({ id, isActive: next }),
       });
       const data = await res.json();
       if (data.success) {
-        showToast(data.message, 'success');
-        refreshAllData();
+        showToast(`Package ${next ? 'shown on' : 'hidden from'} store`, 'success');
       } else {
-        showToast(data.error || 'Failed to toggle package', 'error');
+        setActive(!next);
+        showToast(data.error || 'Failed to update package', 'error');
       }
     } catch (e: any) {
+      setActive(!next);
       showToast(e.message, 'error');
     } finally {
       setPackageSavingId(null);
