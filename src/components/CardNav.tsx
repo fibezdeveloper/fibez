@@ -45,6 +45,8 @@ export interface CardNavProps {
   speed?: number;
   cardHeight?: number;
   maxWidth?: number;
+  /** Page scrolled: the bar condenses (narrower, denser glass, deeper shadow, smaller logo). */
+  scrolled?: boolean;
   accentColor?: string;
   menuLabel?: boolean;
   intro?: boolean;
@@ -203,6 +205,7 @@ export default function CardNav({
   speed = 1,
   cardHeight = 176,
   maxWidth = 1080,
+  scrolled = false,
   accentColor,
   menuLabel = true,
   intro = true,
@@ -504,6 +507,7 @@ export default function CardNav({
       data-open={isExpanded ? '' : undefined}
       data-shown={shown || isExpanded ? '' : undefined}
       data-narrow={narrow ? '' : undefined}
+      data-scrolled={scrolled ? '' : undefined}
       style={{ ...(vars as any), ...style }}
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}

@@ -51,12 +51,21 @@ export default function Navbar(props: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // Shrink / expand with hysteresis (two thresholds) so the bar never flickers around one scroll
+  // position. State only changes when the threshold is crossed, so this is cheap per scroll event.
   React.useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 40);
+    let scrolled = window.scrollY > 40;
+    setIsScrolled(scrolled);
+    const onScroll = () => {
+      const y = window.scrollY;
+      const next = scrolled ? y > 12 : y > 48;
+      if (next !== scrolled) {
+        scrolled = next;
+        setIsScrolled(next);
+      }
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   // Better Auth session hook
@@ -423,11 +432,16 @@ export default function Navbar(props: NavbarProps) {
   );
 
   return (
-    <header className="sticky top-3 z-50 w-full px-4 sm:px-6 pointer-events-none">
+    <header
+      className={`sticky z-50 w-full pointer-events-none transition-[top,padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        isScrolled ? 'top-2 px-5 sm:px-8' : 'top-3 px-4 sm:px-6'
+      }`}
+    >
       <div className="pointer-events-auto">
         <CardNav
           defaultOpen={false}
           maxWidth={isScrolled ? 860 : 1120}
+          scrolled={isScrolled}
           theme="dark"
           surface="glass"
           cardEffect="rise"

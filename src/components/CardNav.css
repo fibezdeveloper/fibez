@@ -3,6 +3,8 @@
   position: relative;
   width: 100%;
   max-width: var(--cn-max);
+  /* The width eases between the wide and condensed states instead of snapping. */
+  transition: max-width 520ms cubic-bezier(0.22, 1, 0.36, 1);
   height: var(--cn-bar);
   margin: 0 auto;
   font-size: 14px;
@@ -23,6 +25,37 @@
   box-shadow: var(--cn-shadow);
   -webkit-backdrop-filter: var(--cn-blur);
   backdrop-filter: var(--cn-blur);
+  transition:
+    background-color 360ms ease,
+    box-shadow 360ms ease,
+    backdrop-filter 360ms ease;
+}
+
+/* Condensed state while the page is scrolled */
+.card-nav[data-scrolled] .card-nav__panel {
+  background: rgba(10, 10, 13, 0.97);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+  backdrop-filter: blur(22px) saturate(1.25);
+  box-shadow:
+    0 22px 44px -18px rgba(0, 0, 0, 0.95),
+    0 8px 20px -10px rgba(0, 0, 0, 0.75);
+}
+
+.card-nav__logo > * {
+  transform-origin: center;
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card-nav[data-scrolled] .card-nav__logo > * {
+  transform: scale(0.88);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-nav,
+  .card-nav__panel,
+  .card-nav__logo > * {
+    transition: none;
+  }
 }
 
 .card-nav__rim {
