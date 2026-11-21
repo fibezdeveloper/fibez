@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   V2RayPackageDef,
@@ -32,6 +33,7 @@ import {
   Laptop,
   Layers,
   Crown,
+  X,
 } from 'lucide-react';
 
 interface V2RayPackageCardProps {
@@ -55,6 +57,8 @@ export default function V2RayPackageCard({
   const [serverType, setServerType] = useState<'standard' | 'lk_ip'>(defaultServerType);
   const [copiedCode, setCopiedCode] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   // Local fallback if parent doesn't control expansion
   const [localExpanded, setLocalExpanded] = useState(false);
@@ -67,6 +71,23 @@ export default function V2RayPackageCard({
       setLocalExpanded((prev) => !prev);
     }
   };
+
+  // Sheet behaviour: Esc closes, page behind does not scroll
+  const sheetOpen = controlledExpanded !== undefined ? controlledExpanded : localExpanded;
+  useEffect(() => {
+    if (!sheetOpen) return undefined;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') toggleExpand();
+    };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheetOpen]);
 
   useEffect(() => {
     if (defaultServerType) {
@@ -230,307 +251,213 @@ export default function V2RayPackageCard({
           </span>
         </div>
 
-        {/* ============================================================== */}
-        {/* COLLAPSED TEASER BAR (Visible when NOT expanded)               */}
-        {/* ============================================================== */}
-        {!isCardActive && (
-          <div className="flex items-center justify-between mt-4 pt-3.5 border-t border-[#1a1a22]">
-            <div>
-              <span className="text-[9px] font-mono text-zinc-500 block uppercase tracking-wider">
-                Starting From
-              </span>
-              <div className="text-lg font-black font-mono text-white flex items-baseline gap-1">
-                <span>{V2RAY_PLAN_TIERS[0].monthlyPriceLKR}</span>
-                <span className="text-[11px] font-sans text-zinc-400 font-normal">
-                  LKR / mo
-                </span>
-              </div>
-            </div>
-
-            <AnimatedButton
-              variant="default"
-              size="sm"
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation();
-                toggleExpand();
-              }}
-              className="text-xs font-mono text-[#3ad389] font-medium"
-            >
-              <span>Choose Plan &amp; Buy</span>
-              <ChevronDown className="w-3.5 h-3.5 text-[#3ad389]" />
-            </AnimatedButton>
-          </div>
-        )}
-
-        {/* ============================================================== */}
-        {/* EXPANDED CONTROLS DRAWER (Click-to-Expand)                     */}
-        {/* ============================================================== */}
-        <div
-          className={`transition-all duration-300 ease-in-out ${
-            isCardActive
-              ? 'max-h-[850px] opacity-100 mt-3.5 pointer-events-auto'
-              : 'max-h-0 opacity-0 overflow-hidden mt-0 pointer-events-none'
-          }`}
-        >
-          {/* Server Routing Mode Switcher (Standard SG vs Sri Lankan IP) */}
-          {pkg.hasSriLankanIpOption && (
-            <div className="w-full space-y-1.5">
-              <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
-                <span className="uppercase tracking-wider">Server Routing Location:</span>
-                {serverType === 'lk_ip' && (
-                  <span className="text-amber-400 text-[10px]">Local Bank Safe</span>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-1.5 bg-[#141419] p-1 rounded-xl border border-white/5">
-                <button
-                  type="button"
-                  onClick={() => setServerType('standard')}
-                  className={`py-1.5 px-2 rounded-lg text-[11px] font-mono transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    serverType === 'standard'
-                      ? 'bg-[#1e1e26] text-white font-bold shadow-sm'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  <Zap className="w-3 h-3 text-[#3ad389]" />
-                  <span>Standard SG</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setServerType('lk_ip')}
-                  className={`py-1.5 px-2 rounded-lg text-[11px] font-mono transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    serverType === 'lk_ip'
-                      ? 'bg-[#3ad389]/10 text-[#3ad389] border border-[#3ad389]/30 font-bold shadow-sm'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                  title="Routes via Sri Lankan residential node for banking & local services"
-                >
-                  <span>🇱🇰 Sri Lankan IP (+300)</span>
-                </button>
-              </div>
-
-              {serverType === 'lk_ip' && (
-                <div className="p-2 rounded-lg bg-emerald-950/20 border border-emerald-500/20 text-[10px] font-mono text-emerald-300 leading-snug">
-                  🛡️ <strong>Sri Lankan IP:</strong> Bypasses foreign IP security flags on BOC, Sampath, and Commercial Bank apps.
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Service Plan Selection (Basic, Standard, Premium, Private, Streaming) */}
-          <div className="w-full mt-3 space-y-2">
-            <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
-              <span className="uppercase tracking-wider">Select Service Plan Tier:</span>
-              <span className="text-emerald-400 font-bold">{activePlan.name} ({activePlan.quotaLabel})</span>
-            </div>
-
-            <div className="space-y-1.5">
-              {V2RAY_PLAN_TIERS.map((tier) => {
-                const tierMonthly =
-                  serverType === 'lk_ip' ? tier.lkIpPriceLKR : tier.monthlyPriceLKR;
-                const isSelected = selectedPlanId === tier.id;
-
-                return (
-                  <div
-                    key={tier.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedPlanId(tier.id);
-                    }}
-                    className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                      isSelected
-                        ? 'bg-[#141419] border-[#3ad389] ring-1 ring-[#3ad389]/30'
-                        : 'bg-[#0f0f13] border-[#1d1d24] hover:border-zinc-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                          isSelected
-                            ? 'border-[#3ad389] bg-[#3ad389]'
-                            : 'border-zinc-600 bg-transparent'
-                        }`}
-                      >
-                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-bold text-white">{tier.name}</span>
-                          <span className="text-[10px] font-mono text-zinc-400">
-                            • {tier.quotaLabel}
-                          </span>
-                          {tier.badge && (
-                            <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-[#3ad389]/10 text-[#3ad389] border border-[#3ad389]/20">
-                              {tier.badge}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[10px] font-mono text-zinc-500 mt-0.5">
-                          {tier.deviceLimit} Device{tier.deviceLimit > 1 ? 's' : ''} • {tier.nodeType}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      <div className="text-xs font-bold font-mono text-white">
-                        Rs {tierMonthly.toLocaleString()}
-                      </div>
-                      <div className="text-[9px] font-mono text-zinc-500">/ month</div>
-                    </div>
-                  </div>
-                );
-              })}
+        {/* Price teaser + one clear action. The plan picker opens in a sheet so the card never stretches. */}
+        <div className="flex items-center justify-between mt-4 pt-3.5 border-t border-[#1a1a22]">
+          <div>
+            <span className="text-[9px] font-mono text-zinc-500 block uppercase tracking-wider">Starting from</span>
+            <div className="text-lg font-black font-mono text-white flex items-baseline gap-1">
+              <span>{V2RAY_PLAN_TIERS[0].monthlyPriceLKR}</span>
+              <span className="text-[11px] font-sans text-zinc-400 font-normal">LKR / mo</span>
             </div>
           </div>
 
-          {/* Billing Duration Discounts */}
-          <div className="w-full mt-3 space-y-1.5">
-            <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
-              <span className="uppercase tracking-wider">Billing Duration &amp; Discounts:</span>
-              {durationDiscount.discountPercent > 0 && (
-                <span className="text-[#3ad389] font-bold">
-                  {durationDiscount.discountPercent}% OFF APPLIED
-                </span>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-              {DURATION_DISCOUNTS.map((d) => {
-                const isSelected = selectedMonths === d.months;
-                return (
-                  <button
-                    key={d.months}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedMonths(d.months);
-                    }}
-                    className={`py-2 px-1.5 rounded-xl text-[10px] font-mono transition-all text-center border cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#3ad389] text-black font-bold border-[#3ad389] shadow-sm'
-                        : 'bg-[#121217] text-zinc-300 hover:text-white border-[#202029]'
-                    }`}
-                  >
-                    <div>{d.months} Mo</div>
-                    <div
-                      className={`text-[9px] ${
-                        isSelected
-                          ? 'text-black/80 font-semibold'
-                          : d.discountPercent > 0
-                          ? 'text-[#3ad389]'
-                          : 'text-zinc-500'
-                      }`}
-                    >
-                      {d.discountPercent > 0 ? `-${d.discountPercent}% OFF` : 'Regular'}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Feature Strip */}
-          <div className="w-full mt-3 p-2.5 rounded-xl bg-[#121217] border border-[#1e1e26] space-y-1.5 text-[11px] font-mono text-zinc-400">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Laptop className="w-3.5 h-3.5 text-zinc-400" />
-                <span>Simultaneous Devices:</span>
-              </span>
-              <span className="text-white font-semibold">{activePlan.deviceLimit} Device Limit</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Server className="w-3.5 h-3.5 text-zinc-400" />
-                <span>Infrastructure Node:</span>
-              </span>
-              <span className="text-zinc-200 font-semibold">{activePlan.nodeType}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-zinc-400" />
-                <span>Generated Configs:</span>
-              </span>
-              <span className="text-[#3ad389] font-semibold">
-                {activePlan.configsCount} {activePlan.configsCount > 1 ? 'Configs (Streaming + Gaming)' : 'Config'}
-              </span>
-            </div>
-            <div className="pt-1 border-t border-white/5 text-[10px] text-zinc-400 leading-tight">
-              {activePlan.features}
-            </div>
-          </div>
-
-          {/* Dynamic Price & Instant Action Buttons */}
-          <div className="w-full mt-4 pt-3 border-t border-[#1f1f26]">
-            <div className="flex items-baseline justify-between mb-3.5">
-              <div>
-                <span className="text-[10px] font-mono text-zinc-400 block uppercase tracking-wider">
-                  Total for {selectedMonths} Month{selectedMonths > 1 ? 's' : ''} ({activePlan.name})
-                </span>
-                <div className="text-2xl font-black font-mono text-white tracking-tight flex items-baseline gap-1">
-                  <span>{totalPriceLKR.toLocaleString()}</span>
-                  <span className="text-xs font-sans text-zinc-400 font-medium">LKR</span>
-                </div>
-                {totalSavingsLKR > 0 && (
-                  <span className="text-[10px] font-mono text-[#3ad389] font-bold">
-                    You save Rs {totalSavingsLKR.toLocaleString()} LKR!
-                  </span>
-                )}
-              </div>
-
-              <div className="text-right">
-                <span className="text-[10px] font-mono text-zinc-400 block">
-                  ≈ ${(totalPriceLKR / 305).toFixed(2)} USD
-                </span>
-                <span className="text-[10px] font-mono text-zinc-500">
-                  Rs {discountedMonthlyPrice.toLocaleString()} / mo
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <AnimatedButton
-                variant="dark"
-                size="sm"
-                onClick={handleAddToCart}
-                className="py-2.5 px-3 text-xs font-mono font-medium"
-              >
-                {isAdded ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-[#3ad389]" />
-                    <span className="text-[#3ad389] font-bold">Added!</span>
-                  </>
-                ) : (
-                  <span>Add to Cart</span>
-                )}
-              </AnimatedButton>
-
-              <AnimatedButton
-                variant="emerald"
-                size="sm"
-                onClick={handleInstantBuy}
-                className="py-2.5 px-3 text-xs font-mono font-bold"
-              >
-                <span>Buy Now</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </AnimatedButton>
-            </div>
-
-            {/* Collapse toggle button */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleExpand();
-              }}
-              className="w-full mt-2.5 py-1 text-center text-[10px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors flex items-center justify-center gap-1 cursor-pointer"
-            >
-              <span>Hide Controls</span>
-              <ChevronUp className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <AnimatedButton
+            variant="emerald"
+            size="sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              toggleExpand();
+            }}
+            className="text-xs font-mono font-bold"
+          >
+            <span>Choose plan</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </AnimatedButton>
         </div>
       </div>
+
+      {isCardActive && mounted &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Choose a plan for ${pkg.title}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleExpand();
+            }}
+          >
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full sm:max-w-lg max-h-[92dvh] flex flex-col rounded-t-[24px] sm:rounded-[24px] bg-[#0b0b0f] border border-[#26262d] shadow-2xl animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3 p-5 pb-3">
+                <div className="min-w-0">
+                  <h3 className="text-lg font-bold text-white tracking-tight truncate">{pkg.title}</h3>
+                  <p className="text-xs text-zinc-400 mt-0.5 truncate">
+                    {pkg.targetMedium} · {pkg.carrierSpeedNote}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleExpand}
+                  aria-label="Close"
+                  className="p-2 -m-1 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Scrollable choices */}
+              <div className="px-5 pb-4 overflow-y-auto space-y-5">
+                {pkg.hasSriLankanIpOption && (
+                  <div>
+                    <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Server location</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'standard', title: 'Singapore', sub: 'Fastest · included' },
+                        { id: 'lk_ip', title: 'Sri Lanka IP', sub: 'For local bank apps · +Rs 300' },
+                      ].map((o) => (
+                        <button
+                          key={o.id}
+                          type="button"
+                          onClick={() => setServerType(o.id as 'standard' | 'lk_ip')}
+                          className={`text-left p-3 rounded-xl border transition-colors cursor-pointer ${
+                            serverType === o.id
+                              ? 'bg-[#3ad389]/10 border-[#3ad389]'
+                              : 'bg-[#111116] border-[#202028] hover:border-zinc-600'
+                          }`}
+                        >
+                          <div className="text-sm font-semibold text-white">{o.title}</div>
+                          <div className="text-[11px] text-zinc-400 mt-0.5">{o.sub}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Plan</div>
+                  <div className="space-y-2">
+                    {V2RAY_PLAN_TIERS.map((tier) => {
+                      const monthly = serverType === 'lk_ip' ? tier.lkIpPriceLKR : tier.monthlyPriceLKR;
+                      const selected = selectedPlanId === tier.id;
+                      return (
+                        <button
+                          key={tier.id}
+                          type="button"
+                          onClick={() => setSelectedPlanId(tier.id)}
+                          className={`w-full text-left p-3 rounded-xl border transition-colors cursor-pointer flex items-center gap-3 ${
+                            selected ? 'bg-[#3ad389]/10 border-[#3ad389]' : 'bg-[#111116] border-[#202028] hover:border-zinc-600'
+                          }`}
+                        >
+                          <span
+                            className={`w-4 h-4 rounded-full border shrink-0 flex items-center justify-center ${
+                              selected ? 'border-[#3ad389] bg-[#3ad389]' : 'border-zinc-600'
+                            }`}
+                          >
+                            {selected && <span className="w-1.5 h-1.5 rounded-full bg-black" />}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-semibold text-white capitalize">{tier.name.toLowerCase()}</span>
+                              {tier.badge && (
+                                <span className="px-1.5 rounded text-[9px] font-mono font-bold bg-[#3ad389]/15 text-[#3ad389] border border-[#3ad389]/25">
+                                  {tier.badge}
+                                </span>
+                              )}
+                            </span>
+                            <span className="block text-[11px] text-zinc-400 mt-0.5">
+                              {tier.quotaLabel.replace(' GB', tier.quotaGB > 0 ? ' GB' : ' data')} · {tier.deviceLimit} device
+                              {tier.deviceLimit > 1 ? 's' : ''}
+                              {tier.configsCount > 1 ? ` · ${tier.configsCount} configs` : ''}
+                            </span>
+                          </span>
+                          <span className="text-right shrink-0">
+                            <span className="block text-sm font-bold font-mono text-white">Rs {monthly.toLocaleString()}</span>
+                            <span className="block text-[10px] text-zinc-500">per month</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-zinc-500 mt-2 leading-snug">{activePlan.features}</p>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 mb-2">How long</div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {DURATION_DISCOUNTS.map((d) => {
+                      const selected = selectedMonths === d.months;
+                      return (
+                        <button
+                          key={d.months}
+                          type="button"
+                          onClick={() => setSelectedMonths(d.months)}
+                          className={`py-2 rounded-xl border text-center transition-colors cursor-pointer ${
+                            selected
+                              ? 'bg-[#3ad389] border-[#3ad389] text-black'
+                              : 'bg-[#111116] border-[#202028] text-zinc-200 hover:border-zinc-600'
+                          }`}
+                        >
+                          <div className="text-sm font-bold">{d.months}</div>
+                          <div className={`text-[10px] ${selected ? 'text-black/70' : d.discountPercent > 0 ? 'text-[#3ad389]' : 'text-zinc-500'}`}>
+                            {d.discountPercent > 0 ? `save ${d.discountPercent}%` : d.months === 1 ? 'month' : 'months'}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Sticky footer: total + the one action */}
+              <div className="p-5 pt-4 border-t border-[#1d1d24] bg-[#0b0b0f] rounded-b-[24px] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                <div className="flex items-end justify-between mb-3">
+                  <div>
+                    <div className="text-[11px] text-zinc-400">
+                      {activePlan.name.charAt(0) + activePlan.name.slice(1).toLowerCase()} · {selectedMonths} month{selectedMonths > 1 ? 's' : ''}
+                    </div>
+                    <div className="text-2xl font-black font-mono text-white flex items-baseline gap-1">
+                      {totalPriceLKR.toLocaleString()} <span className="text-xs font-sans font-medium text-zinc-400">LKR</span>
+                    </div>
+                  </div>
+                  <div className="text-right text-[11px]">
+                    {totalSavingsLKR > 0 && <div className="text-[#3ad389] font-semibold">You save Rs {totalSavingsLKR.toLocaleString()}</div>}
+                    <div className="text-zinc-500">≈ ${(totalPriceLKR / 305).toFixed(2)} USD</div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleInstantBuy}
+                  className="w-full py-3 rounded-xl bg-[#3ad389] hover:bg-[#32be7a] text-black font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <span>Buy now</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    handleAddToCart(e);
+                    window.setTimeout(() => {
+                      if (onToggleExpand) onToggleExpand();
+                      else setLocalExpanded(false);
+                    }, 700);
+                  }}
+                  className="w-full mt-2 py-2 text-xs font-mono text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  {isAdded ? 'Added to cart ✓' : 'Add to cart and keep browsing'}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
