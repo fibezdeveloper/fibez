@@ -234,6 +234,7 @@ export const ticketMessages = pgTable('ticket_messages', {
   senderName: text('sender_name').notNull(),
   senderRole: text('sender_role').notNull().default('user'),
   message: text('message').notNull(),
+  attachments: jsonb('attachments').notNull().default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 

@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { buildRlsContext, isStaffRole, requireAuth } from '@/lib/dal';
 import { withRlsTransaction } from '@/lib/db/rls';
+import { parseAttachments } from '@/lib/ticket-attachments';
 
 const STAFF_ALLOWED_STATUSES = new Set([
   'OPEN',
@@ -83,7 +84,12 @@ export async function POST(
     const body = await req.json().catch(() => ({}));
     const message = typeof body.message === 'string' ? body.message.trim().slice(0, 5000) : '';
 
-    if (!message) {
+    const attachments = parseAttachments(body.attachments, actor.id);
+    if (attachments === null) {
+      return NextResponse.json({ error: 'Invalid attachments' }, { status: 400 });
+    }
+
+    if (!message && attachments.length === 0) {
       return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
     }
 
@@ -116,12 +122,21 @@ export async function POST(
           ? 'Support Engineer'
           : actor.name;
 
-      await client.query(
-        `INSERT INTO public.ticket_messages (
-           id, ticket_id, sender_id, sender_name, sender_role, message, created_at
-         ) VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-        [messageId, ticket.id, actor.id, senderName, senderRole, message]
-      );
+      if (attachments.length > 0) {
+        await client.query(
+          `INSERT INTO public.ticket_messages (
+             id, ticket_id, sender_id, sender_name, sender_role, message, attachments, created_at
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, NOW())`,
+          [messageId, ticket.id, actor.id, senderName, senderRole, message, JSON.stringify(attachments)]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO public.ticket_messages (
+             id, ticket_id, sender_id, sender_name, sender_role, message, created_at
+           ) VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+          [messageId, ticket.id, actor.id, senderName, senderRole, message]
+        );
+      }
 
       let newStatus = ticket.status;
       if (isStaff) {

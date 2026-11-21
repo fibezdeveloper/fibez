@@ -45,3 +45,6 @@ next-env.d.ts
 save file/
 do not push/
 .fibez-*.json
+
+# local dev attachment fallback
+.local-uploads/

@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { buildRlsContext, isStaffRole, requireAuth } from '@/lib/dal';
 import { withRlsTransaction } from '@/lib/db/rls';
+import { parseAttachments } from '@/lib/ticket-attachments';
 
 const VALID_PRIORITIES = new Set(['LOW', 'MEDIUM', 'HIGH', 'URGENT']);
 
@@ -92,6 +93,11 @@ export async function POST(req: NextRequest) {
     const priority = VALID_PRIORITIES.has(rawPriority) ? rawPriority : 'MEDIUM';
     const message = typeof body.message === 'string' ? body.message.trim().slice(0, 5000) : '';
 
+    const attachments = parseAttachments(body.attachments, actor.id);
+    if (attachments === null) {
+      return NextResponse.json({ error: 'Invalid attachments' }, { status: 400 });
+    }
+
     if (!subject || !message) {
       return NextResponse.json(
         { error: 'Subject and message are required' },
@@ -113,12 +119,21 @@ export async function POST(req: NextRequest) {
         [ticketId, ticketNumber, actor.id, customerName, actor.email, subject, category, priority]
       );
 
-      await client.query(
-        `INSERT INTO public.ticket_messages (
-           id, ticket_id, sender_id, sender_name, sender_role, message, created_at
-         ) VALUES ($1, $2, $3, $4, 'user', $5, NOW())`,
-        [messageId, ticketId, actor.id, customerName, message]
-      );
+      if (attachments.length > 0) {
+        await client.query(
+          `INSERT INTO public.ticket_messages (
+             id, ticket_id, sender_id, sender_name, sender_role, message, attachments, created_at
+           ) VALUES ($1, $2, $3, $4, 'user', $5, $6::jsonb, NOW())`,
+          [messageId, ticketId, actor.id, customerName, message, JSON.stringify(attachments)]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO public.ticket_messages (
+             id, ticket_id, sender_id, sender_name, sender_role, message, created_at
+           ) VALUES ($1, $2, $3, $4, 'user', $5, NOW())`,
+          [messageId, ticketId, actor.id, customerName, message]
+        );
+      }
 
       return tRes.rows[0];
     });

@@ -52,6 +52,12 @@ export async function getObjectDownloadUrl(key: string, bucket = BUCKET_NAME, ex
   return getSignedUrl(s3Client, command, { expiresIn });
 }
 
+export async function getObjectBytes(key: string, bucket = BUCKET_NAME): Promise<Uint8Array> {
+  const res = await s3Client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+  if (!res.Body) throw new Error('Empty storage object');
+  return res.Body.transformToByteArray();
+}
+
 export async function deleteObject(key: string, bucket = BUCKET_NAME): Promise<void> {
   await s3Client.send(
     new DeleteObjectCommand({

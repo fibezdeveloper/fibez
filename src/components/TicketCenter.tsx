@@ -18,6 +18,15 @@ import {
   Shield,
   Filter
 } from 'lucide-react';
+import type { TicketAttachment } from '@/lib/ticket-attachments';
+import {
+  AttachButton,
+  AttachmentDropArea,
+  AttachmentGallery,
+  AttachmentTray,
+  filesFromPaste,
+  useAttachmentUploader,
+} from '@/components/TicketAttachments';
 
 export interface Ticket {
   id: string;
@@ -41,6 +50,7 @@ export interface TicketMessage {
   sender_name: string;
   sender_role: 'user' | 'admin' | 'owner';
   message: string;
+  attachments?: TicketAttachment[] | null;
   created_at: string;
 }
 
@@ -100,6 +110,8 @@ export default function TicketCenter({
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const replyUploader = useAttachmentUploader();
+  const newTicketUploader = useAttachmentUploader();
 
   // New Ticket Modal State
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -164,6 +176,7 @@ export default function TicketCenter({
 
   const openTicketThread = async (ticket: Ticket) => {
     setActiveTicket(ticket);
+    replyUploader.reset();
     try {
       setLoadingMessages(true);
       const res = await fetch(`/api/tickets/${ticket.id}`);
@@ -180,7 +193,7 @@ export default function TicketCenter({
 
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyText.trim() || !activeTicket) return;
+    if ((!replyText.trim() && replyUploader.attachments.length === 0) || replyUploader.uploading || !activeTicket) return;
 
     try {
       setSendingReply(true);
@@ -189,11 +202,13 @@ export default function TicketCenter({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: replyText.trim(),
+          attachments: replyUploader.attachments,
         }),
       });
 
       if (res.ok) {
         setReplyText('');
+        replyUploader.reset();
         const updatedRes = await fetch(`/api/tickets/${activeTicket.id}`);
         const updatedData = await updatedRes.json();
         if (updatedData.messages) {
@@ -234,7 +249,7 @@ export default function TicketCenter({
 
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSubject.trim() || !newInitialMessage.trim()) return;
+    if (!newSubject.trim() || !newInitialMessage.trim() || newTicketUploader.uploading) return;
 
     try {
       setCreatingTicket(true);
@@ -247,6 +262,7 @@ export default function TicketCenter({
           category: newCategory,
           priority: newPriority,
           message: newInitialMessage.trim(),
+          attachments: newTicketUploader.attachments,
         }),
       });
 
@@ -255,6 +271,7 @@ export default function TicketCenter({
         setIsNewModalOpen(false);
         setNewSubject('');
         setNewInitialMessage('');
+        newTicketUploader.reset();
         fetchTickets();
         openTicketThread(data.ticket);
       }
@@ -303,7 +320,10 @@ export default function TicketCenter({
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setActiveTicket(null)}
+                onClick={() => {
+                  replyUploader.reset();
+                  setActiveTicket(null);
+                }}
                 className="p-2 rounded-xl bg-[#141417] hover:bg-[#1a1a1e] border border-white/10 text-white transition-colors cursor-pointer"
                 title="Back to all tickets"
               >
@@ -399,7 +419,10 @@ export default function TicketCenter({
                       <span className="text-[#a1a4a5]">{formatDate(msg.created_at)}</span>
                     </div>
 
-                    <p className="text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                    {msg.message && (
+                      <p className="text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                    )}
+                    <AttachmentGallery attachments={msg.attachments} />
                   </div>
                 );
               })
@@ -408,34 +431,52 @@ export default function TicketCenter({
 
           {/* Reply Composer Form */}
           <form onSubmit={handleSendReply} className="pt-3 border-t border-[#1f1f23] space-y-3">
-            <div className="flex gap-2">
+            <AttachmentDropArea uploader={replyUploader} disabled={sendingReply}>
               <textarea
                 rows={3}
-                required
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
+                onPaste={(e) => {
+                  const files = filesFromPaste(e);
+                  if (files.length > 0) {
+                    e.preventDefault();
+                    replyUploader.addFiles(files);
+                  }
+                }}
                 placeholder={
                   effectiveRole === 'admin' || effectiveRole === 'owner'
                     ? 'Write official support reply or resolution steps...'
                     : 'Add follow-up details, configuration errors, or client log output...'
                 }
-                className="flex-1 p-3 rounded-xl bg-[#141417] border border-white/10 text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-white/30"
+                className="w-full p-3 rounded-xl bg-[#141417] border border-white/10 text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-white/30"
               />
-            </div>
+            </AttachmentDropArea>
+
+            <AttachmentTray uploader={replyUploader} />
 
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono text-[#a1a4a5]">
+              <span className="text-[11px] font-mono text-[#a1a4a5] min-w-0 truncate pr-3">
                 Signed as: <strong>{effectiveRole.toUpperCase()}</strong> ({effectiveEmail || 'Active Session'})
               </span>
+              <div className="flex items-center gap-2 shrink-0">
+              <AttachButton uploader={replyUploader} disabled={sendingReply} />
               <button
                 type="submit"
-                disabled={sendingReply || !replyText.trim()}
+                disabled={
+                  sendingReply ||
+                  replyUploader.uploading ||
+                  (!replyText.trim() && replyUploader.attachments.length === 0)
+                }
                 className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>{sendingReply ? 'Sending...' : 'Send Message'}</span>
+                <span>{sendingReply ? 'Sending...' : replyUploader.uploading ? 'Uploading...' : 'Send Message'}</span>
               </button>
+              </div>
             </div>
+            <p className="text-[11px] font-mono text-zinc-500">
+              Drag and drop, paste, or attach screenshots and short clips (JPG, PNG, WEBP, GIF, MP4, MOV, WEBM, up to 4 MB each).
+            </p>
           </form>
 
         </div>
@@ -745,6 +786,17 @@ export default function TicketCenter({
                 />
               </div>
 
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[#a1a4a5] uppercase tracking-wider">Screenshots or clips</span>
+                  <AttachButton uploader={newTicketUploader} disabled={creatingTicket} />
+                </div>
+                <AttachmentTray uploader={newTicketUploader} />
+                <p className="text-[11px] text-zinc-500">
+                  Optional. Up to 4 files, 4 MB each (JPG, PNG, WEBP, GIF, MP4, MOV, WEBM).
+                </p>
+              </div>
+
               <div className="pt-2 flex justify-end gap-2.5">
                 <button
                   type="button"
@@ -755,10 +807,10 @@ export default function TicketCenter({
                 </button>
                 <button
                   type="submit"
-                  disabled={creatingTicket}
+                  disabled={creatingTicket || newTicketUploader.uploading}
                   className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold uppercase tracking-wider cursor-pointer disabled:opacity-50"
                 >
-                  {creatingTicket ? 'Submitting...' : 'Submit Ticket ›'}
+                  {creatingTicket ? 'Submitting...' : newTicketUploader.uploading ? 'Uploading...' : 'Submit Ticket ›'}
                 </button>
               </div>
             </form>
