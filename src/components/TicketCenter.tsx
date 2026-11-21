@@ -495,7 +495,7 @@ export default function TicketCenter({
               </div>
             </div>
             <p className="text-[11px] font-mono text-zinc-500">
-              Drag and drop, paste, or attach screenshots and short clips (JPG, PNG, WEBP, GIF, MP4, MOV, WEBM, up to 4 MB each).
+              Drag and drop, paste, or attach screenshots, short clips and PDF invoices (JPG, PNG, WEBP, GIF, MP4, MOV, WEBM, PDF, up to 4 MB each).
             </p>
           </form>
 
@@ -808,12 +808,12 @@ export default function TicketCenter({
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-[#a1a4a5] uppercase tracking-wider">Screenshots or clips</span>
+                  <span className="text-[#a1a4a5] uppercase tracking-wider">Screenshots, clips or invoice</span>
                   <AttachButton uploader={newTicketUploader} disabled={creatingTicket} />
                 </div>
                 <AttachmentTray uploader={newTicketUploader} />
                 <p className="text-[11px] text-zinc-500">
-                  Optional. Up to 4 files, 4 MB each (JPG, PNG, WEBP, GIF, MP4, MOV, WEBM).
+                  Optional. Up to 4 files, 4 MB each. Screenshots, short clips or a PDF invoice.
                 </p>
               </div>
 

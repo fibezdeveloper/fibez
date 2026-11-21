@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Paperclip, X, Loader2, AlertCircle, Film, UploadCloud } from 'lucide-react';
+import { Paperclip, X, Loader2, AlertCircle, Film, FileText, UploadCloud } from 'lucide-react';
 import {
   ATTACHMENT_ACCEPT,
   ATTACHMENT_MIME_EXT,
@@ -9,6 +9,7 @@ import {
   MAX_ATTACHMENT_BYTES,
   attachmentUrl,
   formatBytes,
+  isPdfType,
   isVideoType,
   type TicketAttachment,
 } from '@/lib/ticket-attachments';
@@ -32,6 +33,7 @@ const TYPE_TO_EXT: Record<string, string> = {
   'video/mp4': '.mp4',
   'video/quicktime': '.mov',
   'video/webm': '.webm',
+  'application/pdf': '.pdf',
 };
 
 // Large phone screenshots are re-encoded smaller so they fit the upload limit.
@@ -39,8 +41,8 @@ async function shrinkImage(file: File): Promise<File> {
   if (file.type === 'image/gif' || file.size <= 1_500_000) return file;
   try {
     const bitmap = await createImageBitmap(file);
-    let maxSide = 2400;
-    let quality = 0.85;
+    let maxSide = 3200;
+    let quality = 0.9;
     for (let attempt = 0; attempt < 4; attempt++) {
       const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
       const canvas = document.createElement('canvas');
@@ -95,7 +97,7 @@ export function useAttachmentUploader() {
       const room = MAX_ATTACHMENTS_PER_MESSAGE - itemsRef.current.filter((i) => i.status !== 'error').length;
       incoming.forEach((raw, index) => {
         const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        const isMedia = raw.type.startsWith('image/') || raw.type.startsWith('video/');
+        const isMedia = raw.type.startsWith('image/') || raw.type.startsWith('video/') || isPdfType(raw.type);
         const base: PendingItem = { id, name: raw.name || 'attachment', type: raw.type, size: raw.size, status: 'uploading' };
 
         if (index >= room) {
@@ -108,7 +110,7 @@ export function useAttachmentUploader() {
         if (!isMedia || !ATTACHMENT_MIME_EXT[raw.type]) {
           setItems((prev) => [
             ...prev,
-            { ...base, status: 'error', error: 'Only screenshots (JPG, PNG, WEBP, GIF) and clips (MP4, MOV, WEBM).' },
+            { ...base, status: 'error', error: 'Only screenshots, short clips and PDF invoices.' },
           ]);
           return;
         }
@@ -252,7 +254,7 @@ export function AttachButton({ uploader, disabled }: { uploader: AttachmentUploa
         disabled={disabled || full}
         onClick={() => inputRef.current?.click()}
         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#141417] hover:bg-[#1a1a1e] border border-white/10 text-white text-xs font-mono transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-        title="Attach screenshots or short video clips (max 4 MB each)"
+        title="Attach screenshots, short clips or a PDF invoice (max 4 MB each)"
       >
         <Paperclip className="w-3.5 h-3.5" />
         <span>Attach</span>
@@ -277,6 +279,8 @@ export function AttachmentTray({ uploader }: { uploader: AttachmentUploader }) {
             {it.previewUrl && !isVideoType(it.type) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={it.previewUrl} alt={it.name} className="w-full h-full object-cover" />
+            ) : isPdfType(it.type) ? (
+              <FileText className="w-6 h-6 text-zinc-400" />
             ) : (
               <Film className="w-6 h-6 text-zinc-400" />
             )}
@@ -331,7 +335,26 @@ export function AttachmentGallery({ attachments }: { attachments?: TicketAttachm
     <>
       <div className="flex flex-wrap gap-2 pt-1">
         {attachments.map((a) =>
-          isVideoType(a.type) ? (
+          isPdfType(a.type) ? (
+            <a
+              key={a.key}
+              href={attachmentUrl(a.key)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-white/10 bg-[#141417] hover:border-white/40 transition-colors max-w-full"
+              title={a.name}
+            >
+              <span className="w-9 h-9 rounded-lg bg-rose-500/15 border border-rose-500/30 flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4 text-rose-400" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold text-white truncate">{a.name}</span>
+                <span className="block text-[11px] text-zinc-500">
+                  PDF{a.size ? ` · ${formatBytes(a.size)}` : ''} · Open
+                </span>
+              </span>
+            </a>
+          ) : isVideoType(a.type) ? (
             <video
               key={a.key}
               controls

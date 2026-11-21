@@ -19,6 +19,7 @@ export const ATTACHMENT_MIME_EXT: Record<string, string[]> = {
   'video/mp4': ['.mp4', '.m4v'],
   'video/quicktime': ['.mov'],
   'video/webm': ['.webm'],
+  'application/pdf': ['.pdf'],
 };
 
 const EXT_TO_MIME: Record<string, string> = {};
@@ -35,6 +36,10 @@ export const ATTACHMENT_ACCEPT = Object.keys(ATTACHMENT_MIME_EXT).join(',');
 
 export function isVideoType(type: string): boolean {
   return type.startsWith('video/');
+}
+
+export function isPdfType(type: string): boolean {
+  return type === 'application/pdf';
 }
 
 export function formatBytes(n: number): string {

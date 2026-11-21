@@ -26,6 +26,8 @@ function matchesSignature(mime: string, b: Buffer): boolean {
       return ascii(4, 8) === 'ftyp';
     case 'video/webm':
       return startsWith(0x1a, 0x45, 0xdf, 0xa3);
+    case 'application/pdf':
+      return ascii(0, 5) === '%PDF-';
     default:
       return false;
   }
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
     const ext = file.name.toLowerCase().match(/\.[^.]+$/)?.[0] || '';
     if (!allowedExts || !allowedExts.includes(ext)) {
       return NextResponse.json(
-        { error: 'Only screenshots (JPG, PNG, WEBP, GIF) and clips (MP4, MOV, WEBM) are allowed.' },
+        { error: 'Only screenshots (JPG, PNG, WEBP, GIF), clips (MP4, MOV, WEBM) and PDF invoices are allowed.' },
         { status: 400 }
       );
     }
