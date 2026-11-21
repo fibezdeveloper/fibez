@@ -364,7 +364,15 @@ export default function AdminPage() {
   const [v2rayActionLoading, setV2rayActionLoading] = useState<string | null>(null);
 
   // Windster Analytics & Filter Controls State
-  const [overviewMetricTab, setOverviewMetricTab] = useState<'traffic' | 'revenue'>('traffic');
+  const [panelState, setPanelState] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [walletSummary, setWalletSummary] = useState<{
+    totalBalanceLkr: number;
+    accounts: number;
+    mismatches: unknown[];
+    pendingTopups: number;
+    pendingTopupsLkr: number;
+    pendingRefunds: number;
+  } | null>(null);
   const [overviewTimeRange, setOverviewTimeRange] = useState<'7d' | '30d'>('7d');
   const [v2rayTimeRange, setV2rayTimeRange] = useState<'7d' | '30d'>('7d');
   const [v2raySearch, setV2raySearch] = useState('');
@@ -559,13 +567,17 @@ export default function AdminPage() {
   const refreshAllData = async () => {
     setIsRefreshing(true);
     try {
-      const [ordersRes, v2rayRes, invRes, cpnRes, pkgRes] = await Promise.all([
+      const [ordersRes, v2rayRes, invRes, cpnRes, pkgRes, walletRes] = await Promise.all([
         fetch('/api/admin/orders').then((r) => r.json()),
         fetch('/api/admin/v2ray').then((r) => r.json()),
         fetch('/api/admin/inventory').then((r) => r.json()),
         fetch('/api/admin/coupons').then((r) => r.json()),
         fetch('/api/admin/packages').then((r) => r.json()),
+        fetch('/api/admin/wallet', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
       ]);
+
+      if (walletRes?.summary) setWalletSummary(walletRes.summary);
+      setPanelState(v2rayRes?.success ? 'online' : 'offline');
 
       if (pkgRes.success) {
         setAdminPackages(pkgRes.packages || []);
@@ -1455,7 +1467,7 @@ export default function AdminPage() {
         category: 'Port 443 / Mobile & Router',
         gb: dialogGB,
         users: dialogClients,
-        pct: totalCalculated > 0 ? Math.round((dialogGB / baseTotal) * 100) : 46,
+        pct: totalCalculated > 0 ? Math.round((dialogGB / baseTotal) * 100) : 0,
         color: 'bg-amber-500',
         textColor: 'text-amber-400',
         badge: 'DLG',
@@ -1465,7 +1477,7 @@ export default function AdminPage() {
         category: 'Port 445 / 444 Fiber ADSL',
         gb: sltGB,
         users: sltClients,
-        pct: totalCalculated > 0 ? Math.round((sltGB / baseTotal) * 100) : 31,
+        pct: totalCalculated > 0 ? Math.round((sltGB / baseTotal) * 100) : 0,
         color: 'bg-emerald-500',
         textColor: 'text-emerald-400',
         badge: 'SLT',
@@ -1475,7 +1487,7 @@ export default function AdminPage() {
         category: 'Port 443 Work & Study',
         gb: airtelGB,
         users: airtelClients,
-        pct: totalCalculated > 0 ? Math.round((airtelGB / baseTotal) * 100) : 13,
+        pct: totalCalculated > 0 ? Math.round((airtelGB / baseTotal) * 100) : 0,
         color: 'bg-rose-500',
         textColor: 'text-rose-400',
         badge: 'AIR',
@@ -1485,7 +1497,7 @@ export default function AdminPage() {
         category: 'Port 443 Work Bundle',
         gb: hutchGB,
         users: hutchClients,
-        pct: totalCalculated > 0 ? Math.round((hutchGB / baseTotal) * 100) : 7,
+        pct: totalCalculated > 0 ? Math.round((hutchGB / baseTotal) * 100) : 0,
         color: 'bg-yellow-400',
         textColor: 'text-yellow-400',
         badge: 'HTC',
@@ -1495,7 +1507,7 @@ export default function AdminPage() {
         category: 'Port 4445 Dedicated SIM',
         gb: mobitelGB,
         users: mobitelClients,
-        pct: totalCalculated > 0 ? Math.round((mobitelGB / baseTotal) * 100) : 3,
+        pct: totalCalculated > 0 ? Math.round((mobitelGB / baseTotal) * 100) : 0,
         color: 'bg-cyan-400',
         textColor: 'text-cyan-400',
         badge: 'MOB',
@@ -1503,65 +1515,60 @@ export default function AdminPage() {
     ];
   }, [allV2rayClients]);
 
-  // Windster Hero Telemetry Chart Data for Overview Tab
-  const telemetryChartData: ChartDataPoint[] = useMemo(() => {
-    const days = overviewTimeRange === '7d' ? 7 : 14;
-    const list: ChartDataPoint[] = [];
-    const baseTimestamp = isMounted ? Date.now() : 1732060800000;
-    const now = new Date(baseTimestamp);
-
-    const baseDown = (v2raySummary.totalDownGB || 820) / days;
-    const baseUp = (v2raySummary.totalUpGB || 240) / days;
-    const baseRev = (orderMetrics.totalRevenueLKR || 42000) / days;
-    const factors = [0.82, 0.94, 1.12, 0.88, 1.25, 1.05, 1.32, 0.9, 1.15, 1.28, 1.02, 1.18, 0.95, 1.22];
-
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
-      const factor = factors[i % factors.length];
-
-      if (overviewMetricTab === 'traffic') {
-        list.push({
-          date: dateStr,
-          primaryValue: Math.round(baseDown * factor),
-          secondaryValue: Math.round(baseUp * factor),
-        });
-      } else {
-        const revVal = Math.round(baseRev * factor);
-        list.push({
-          date: dateStr,
-          primaryValue: revVal,
-          secondaryValue: Math.round(revVal * 0.32),
-        });
-      }
+  // Real revenue per day: verified, paid orders only.
+  const revenueSeries: ChartDataPoint[] = useMemo(() => {
+    const days = overviewTimeRange === '7d' ? 7 : 30;
+    const buckets = new Map<string, number>();
+    const keyOf = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    for (const o of orders) {
+      if (o.paymentStatus !== 'VERIFIED' || !(o.totalAmountLKR > 0)) continue;
+      const k = keyOf(new Date(o.createdAt));
+      buckets.set(k, (buckets.get(k) || 0) + o.totalAmountLKR);
     }
-    return list;
-  }, [overviewTimeRange, overviewMetricTab, v2raySummary, orderMetrics, isMounted]);
-
-  // Windster V2Ray Bandwidth Time-series Data
-  const v2rayTelemetryData: ChartDataPoint[] = useMemo(() => {
-    const days = v2rayTimeRange === '7d' ? 7 : 14;
     const list: ChartDataPoint[] = [];
-    const baseTimestamp = isMounted ? Date.now() : 1732060800000;
-    const now = new Date(baseTimestamp);
-    const baseDown = (v2raySummary.totalDownGB || 820) / days;
-    const baseUp = (v2raySummary.totalUpGB || 240) / days;
-    const factors = [0.78, 0.95, 1.1, 0.86, 1.22, 1.08, 1.29, 0.89, 1.14, 1.24, 1.01, 1.16, 0.92, 1.21];
-
+    const today = new Date();
     for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(now);
+      const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const dateStr = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
-      const factor = factors[i % factors.length];
       list.push({
-        date: dateStr,
-        primaryValue: Math.round(baseDown * factor),
-        secondaryValue: Math.round(baseUp * factor),
+        date: d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }),
+        primaryValue: buckets.get(keyOf(d)) || 0,
       });
     }
     return list;
-  }, [v2rayTimeRange, v2raySummary, isMounted]);
+  }, [orders, overviewTimeRange]);
+
+  const navGroups = [
+    {
+      label: 'Operations',
+      items: [
+        { id: 'overview', label: 'Overview', icon: LayoutDashboard, badge: null as number | null },
+        { id: 'orders', label: 'Orders', icon: Receipt, badge: orderMetrics.pendingReviewCount || null },
+        {
+          id: 'wallet',
+          label: 'Wallet',
+          icon: DollarSign,
+          badge: (walletSummary ? walletSummary.pendingTopups + walletSummary.pendingRefunds : 0) || null,
+        },
+        { id: 'tickets', label: 'Support', icon: LifeBuoy, badge: null as number | null },
+      ],
+    },
+    {
+      label: 'Catalog',
+      items: [
+        { id: 'packages', label: 'Packages', icon: Sparkles, badge: null as number | null },
+        { id: 'inventory', label: 'Inventory', icon: Package, badge: null as number | null },
+        { id: 'coupons', label: 'Coupons', icon: TicketPercent, badge: null as number | null },
+      ],
+    },
+    {
+      label: 'Infrastructure',
+      items: [
+        { id: 'v2ray', label: 'V2Ray nodes', icon: Server, badge: null as number | null },
+        { id: 'grant', label: 'Grant VIP', icon: Gift, badge: null as number | null, ownerOnly: true },
+      ],
+    },
+  ] as { label: string; items: { id: string; label: string; icon: any; badge: number | null; ownerOnly?: boolean }[] }[];
 
   // 1-Click Copy VLESS URI
   const handleCopyClientVless = (cl: InboundClient & { port: number; remark: string }) => {
@@ -1598,488 +1605,274 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Top Luxury Header Bar */}
-      <header className="border-b border-white/10 bg-[#070708]/95 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      {/* Top bar */}
+      <header className="border-b border-[#1f1f23] bg-[#070708]/95 backdrop-blur-md sticky top-0 z-40">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-3 group">
-              <img
-                src="/logo-mark.png"
-                alt="Fibez"
-                className="w-8 h-8 rounded-lg object-contain shadow-lg shadow-[#3ad389]/20"
-              />
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-base font-bold tracking-[0.2em] text-white group-hover:text-[#3ad389] transition-colors">
-                    FIBEZ
-                  </span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    ADMIN
-                  </span>
-                </div>
-                <span className="text-[10px] text-zinc-400 font-mono">
-                  Console
-                </span>
-              </div>
+              <img src="/logo-mark.png" alt="Fibez" className="w-7 h-7 rounded-md object-contain" />
+              <span className="font-mono text-sm font-bold tracking-[0.25em] text-white group-hover:text-[#3ad389] transition-colors">
+                FIBEZ
+              </span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold tracking-wider text-zinc-400 border border-[#2a2a31]">
+                ADMIN
+              </span>
             </Link>
 
-            <div className="hidden md:flex items-center gap-2 pl-4 border-l border-white/10">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live Node: 18ms
+            <div className="hidden md:flex items-center gap-2 pl-4 border-l border-[#1f1f23]">
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono border ${
+                  panelState === 'online'
+                    ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5'
+                    : panelState === 'offline'
+                    ? 'text-rose-300 border-rose-500/30 bg-rose-500/5'
+                    : 'text-zinc-400 border-[#2a2a31]'
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    panelState === 'online' ? 'bg-emerald-400' : panelState === 'offline' ? 'bg-rose-400' : 'bg-zinc-500'
+                  }`}
+                />
+                {panelState === 'online' ? 'Panel connected' : panelState === 'offline' ? 'Panel unreachable' : 'Checking panel'}
               </span>
-
-              {orderMetrics.pendingReviewCount > 0 && (
-                <button
-                  onClick={() => {
-                    setActiveTab('orders');
-                    setOrderFilter('PENDING_REVIEW');
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
-                >
-                  <Clock className="w-3 h-3 text-amber-400" />
-                  {orderMetrics.pendingReviewCount} Pending Slip{orderMetrics.pendingReviewCount > 1 ? 's' : ''}
-                </button>
-              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               onClick={refreshAllData}
               disabled={isRefreshing}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-300 hover:text-white bg-white/5 border border-white/10 hover:border-white/20 transition-all disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-300 hover:text-white bg-[#0c0c0e] border border-[#1f1f23] hover:border-zinc-600 transition-all disabled:opacity-50 cursor-pointer"
               title="Refresh live data"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#3ad389]' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
-
             <Link
               href="/"
               target="_blank"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-300 hover:text-white bg-white/5 border border-white/10 hover:border-white/20 transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-300 hover:text-white bg-[#0c0c0e] border border-[#1f1f23] hover:border-zinc-600 transition-all"
             >
-              <Globe2 className="w-3.5 h-3.5 text-zinc-400" />
               <span className="hidden sm:inline">Storefront</span>
               <ArrowUpRight className="w-3 h-3 text-zinc-400" />
             </Link>
           </div>
         </div>
-
-        {/* Sleek Segmented Tab Navigation Bar */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 overflow-x-auto scrollbar-none border-t border-white/5 py-2.5">
-          {[
-            { id: 'overview', label: 'Overview', icon: LayoutDashboard, badge: null, color: 'text-[#3ad389]' },
-            {
-              id: 'orders',
-              label: 'Orders',
-              icon: Receipt,
-              badge: orderMetrics.pendingReviewCount > 0 ? `${orderMetrics.pendingReviewCount} Pending` : null,
-              badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-              color: 'text-amber-400',
-            },
-            {
-              id: 'v2ray',
-              label: 'V2Ray Nodes',
-              icon: Server,
-              badge: inbounds.length ? `${inbounds.length} Nodes` : null,
-              badgeClass: 'bg-blue-500/20 text-blue-300 border-blue-500/30 font-mono',
-              color: 'text-blue-400',
-            },
-            { id: 'packages', label: 'Packages', icon: Sparkles, badge: null, color: 'text-emerald-400' },
-            { id: 'inventory', label: 'Inventory', icon: Package, badge: null, color: 'text-purple-400' },
-            { id: 'grant', label: 'Grant VIP', icon: Gift, badge: 'VIP', badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold', color: 'text-[#3ad389]' },
-            { id: 'wallet', label: 'Wallet', icon: Receipt, badge: null, color: 'text-yellow-400' },
-            { id: 'tickets', label: 'Support', icon: LifeBuoy, badge: null, color: 'text-cyan-400' },
-            { id: 'coupons', label: 'Coupons', icon: TicketPercent, badge: null, color: 'text-rose-400' },
-          ]
-            .filter((tab) => tab.id !== 'grant' || myRole === 'owner')
-            .map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 cursor-pointer ${
-                  isActive
-                    ? 'bg-[#18181f] text-white border border-[#3ad389]/40 shadow-sm shadow-[#3ad389]/10 font-bold'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#3ad389]' : tab.color}`} />
-                <span>{tab.label}</span>
-                {tab.badge && (
-                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-semibold border ${tab.badgeClass || 'bg-zinc-800 text-zinc-300 border-zinc-700'}`}>
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 lg:flex lg:gap-8">
+        {/* Navigation: grouped sidebar on desktop, scrolling pills on mobile */}
+        <aside className="lg:w-56 lg:shrink-0 mb-6 lg:mb-0">
+          <nav className="lg:sticky lg:top-20 flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible scrollbar-none pb-1 lg:pb-0">
+            {navGroups.map((group) => {
+              const items = group.items.filter((t) => !t.ownerOnly || myRole === 'owner');
+              if (items.length === 0) return null;
+              return (
+                <div key={group.label} className="flex lg:flex-col gap-1 lg:mb-4 shrink-0 lg:shrink">
+                  <div className="hidden lg:block px-3 pb-1 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-600">
+                    {group.label}
+                  </div>
+                  {items.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] transition-colors shrink-0 cursor-pointer border ${
+                          isActive
+                            ? 'bg-[#0c0c0e] text-white border-[#3ad389]/40 font-semibold'
+                            : 'text-zinc-400 hover:text-white hover:bg-[#0c0c0e] border-transparent'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-[#3ad389]' : 'text-zinc-500'}`} />
+                        <span>{tab.label}</span>
+                        {tab.badge ? (
+                          <span className="ml-auto px-1.5 min-w-[18px] text-center rounded-full text-[10px] font-mono font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/25">
+                            {tab.badge}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </nav>
+        </aside>
+
+        <main className="flex-1 min-w-0">
         {/* ========================================================================= */}
-        {/* TAB 1: COMMAND CENTER (OVERVIEW) — WINDSTER DASHBOARD ENHANCED */}
+        {/* TAB 1: OVERVIEW — real data only */}
         {/* ========================================================================= */}
         {activeTab === 'overview' && (
-          <div className="space-y-8 animate-in fade-in duration-200">
-            {/* Top Windster Metric Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Card 1: Gross Sales */}
-              <div className="p-5 rounded-2xl bg-[#0c0c0e] border border-[#1f1f23] relative overflow-hidden group hover:border-zinc-700 transition-all shadow-xl">
-                <div className="flex items-center justify-between text-zinc-400 mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Gross Sales Verified</span>
-                  <div className="w-8 h-8 rounded-lg bg-[#3ad389]/10 border border-[#3ad389]/20 flex items-center justify-center">
-                    <DollarSign className="w-4 h-4 text-[#3ad389]" />
-                  </div>
-                </div>
-                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-mono">
-                  {orderMetrics.totalRevenueLKR.toLocaleString()} <span className="text-xs text-zinc-400 font-sans">LKR</span>
-                </div>
-                <div className="flex items-center justify-between text-xs mt-3 pt-2.5 border-t border-[#1a1a20]">
-                  <div className="flex items-center gap-1 text-[#3ad389] font-medium font-mono text-[11px]">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    <span>+14.8% this week</span>
-                  </div>
-                  <span className="text-zinc-500 text-[11px]">≈ ${(orderMetrics.totalRevenueLKR / 305).toFixed(2)} USD</span>
-                </div>
-                <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-[#3ad389]/5 rounded-full blur-xl pointer-events-none" />
-              </div>
-
-              {/* Card 2: Total Orders */}
-              <div className="p-5 rounded-2xl bg-[#0c0c0e] border border-[#1f1f23] relative overflow-hidden group hover:border-zinc-700 transition-all shadow-xl">
-                <div className="flex items-center justify-between text-zinc-400 mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Customer Orders</span>
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                    <Receipt className="w-4 h-4 text-amber-400" />
-                  </div>
-                </div>
-                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-mono">
-                  {orderMetrics.totalOrders}
-                </div>
-                <div className="flex items-center justify-between text-xs mt-3 pt-2.5 border-t border-[#1a1a20]">
-                  <div className="flex items-center gap-1 text-emerald-400 font-medium font-mono text-[11px]">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    <span>{orderMetrics.verifiedCount} verified</span>
-                  </div>
-                  <span className="text-purple-400 text-[11px] font-mono">{orders.filter((o) => o.paymentMethod === 'staff_grant').length} VIP grants</span>
-                </div>
-                <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-amber-500/5 rounded-full blur-xl pointer-events-none" />
-              </div>
-
-              {/* Card 3: 3x-ui Live Bandwidth */}
-              <div className="p-5 rounded-2xl bg-[#0c0c0e] border border-[#1f1f23] relative overflow-hidden group hover:border-zinc-700 transition-all shadow-xl">
-                <div className="flex items-center justify-between text-zinc-400 mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider">3x-ui Live Bandwidth</span>
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                    <Server className="w-4 h-4 text-blue-400" />
-                  </div>
-                </div>
-                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-mono">
-                  {(v2raySummary.totalTrafficGB / 1024).toFixed(2)} <span className="text-xs text-zinc-400 font-sans">TB</span>
-                </div>
-                <div className="flex items-center justify-between text-xs mt-3 pt-2.5 border-t border-[#1a1a20]">
-                  <div className="flex items-center gap-1 text-blue-400 font-medium font-mono text-[11px]">
-                    <Activity className="w-3.5 h-3.5" />
-                    <span>+18.4% surge</span>
-                  </div>
-                  <span className="text-zinc-400 font-mono text-[11px]">↑ {v2raySummary.totalUpGB.toFixed(0)}G ↓ {v2raySummary.totalDownGB.toFixed(0)}G</span>
-                </div>
-                <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-blue-500/5 rounded-full blur-xl pointer-events-none" />
-              </div>
-
-              {/* Card 4: Active Clients & Server Health */}
-              <div className="p-5 rounded-2xl bg-[#0c0c0e] border border-[#1f1f23] relative overflow-hidden group hover:border-zinc-700 transition-all shadow-xl">
-                <div className="flex items-center justify-between text-zinc-400 mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Active VPN Clients</span>
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-                    <Wifi className="w-4 h-4 text-purple-400" />
-                  </div>
-                </div>
-                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-mono">
-                  {allV2rayClients.length} <span className="text-xs text-zinc-400 font-sans">Online</span>
-                </div>
-                <div className="flex items-center justify-between text-xs mt-3 pt-2.5 border-t border-[#1a1a20]">
-                  <div className="flex items-center gap-1 text-emerald-400 font-medium font-mono text-[11px]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>99.98% SG3 Uptime</span>
-                  </div>
-                  <span className="text-zinc-400 text-[11px] font-mono">{inbounds.length} Nodes</span>
-                </div>
-                <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-purple-500/5 rounded-full blur-xl pointer-events-none" />
-              </div>
+          <div className="space-y-6 animate-in fade-in duration-200">
+            <div>
+              <h1 className="text-xl font-semibold text-white">Overview</h1>
+              <p className="text-xs text-zinc-500 mt-1">Live numbers from your orders, wallet ledger and V2Ray panel.</p>
             </div>
 
-            {/* Windster Hero Area Chart Widget */}
-            <div className="space-y-3">
-              <WindsterAreaChart
-                title="Infrastructure Bandwidth & Store Revenue Dynamics"
-                subtitle="Singapore Equinix SG3 Live Link & Store Financial Settlement"
-                data={telemetryChartData}
-                primaryName={overviewMetricTab === 'traffic' ? 'Download Flow' : 'Gross Sales'}
-                secondaryName={overviewMetricTab === 'traffic' ? 'Upload Flow' : 'Est. Margin'}
-                primaryColor={overviewMetricTab === 'traffic' ? '#3ad389' : '#06b6d4'}
-                secondaryColor={overviewMetricTab === 'traffic' ? '#3b82f6' : '#a855f7'}
-                unit={overviewMetricTab === 'traffic' ? 'GB' : 'LKR'}
-                trendText={overviewMetricTab === 'traffic' ? '+18.4% surge' : '+14.8% growth'}
-                trendPositive={true}
-                views={[
-                  { label: '⚡ Bandwidth (GB)', value: 'traffic' },
-                  { label: '💰 Revenue (LKR)', value: 'revenue' },
-                ]}
-                activeView={overviewMetricTab}
-                onViewChange={(v) => setOverviewMetricTab(v as any)}
-                timeRanges={[
-                  { label: 'Last 7 Days', value: '7d' },
-                  { label: 'Last 30 Days', value: '30d' },
-                ]}
-                activeRange={overviewTimeRange}
-                onRangeChange={(r) => setOverviewTimeRange(r as any)}
+            {/* Needs attention */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              <AttentionCard
+                label="Payment slips to review"
+                value={orderMetrics.pendingReviewCount}
+                onClick={() => {
+                  setActiveTab('orders');
+                  setOrderFilter('PENDING_REVIEW');
+                }}
               />
-
-              {/* Windster Mini Telemetry Strip */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="p-3.5 rounded-xl bg-[#0c0c0e] border border-[#1f1f23] flex items-center justify-between">
-                  <span className="text-xs text-zinc-400">Peak Bandwidth</span>
-                  <span className="text-xs font-mono font-bold text-white">2.4 Gbps SG3</span>
-                </div>
-                <div className="p-3.5 rounded-xl bg-[#0c0c0e] border border-[#1f1f23] flex items-center justify-between">
-                  <span className="text-xs text-zinc-400">Avg Daily Volume</span>
-                  <span className="text-xs font-mono font-bold text-[#3ad389]">
-                    {Math.round((v2raySummary.totalTrafficGB || 820) / 7)} GB / day
-                  </span>
-                </div>
-                <div className="p-3.5 rounded-xl bg-[#0c0c0e] border border-[#1f1f23] flex items-center justify-between">
-                  <span className="text-xs text-zinc-400">Mean Order Basket</span>
-                  <span className="text-xs font-mono font-bold text-amber-300">
-                    {orderMetrics.totalOrders > 0
-                      ? Math.round(orderMetrics.totalRevenueLKR / orderMetrics.totalOrders).toLocaleString()
-                      : 850}{' '}
-                    LKR
-                  </span>
-                </div>
-                <div className="p-3.5 rounded-xl bg-[#0c0c0e] border border-[#1f1f23] flex items-center justify-between">
-                  <span className="text-xs text-zinc-400">Gateway Latency</span>
-                  <span className="text-xs font-mono font-bold text-emerald-400 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    18ms (LK ⇄ SG)
-                  </span>
-                </div>
-              </div>
+              <AttentionCard
+                label="Wallet top-ups to approve"
+                value={walletSummary?.pendingTopups ?? 0}
+                hint={walletSummary && walletSummary.pendingTopups > 0 ? `Rs. ${walletSummary.pendingTopupsLkr.toLocaleString()} waiting` : undefined}
+                onClick={() => setActiveTab('wallet')}
+              />
+              <AttentionCard
+                label="Refund requests"
+                value={walletSummary?.pendingRefunds ?? 0}
+                onClick={() => setActiveTab('wallet')}
+              />
+              <AttentionCard
+                label="Ledger check"
+                text={!walletSummary ? '—' : walletSummary.mismatches.length === 0 ? 'Balances match' : `${walletSummary.mismatches.length} mismatch`}
+                bad={Boolean(walletSummary && walletSummary.mismatches.length > 0)}
+                onClick={() => setActiveTab('wallet')}
+              />
             </div>
 
-            {/* Windster 2-Column Analytics Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column: Windster Acquisition Overview (Sri Lanka Carrier Distribution) */}
-              <div className="p-6 rounded-2xl bg-[#0c0c0e] border border-[#1f1f23] shadow-xl flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-[#3ad389]" />
-                        Carrier & Inbound Traffic Acquisition
-                      </h3>
-                      <p className="text-xs text-zinc-400 mt-0.5">
-                        Bandwidth volume consumed across Sri Lankan telecoms
-                      </p>
-                    </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-800 text-zinc-300 border border-zinc-700">
-                      5 ISPs Active
-                    </span>
-                  </div>
+            {/* KPIs */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              <Kpi label="Verified revenue" value={`Rs. ${orderMetrics.totalRevenueLKR.toLocaleString()}`} sub={`${orderMetrics.verifiedCount} verified orders`} />
+              <Kpi label="Orders" value={String(orderMetrics.totalOrders)} sub={`${orders.filter((o) => o.paymentMethod === 'staff_grant').length} staff grants`} />
+              <Kpi
+                label="Money held in wallets"
+                value={walletSummary ? `Rs. ${walletSummary.totalBalanceLkr.toLocaleString()}` : '—'}
+                sub={walletSummary ? `${walletSummary.accounts} wallets` : 'Loading'}
+              />
+              <Kpi
+                label="VPN clients on panel"
+                value={panelState === 'online' ? String(allV2rayClients.length) : '—'}
+                sub={panelState === 'online' ? `${(v2raySummary.totalTrafficGB / 1024).toFixed(2)} TB used · ${inbounds.length} inbounds` : 'Panel not reachable'}
+              />
+            </div>
 
-                  <div className="space-y-4 pt-2">
-                    {carrierDistribution.map((carrier) => (
-                      <div key={carrier.name} className="space-y-1.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="px-1.5 py-0.2 rounded font-mono text-[10px] font-bold bg-[#18181f] text-zinc-300 border border-zinc-700">
-                              {carrier.badge}
-                            </span>
-                            <span className="font-medium text-white truncate max-w-[200px] sm:max-w-[260px]">
-                              {carrier.name}
+            {/* Revenue chart (verified paid orders per day) */}
+            <WindsterAreaChart
+              title="Revenue"
+              subtitle="Verified paid orders per day"
+              data={revenueSeries}
+              primaryName="Revenue"
+              primaryColor="#3ad389"
+              unit="LKR"
+              trendText={`${revenueSeries.reduce((s, d) => s + d.primaryValue, 0).toLocaleString()} LKR in range`}
+              trendPositive={true}
+              timeRanges={[
+                { label: 'Last 7 days', value: '7d' },
+                { label: 'Last 30 days', value: '30d' },
+              ]}
+              activeRange={overviewTimeRange}
+              onRangeChange={(r) => setOverviewTimeRange(r as any)}
+            />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Panel usage by carrier */}
+              <div className="p-6 rounded-2xl bg-[#0c0c0e] border border-[#1f1f23]">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Traffic by carrier</h3>
+                    <p className="text-xs text-zinc-500 mt-0.5">Data used by clients on the panel</p>
+                  </div>
+                  <button onClick={() => setActiveTab('v2ray')} className="text-xs font-mono text-zinc-400 hover:text-white cursor-pointer">
+                    Open nodes →
+                  </button>
+                </div>
+                {carrierDistribution.filter((c) => c.users > 0).length === 0 ? (
+                  <div className="py-8 text-center text-xs text-zinc-500 font-mono">No client traffic yet.</div>
+                ) : (
+                  <div className="space-y-4">
+                    {carrierDistribution
+                      .filter((c) => c.users > 0)
+                      .map((carrier) => (
+                        <div key={carrier.name} className="space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium text-zinc-200 truncate pr-3">{carrier.name}</span>
+                            <span className="font-mono text-[11px] text-zinc-400 shrink-0">
+                              {carrier.users} clients · <span className="text-white">{carrier.gb.toFixed(1)} GB</span> · {carrier.pct}%
                             </span>
                           </div>
-                          <div className="flex items-center gap-3 font-mono text-[11px]">
-                            <span className="text-zinc-400">{carrier.users} users</span>
-                            <span className="text-white font-bold">{carrier.gb.toFixed(0)} GB</span>
-                            <span className={`font-bold w-10 text-right ${carrier.textColor}`}>
-                              {carrier.pct}%
-                            </span>
+                          <div className="w-full h-1.5 rounded-full bg-[#18181f] overflow-hidden">
+                            <div className="h-full rounded-full bg-[#3ad389]" style={{ width: `${Math.max(3, Math.min(100, carrier.pct))}%` }} />
                           </div>
                         </div>
+                      ))}
+                  </div>
+                )}
+              </div>
 
-                        {/* Visual Progress Bar */}
-                        <div className="w-full h-2 rounded-full bg-[#18181f] overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${carrier.color} transition-all duration-500`}
-                            style={{ width: `${Math.max(4, Math.min(100, carrier.pct))}%` }}
-                          />
+              {/* Latest orders */}
+              <div className="p-6 rounded-2xl bg-[#0c0c0e] border border-[#1f1f23]">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Latest orders</h3>
+                    <p className="text-xs text-zinc-500 mt-0.5">Most recent five</p>
+                  </div>
+                  <button onClick={() => setActiveTab('orders')} className="text-xs font-mono text-zinc-400 hover:text-white cursor-pointer">
+                    View all ({orders.length}) →
+                  </button>
+                </div>
+                {orders.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-zinc-500 font-mono">No orders yet.</div>
+                ) : (
+                  <div className="divide-y divide-[#1a1a20]">
+                    {orders.slice(0, 5).map((ord) => (
+                      <div key={ord.id} className="py-3 flex items-center justify-between gap-3 first:pt-0 last:pb-0">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-white truncate">{ord.customerName}</span>
+                            {ord.paymentMethod === 'staff_grant' && (
+                              <span className="px-1.5 rounded text-[9px] font-mono text-zinc-400 border border-[#2a2a31]">GRANT</span>
+                            )}
+                            {ord.paymentMethod === 'wallet' && (
+                              <span className="px-1.5 rounded text-[9px] font-mono text-[#3ad389] border border-[#3ad389]/30">WALLET</span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-zinc-500 truncate">
+                            {ord.orderNumber} · {ord.items[0]?.productTitle || 'Digital item'}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="text-right">
+                            <div className="font-mono text-xs font-semibold text-white">
+                              {ord.totalAmountLKR > 0 ? `Rs. ${ord.totalAmountLKR.toLocaleString()}` : 'Free'}
+                            </div>
+                            <div className="text-[10px] font-mono">
+                              {ord.paymentStatus === 'VERIFIED' ? (
+                                <span className="text-emerald-400">Verified</span>
+                              ) : ord.paymentStatus === 'PENDING_REVIEW' ? (
+                                <span className="text-amber-400">Needs review</span>
+                              ) : (
+                                <span className="text-zinc-500">{ord.paymentStatus}</span>
+                              )}
+                            </div>
+                          </div>
+                          {ord.paymentStatus === 'PENDING_REVIEW' && (
+                            <button
+                              onClick={() => {
+                                setSelectedReceiptOrder(ord);
+                                setActiveTab('orders');
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 text-[10px] font-bold font-mono cursor-pointer"
+                            >
+                              Review
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-[#18181f] flex items-center justify-between text-xs text-zinc-400">
-                  <span>Dialog & SLT make up ~77% of total node consumption</span>
-                  <button
-                    onClick={() => setActiveTab('v2ray')}
-                    className="text-[#3ad389] hover:underline flex items-center gap-1 font-mono text-[11px]"
-                  >
-                    View Node Analytics →
-                  </button>
-                </div>
-              </div>
-
-              {/* Right Column: Windster Latest Transactions & Customer Stream */}
-              <div className="p-6 rounded-2xl bg-[#0c0c0e] border border-[#1f1f23] shadow-xl flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                        <Receipt className="w-4 h-4 text-amber-400" />
-                        Latest Customer Transactions
-                      </h3>
-                      <p className="text-xs text-zinc-400 mt-0.5">
-                        Recent orders, bank transfer slips and VIP grants
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setActiveTab('orders')}
-                      className="text-xs font-mono text-zinc-400 hover:text-white transition-colors"
-                    >
-                      View all ({orders.length}) →
-                    </button>
-                  </div>
-
-                  <div className="space-y-3 pt-1">
-                    {orders.slice(0, 5).map((ord) => {
-                      const initials = ord.customerName
-                        ? ord.customerName
-                            .split(' ')
-                            .map((w) => w[0])
-                            .join('')
-                            .toUpperCase()
-                            .slice(0, 2)
-                        : 'CL';
-
-                      return (
-                        <div
-                          key={ord.id}
-                          className="p-3 rounded-xl bg-[#141418] border border-[#1f1f23] flex items-center justify-between gap-3 hover:border-zinc-700 transition-colors"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 flex items-center justify-center font-mono text-xs font-bold text-white shrink-0">
-                              {initials}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-xs text-white truncate">
-                                  {ord.customerName}
-                                </span>
-                                {ord.paymentMethod === 'staff_grant' && (
-                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                                    VIP Gift
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-[11px] text-zinc-400 truncate block">
-                                {ord.items[0]?.productTitle || 'Digital License'}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3 shrink-0">
-                            <div className="text-right">
-                              <div className="font-mono text-xs font-bold text-white">
-                                {ord.totalAmountLKR > 0 ? `${ord.totalAmountLKR.toLocaleString()} LKR` : 'FREE'}
-                              </div>
-                              <div className="text-[10px]">
-                                {ord.paymentStatus === 'VERIFIED' ? (
-                                  <span className="text-emerald-400 font-medium">Verified</span>
-                                ) : ord.paymentStatus === 'PENDING_REVIEW' ? (
-                                  <span className="text-amber-400 font-medium animate-pulse">Slip Review</span>
-                                ) : (
-                                  <span className="text-zinc-500">{ord.paymentStatus}</span>
-                                )}
-                              </div>
-                            </div>
-
-                            {ord.paymentStatus === 'PENDING_REVIEW' ? (
-                              <button
-                                onClick={() => {
-                                  setSelectedReceiptOrder(ord);
-                                  setActiveTab('orders');
-                                }}
-                                className="px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-[10px] font-bold font-mono transition-colors"
-                              >
-                                Check
-                              </button>
-                            ) : ord.items[0]?.dispensedKey ? (
-                              <button
-                                onClick={() => copyToClipboard(ord.items[0].dispensedKey || '', 'Key copied!')}
-                                className="px-2.5 py-1 rounded bg-[#1f1f26] hover:bg-zinc-700 text-zinc-300 text-[10px] font-mono transition-colors"
-                              >
-                                Key
-                              </button>
-                            ) : null}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-[#18181f] flex items-center justify-between text-xs text-zinc-400">
-                  <span>{orderMetrics.pendingReviewCount} receipts awaiting verification</span>
-                  <button
-                    onClick={() => {
-                      setActiveTab('orders');
-                      setOrderFilter('PENDING_REVIEW');
-                    }}
-                    className="text-amber-400 hover:underline font-mono text-[11px]"
-                  >
-                    Open Review Queue →
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Direct Grant & Infrastructure Bar */}
-            <div className="p-4 rounded-xl bg-[#0c0c0e] border border-[#1f1f23] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[#3ad389]/10 border border-[#3ad389]/20 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 h-4 text-[#3ad389]" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white flex items-center gap-2">
-                    <span>Direct VIP Product Grant</span>
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Instant</span>
-                  </h4>
-                  <p className="text-[11px] text-zinc-400">Issue V2Ray configs or license keys directly to customers or friends with 1-click WhatsApp delivery.</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-                <button
-                  onClick={() => setActiveTab('v2ray')}
-                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white text-xs font-medium border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Server className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Nodes ({inbounds.length})</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('grant')}
-                  className="px-3.5 py-1.5 rounded-lg bg-[#3ad389] hover:bg-[#32be7a] text-black text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-[#3ad389]/20"
-                >
-                  <Gift className="w-3.5 h-3.5" />
-                  <span>Grant VIP</span>
-                </button>
+                )}
               </div>
             </div>
           </div>
@@ -3011,19 +2804,15 @@ export default function AdminPage() {
                     3x-ui Live V2Ray Infrastructure
                   </h2>
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono border ${
-                    xuiConnectionStatus === 'CONNECTED'
+                    panelState === 'online'
                       ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                      : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                      : panelState === 'offline'
+                      ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                      : 'text-zinc-400 border-[#2a2a31]'
                   }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${xuiConnectionStatus === 'CONNECTED' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
-                    {xuiConnectionStatus === 'CONNECTED' ? `CONNECTED (${xuiLatencyMs}ms SG3)` : 'DISCONNECTED'}
+                    <span className={`w-1.5 h-1.5 rounded-full ${panelState === 'online' ? 'bg-emerald-400' : panelState === 'offline' ? 'bg-rose-400' : 'bg-zinc-500'}`} />
+                    {panelState === 'online' ? 'Connected' : panelState === 'offline' ? 'Unreachable' : 'Checking'}
                   </span>
-                  {xuiAutoSyncEnabled && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                      <RefreshCw className="w-3 h-3 animate-spin text-blue-400" />
-                      Auto-Sync Active ({xuiSyncIntervalSec}s)
-                    </span>
-                  )}
                 </div>
                 <p className="text-xs text-zinc-400 mt-1">
                   Panel: <span className="font-mono text-zinc-300">{xuiBaseUrlInput}</span> • Host: <span className="font-mono text-zinc-300">{v2rayPublicHost}</span> • {inbounds.length} Live Inbounds • {v2raySummary.totalClients} Clients
@@ -3067,31 +2856,19 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Windster Hero Bandwidth Area Chart */}
-            <WindsterAreaChart
-              title="Singapore Equinix SG3 Bandwidth Flow"
-              subtitle={`Live uplink (upload) vs downlink (download) traffic telemetry across all ${inbounds.length} inbounds`}
-              data={v2rayTelemetryData}
-              primaryName="Downlink Traffic"
-              secondaryName="Uplink Traffic"
-              primaryColor="#3ad389"
-              secondaryColor="#06b6d4"
-              unit="GB"
-              trendText="+18.4% bandwidth spike"
-              trendPositive={true}
-              timeRanges={[
-                { label: 'Last 7 Days', value: '7d' },
-                { label: 'Last 30 Days', value: '30d' },
-              ]}
-              activeRange={v2rayTimeRange}
-              onRangeChange={(r) => setV2rayTimeRange(r as any)}
-            />
+            {/* Panel totals (real, read from 3x-ui) */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <Kpi label="Inbounds" value={String(inbounds.length)} />
+              <Kpi label="Clients" value={String(allV2rayClients.length)} />
+              <Kpi label="Download used" value={`${v2raySummary.totalDownGB.toFixed(1)} GB`} />
+              <Kpi label="Upload used" value={`${v2raySummary.totalUpGB.toFixed(1)} GB`} />
+            </div>
 
             {/* Inbounds Cards Grid with Real Health & Telemetry Status */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
               {inbounds.map((ib) => {
                 const totalTraffic = (ib.upGB || 0) + (ib.downGB || 0);
-                const downPct = totalTraffic > 0 ? Math.round(((ib.downGB || 0) / totalTraffic) * 100) : 95;
+                const downPct = totalTraffic > 0 ? Math.round(((ib.downGB || 0) / totalTraffic) * 100) : 0;
                 const upPct = 100 - downPct;
 
                 return (
@@ -5435,7 +5212,51 @@ export default function AdminPage() {
             </div>
           </div>
         )}
-      </main>
+        </main>
+      </div>
     </div>
+  );
+}
+
+// ---- Admin overview building blocks (same card language as the cart: #0c0c0e cards, mono labels) ----
+function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="p-5 rounded-2xl bg-[#0c0c0e] border border-[#1f1f23]">
+      <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-500">{label}</div>
+      <div className="mt-2 text-2xl font-semibold tracking-tight text-white font-mono">{value}</div>
+      {sub && <div className="mt-1 text-[11px] text-zinc-500">{sub}</div>}
+    </div>
+  );
+}
+
+function AttentionCard({
+  label,
+  value,
+  text,
+  hint,
+  bad,
+  onClick,
+}: {
+  label: string;
+  value?: number;
+  text?: string;
+  hint?: string;
+  bad?: boolean;
+  onClick: () => void;
+}) {
+  const hot = (value ?? 0) > 0 || bad;
+  return (
+    <button
+      onClick={onClick}
+      className={`text-left p-4 rounded-2xl border transition-colors cursor-pointer ${
+        hot ? 'bg-amber-500/[0.04] border-amber-500/25 hover:border-amber-500/50' : 'bg-[#0c0c0e] border-[#1f1f23] hover:border-zinc-600'
+      }`}
+    >
+      <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-500">{label}</div>
+      <div className={`mt-1.5 font-mono font-semibold ${text ? 'text-base' : 'text-2xl'} ${hot ? 'text-amber-300' : 'text-white'}`}>
+        {text ?? value}
+      </div>
+      {hint && <div className="text-[11px] text-zinc-500 mt-0.5">{hint}</div>}
+    </button>
   );
 }

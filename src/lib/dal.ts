@@ -51,7 +51,7 @@ export async function getVerifiedSessionUser(): Promise<VerifiedSessionUser | nu
     }
 
     const rows = await adminSql`
-      SELECT id::text AS id, email, name, role, banned, "banExpires" AS ban_expires
+      SELECT id::text AS id, email, name, role, banned, "banExpires" AS ban_expires, "emailVerified" AS email_verified
       FROM neon_auth."user"
       WHERE id::text = ${sessionUser.id}
       LIMIT 1
@@ -74,8 +74,14 @@ export async function getVerifiedSessionUser(): Promise<VerifiedSessionUser | nu
       return null;
     }
 
-    const normalizedRole: ValidRole =
-      row.role === 'owner' ? 'owner' : row.role === 'admin' ? 'admin' : 'user';
+    // Staff powers require a verified email, so an unverified sign-up can never act as admin/owner.
+    const normalizedRole: ValidRole = !row.email_verified
+      ? 'user'
+      : row.role === 'owner'
+      ? 'owner'
+      : row.role === 'admin'
+      ? 'admin'
+      : 'user';
 
     return {
       id: String(row.id),

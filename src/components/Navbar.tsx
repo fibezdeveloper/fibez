@@ -20,9 +20,9 @@ import {
   UserPlus, 
   LayoutDashboard,
   LifeBuoy,
+  ShieldCheck,
   Radio,
   X,
-  User,
 } from 'lucide-react';
 
 export interface NavbarProps {
@@ -81,6 +81,26 @@ export default function Navbar(props: NavbarProps) {
     };
   }, [session?.user?.id]);
 
+  // Staff get an Admin Console shortcut. Display only: /admin and its APIs re-check the role on the server.
+  const [isStaff, setIsStaff] = useState(false);
+  useEffect(() => {
+    if (!session?.user) {
+      setIsStaff(false);
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/me', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const role = d?.user?.role;
+        if (!cancelled) setIsStaff(role === 'admin' || role === 'owner');
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.id]);
+
   const currentCurrency = props.currency || store?.currency || 'LKR';
   const cartCount = props.cartCount !== undefined ? props.cartCount : (store?.cartCount || 0);
 
@@ -96,144 +116,147 @@ export default function Navbar(props: NavbarProps) {
     router.push(mode === 'register' ? '/login?mode=register' : '/login');
   };
 
-  // Account dropdown actions (concise essentials only)
-  const dropdownActions: GooeyDropdownAction[] = [
-    {
-      id: 'cart',
-      label: `Shopping Cart (${cartCount})`,
-      icon: <ShoppingCart className="w-4 h-4 text-zinc-300" />,
-      detail: cartCount > 0 ? `${cartCount} item(s) ready to checkout` : 'View your cart',
-      onSelect: () => {
-        router.push('/cart');
-      },
-    },
-    {
-      id: 'vault',
-      label: 'Key Vault & Orders',
-      icon: <KeyRound className="w-4 h-4 text-zinc-300" />,
-      detail: 'View purchases & codes',
-      onSelect: () => {
-        router.push('/vault');
-      },
-    },
-    {
-      id: 'wallet',
-      label: walletLkr === null ? 'Wallet' : `Wallet: Rs. ${walletLkr.toLocaleString()}`,
-      icon: <Wallet className="w-4 h-4 text-[#3ad389]" />,
-      detail: 'Top up, history & refunds',
-      onSelect: () => {
-        router.push('/billing');
-      },
-    },
-    {
-      id: 'v2ray-dash',
-      label: 'V2Ray Dash',
-      icon: <Radio className="w-4 h-4 text-[#3ad389]" />,
-      detail: 'Nodes, configs & diagnostics',
-      onSelect: () => {
-        router.push('/v2ray/dashboard');
-      },
-    },
-    {
-      id: 'currency',
-      label: `Currency: ${currentCurrency}`,
-      icon: <Globe className="w-4 h-4 text-zinc-300" />,
-      detail: `Switch to ${currentCurrency === 'LKR' ? 'USD ($)' : 'LKR (Rs.)'}`,
-      onSelect: () => handleCurrencyToggle(currentCurrency === 'LKR' ? 'USD' : 'LKR'),
-    },
-    ...(session?.user
-      ? [
-          {
-            id: 'dashboard',
-            label: 'Account Dashboard',
-            icon: <LayoutDashboard className="w-4 h-4 text-zinc-300" />,
-            detail: 'Manage account & orders',
-            divider: true,
-            onSelect: () => {
-              router.push('/dashboard');
-            },
+  // Account dropdown: a short, grouped list. Signed-in: wallet, orders, V2Ray, account, support,
+  // then currency and sign out. Cart only shows when it has items (the navbar already has a cart).
+  const dropdownActions: GooeyDropdownAction[] = session?.user
+    ? [
+        {
+          id: 'wallet',
+          label: walletLkr === null ? 'Wallet' : `Wallet: Rs. ${walletLkr.toLocaleString()}`,
+          icon: <Wallet className="w-4 h-4 text-[#3ad389]" />,
+          detail: 'Top up & history',
+          onSelect: () => router.push('/billing'),
+        },
+        {
+          id: 'vault',
+          label: 'Orders & Keys',
+          icon: <KeyRound className="w-4 h-4 text-zinc-300" />,
+          onSelect: () => router.push('/vault'),
+        },
+        {
+          id: 'v2ray-dash',
+          label: 'V2Ray Dashboard',
+          icon: <Radio className="w-4 h-4 text-[#3ad389]" />,
+          onSelect: () => router.push('/v2ray/dashboard'),
+        },
+        ...(cartCount > 0
+          ? [
+              {
+                id: 'cart',
+                label: `Cart (${cartCount})`,
+                icon: <ShoppingCart className="w-4 h-4 text-zinc-300" />,
+                onSelect: () => router.push('/cart'),
+              },
+            ]
+          : []),
+        {
+          id: 'dashboard',
+          label: 'Account & Settings',
+          icon: <LayoutDashboard className="w-4 h-4 text-zinc-300" />,
+          divider: true,
+          onSelect: () => router.push('/dashboard'),
+        },
+        {
+          id: 'tickets',
+          label: 'Support',
+          icon: <LifeBuoy className="w-4 h-4 text-zinc-300" />,
+          onSelect: () => router.push('/tickets'),
+        },
+        ...(isStaff
+          ? [
+              {
+                id: 'admin',
+                label: 'Admin Console',
+                icon: <ShieldCheck className="w-4 h-4 text-amber-400" />,
+                onSelect: () => router.push('/admin'),
+              },
+            ]
+          : []),
+        {
+          id: 'currency',
+          label: `Currency: ${currentCurrency}`,
+          icon: <Globe className="w-4 h-4 text-zinc-300" />,
+          divider: true,
+          onSelect: () => handleCurrencyToggle(currentCurrency === 'LKR' ? 'USD' : 'LKR'),
+        },
+        {
+          id: 'signout',
+          label: 'Sign Out',
+          icon: <LogOut className="w-4 h-4 text-[#ff453a]" />,
+          detail: session.user.email || session.user.name,
+          destructive: true,
+          onSelect: async () => {
+            await authClient.signOut();
           },
-          {
-            id: 'profile',
-            label: 'Profile & Settings',
-            icon: <User className="w-4 h-4 text-zinc-300" />,
-            detail: 'Username, email & security',
-            onSelect: () => {
-              router.push('/dashboard?tab=profile');
-            },
-          },
-          {
-            id: 'tickets',
-            label: 'Support Tickets',
-            icon: <LifeBuoy className="w-4 h-4 text-zinc-300" />,
-            detail: 'Help & ticket history',
-            onSelect: () => {
-              router.push('/tickets');
-            },
-          },
-          {
-            id: 'signout',
-            label: 'Sign Out',
-            icon: <LogOut className="w-4 h-4 text-[#ff453a]" />,
-            detail: session.user.email || session.user.name,
-            destructive: true,
-            divider: true,
-            onSelect: async () => {
-              await authClient.signOut();
-            },
-          },
-        ]
-      : [
-          {
-            id: 'signin',
-            label: 'Sign In',
-            icon: <LogIn className="w-4 h-4 text-zinc-300" />,
-            detail: 'Access your orders & keys',
-            divider: true,
-            onSelect: () => handleOpenAuthModal('login'),
-          },
-          {
-            id: 'register',
-            label: 'Create Account',
-            icon: <UserPlus className="w-4 h-4 text-zinc-300" />,
-            detail: 'Register for instant delivery',
-            onSelect: () => handleOpenAuthModal('register'),
-          },
-        ]),
-  ];
+        },
+      ]
+    : [
+        {
+          id: 'signin',
+          label: 'Sign In',
+          icon: <LogIn className="w-4 h-4 text-zinc-300" />,
+          detail: 'Access your orders & keys',
+          onSelect: () => handleOpenAuthModal('login'),
+        },
+        {
+          id: 'register',
+          label: 'Create Account',
+          icon: <UserPlus className="w-4 h-4 text-zinc-300" />,
+          onSelect: () => handleOpenAuthModal('register'),
+        },
+        ...(cartCount > 0
+          ? [
+              {
+                id: 'cart',
+                label: `Cart (${cartCount})`,
+                icon: <ShoppingCart className="w-4 h-4 text-zinc-300" />,
+                divider: true,
+                onSelect: () => router.push('/cart'),
+              },
+            ]
+          : []),
+        {
+          id: 'currency',
+          label: `Currency: ${currentCurrency}`,
+          icon: <Globe className="w-4 h-4 text-zinc-300" />,
+          divider: cartCount === 0,
+          onSelect: () => handleCurrencyToggle(currentCurrency === 'LKR' ? 'USD' : 'LKR'),
+        },
+      ];
 
   const dropdownLabel = session?.user
     ? (session.user.name ? session.user.name.split(' ')[0] : session.user.email?.split('@')[0] || 'Account')
     : (cartCount > 0 ? `Cart (${cartCount})` : 'Account');
 
-  // Focused 3-Card Menu Navigation
+  // Three clear groups: what to buy, your account, and help. Each page appears once.
   const navItems: CardNavItem[] = [
     {
-      label: 'Shop Products',
-      description: 'Gift cards, games, subscriptions, software & VPN.',
+      label: 'Shop',
+      description: 'Browse everything we sell.',
       links: [
         { label: 'All Products', href: '/catalog' },
-        { label: 'High-Speed VLESS VPN', href: '/v2ray' },
+        { label: 'VLESS VPN Packages', href: '/v2ray' },
         { label: 'Gift Cards & Gaming', href: '/catalog?category=giftcard' },
         { label: 'Subscriptions & Software', href: '/catalog?category=subscription' },
       ]
     },
     {
-      label: 'Orders & Setup',
-      description: 'View keys, track orders, and configure apps.',
+      label: 'My Account',
+      description: 'Orders, lines and money.',
       links: [
-        { label: 'My Key Vault & Orders', href: '/vault' },
+        { label: 'Orders & Keys', href: '/vault' },
         { label: 'V2Ray Dashboard', href: '/v2ray/dashboard' },
-        { label: 'Shopping Cart', href: '/cart' },
-        { label: 'NetMod & v2rayNG Guide', href: '/v2ray/guide' },
+        { label: 'Wallet & Top-up', href: '/billing' },
+        { label: 'Cart', href: '/cart' },
       ]
     },
     {
-      label: 'Support',
-      description: 'Get fast help from our team.',
+      label: 'Help',
+      description: 'Setup guides and support.',
       links: [
-        { label: 'Support Tickets', href: '/tickets' },
+        { label: 'Setup Guide (NetMod / v2rayNG)', href: '/v2ray/guide' },
         { label: 'VLESS Line Check', href: '/v2ray#line-check' },
+        { label: 'Support Tickets', href: '/tickets' },
         { label: 'WhatsApp Support', href: 'https://wa.me/94771234567' },
       ]
     }

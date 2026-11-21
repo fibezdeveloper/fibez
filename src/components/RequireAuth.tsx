@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getVerifiedSessionUser, isStaffRole } from '@/lib/dal';
 
 /**
@@ -24,7 +24,8 @@ async function Gate({
     redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
   if (staffOnly && !isStaffRole(user.role)) {
-    redirect('/');
+    // Signed in but not staff: pretend the page does not exist.
+    notFound();
   }
   return <>{children}</>;
 }
