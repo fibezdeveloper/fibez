@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Hero from '@/components/Hero';
@@ -15,6 +15,18 @@ import { ArrowRight, ShoppingBag, KeyRound, ShieldCheck, LifeBuoy } from 'lucide
 export default function HomePage() {
   const router = useRouter();
   const { currency } = useStore();
+
+  // V2Ray-only mode (Admin -> Site pages): visitors land on the V2Ray hub instead of the shop home.
+  // Add ?preview=1 to see the full home page anyway.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('preview')) return;
+    fetch('/api/site-pages', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.pages && d.pages.shop === false && d.pages.v2ray !== false) router.replace('/v2ray');
+      })
+      .catch(() => {});
+  }, [router]);
 
   return (
     <main className="flex flex-col">

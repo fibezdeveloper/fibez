@@ -12,6 +12,7 @@ import {
   listTopups,
   listRefunds,
   findWalletUser,
+  listWalletUsers,
   adjustBalance,
   getHistory,
   walletSummary,
@@ -29,6 +30,12 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const view = searchParams.get('view') || 'overview';
+
+    if (view === 'users') {
+      const search = (searchParams.get('q') || '').slice(0, 80);
+      const offset = Math.max(0, Number(searchParams.get('offset')) || 0);
+      return NextResponse.json(await listWalletUsers(search, 50, offset));
+    }
 
     if (view === 'user') {
       const email = (searchParams.get('email') || '').trim();

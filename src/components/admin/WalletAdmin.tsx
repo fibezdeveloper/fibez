@@ -59,6 +59,10 @@ export default function WalletAdmin() {
 
   const [lookupEmail, setLookupEmail] = useState('');
   const [lookup, setLookup] = useState<{ user: { id: string; email: string; name: string; balance_lkr: number }; history: LedgerRow[] } | null>(null);
+  const [users, setUsers] = useState<{ id: string; email: string; name: string; role: string; balance_lkr: number }[]>([]);
+  const [usersTotal, setUsersTotal] = useState(0);
+  const [userSearch, setUserSearch] = useState('');
+  const [usersLoading, setUsersLoading] = useState(false);
   const [adjAmount, setAdjAmount] = useState('');
   const [adjReason, setAdjReason] = useState('');
 
@@ -99,10 +103,31 @@ export default function WalletAdmin() {
     }
   };
 
-  const doLookup = async () => {
+
+  const loadUsers = useCallback(async (q: string) => {
+    setUsersLoading(true);
+    try {
+      const r = await fetch(`/api/admin/wallet?view=users&q=${encodeURIComponent(q)}`, { cache: 'no-store' });
+      if (r.ok) {
+        const j = await r.json();
+        setUsers(j.users || []);
+        setUsersTotal(j.total || 0);
+      }
+    } finally {
+      setUsersLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => loadUsers(userSearch), 250);
+    return () => clearTimeout(t);
+  }, [userSearch, loadUsers]);
+
+  const doLookup = async (emailOverride?: string) => {
     setMessage(null);
     try {
-      const r = await fetch(`/api/admin/wallet?view=user&email=${encodeURIComponent(lookupEmail.trim())}`, { cache: 'no-store' });
+      const target = (emailOverride ?? lookupEmail).trim();
+      const r = await fetch(`/api/admin/wallet?view=user&email=${encodeURIComponent(target)}`, { cache: 'no-store' });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || 'Not found');
       setLookup(j);
@@ -270,12 +295,56 @@ export default function WalletAdmin() {
         )}
       </div>
 
-      {/* User lookup + adjustment */}
+      {/* All users: pick one to see the wallet and (owner) add or remove money */}
       <div className={card}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+          <h3 className="text-sm font-bold text-white">
+            All users <span className="text-zinc-500 font-mono text-xs">({usersTotal})</span>
+          </h3>
+          <input
+            className={`${input} sm:max-w-xs`}
+            placeholder="Search name or email"
+            value={userSearch}
+            onChange={(e) => setUserSearch(e.target.value)}
+          />
+        </div>
+        <div className="max-h-72 overflow-y-auto divide-y divide-white/5 rounded-xl border border-white/5">
+          {users.map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => {
+                setLookupEmail(u.email);
+                doLookup(u.email);
+                document.getElementById('wallet-lookup')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-white/[0.04] transition-colors cursor-pointer"
+            >
+              <div className="min-w-0">
+                <div className="text-xs font-medium text-white truncate">{u.name || u.email.split('@')[0]}</div>
+                <div className="text-[11px] text-zinc-500 truncate">
+                  {u.email}
+                  {u.role !== 'user' ? ` · ${u.role}` : ''}
+                </div>
+              </div>
+              <div className="text-xs font-mono font-semibold text-white shrink-0">{fmt(u.balance_lkr)}</div>
+            </button>
+          ))}
+          {users.length === 0 && (
+            <div className="px-3 py-6 text-center text-xs text-zinc-500">{usersLoading ? 'Loading...' : 'No users found.'}</div>
+          )}
+        </div>
+        {usersTotal > users.length && (
+          <div className="text-[11px] text-zinc-500 mt-2">Showing the first {users.length}. Search to narrow down.</div>
+        )}
+      </div>
+
+      {/* User lookup + adjustment */}
+      <div id="wallet-lookup" className={card}>
         <h3 className="text-sm font-bold text-white mb-3">Look up a customer&apos;s wallet</h3>
         <div className="flex gap-2">
           <input className={input} placeholder="customer@email.com" value={lookupEmail} onChange={(e) => setLookupEmail(e.target.value)} />
-          <button onClick={doLookup} className={`${btn} bg-white text-black`}>
+          <button onClick={() => doLookup()} className={`${btn} bg-white text-black`}>
             Find
           </button>
         </div>

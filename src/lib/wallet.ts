@@ -46,10 +46,12 @@ export interface LedgerParams {
   idem: string;
 }
 
-const q = async <T = any>(text: string, params: unknown[] = []): Promise<T[]> => {
+const q_ = async <T = any>(text: string, params: unknown[] = []): Promise<T[]> => {
   if (!sql) throw new Error('Database is not configured');
   return (await sql.query(text, params)) as unknown as T[];
 };
+
+const q = q_;
 
 /** Atomic ledger write inside an existing transaction. */
 export async function applyLedger(
@@ -390,6 +392,28 @@ export async function findWalletUser(email: string) {
     [email.trim()]
   );
   return rows[0] ? { ...rows[0], balance_lkr: Number(rows[0].balance_lkr) } : null;
+}
+
+/** Every registered account with its wallet balance (admin picker). */
+export async function listWalletUsers(search: string, limit = 50, offset = 0) {
+  const q = `%${search.trim().toLowerCase()}%`;
+  const rows = await q_<any>(
+    `SELECT u.id::text AS id, u.email, u.name, COALESCE(u.role, 'user') AS role, u."createdAt" AS created_at,
+            COALESCE(a.balance_lkr, 0) AS balance_lkr
+       FROM neon_auth."user" u LEFT JOIN public.wallet_accounts a ON a.user_id = u.id::text
+      WHERE ($1 = '%%' OR lower(u.email) LIKE $1 OR lower(COALESCE(u.name,'')) LIKE $1)
+      ORDER BY COALESCE(a.balance_lkr, 0) DESC, u."createdAt" DESC
+      LIMIT $2 OFFSET $3`,
+    [q, Math.min(Math.max(limit, 1), 200), Math.max(offset, 0)]
+  );
+  const total = await q_<{ n: string }>(
+    `SELECT count(*) AS n FROM neon_auth."user" u WHERE ($1 = '%%' OR lower(u.email) LIKE $1 OR lower(COALESCE(u.name,'')) LIKE $1)`,
+    [q]
+  );
+  return {
+    users: rows.map((r) => ({ ...r, balance_lkr: Number(r.balance_lkr) })),
+    total: Number(total[0]?.n || 0),
+  };
 }
 
 export async function adjustBalance(p: { userId: string; amount: number; reason: string; admin: Staff }) {

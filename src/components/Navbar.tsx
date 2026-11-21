@@ -110,6 +110,32 @@ export default function Navbar(props: NavbarProps) {
     };
   }, [session?.user?.id]);
 
+  // Which sections are open (Admin -> Site pages) and which shop products are visible. Display only:
+  // the pages and APIs enforce the same switches on the server.
+  const [pageFlags, setPageFlags] = useState<{ shop: boolean; v2ray: boolean; tickets: boolean; docs: boolean; faq: boolean; infrastructure: boolean } | null>(null);
+  const [visibleIds, setVisibleIds] = useState<Set<string> | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/site-pages', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d?.pages) setPageFlags(d.pages);
+      })
+      .catch(() => {});
+    fetch('/api/products', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && Array.isArray(d?.products)) setVisibleIds(new Set(d.products.map((p: any) => String(p.id))));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const shopOpen = pageFlags ? pageFlags.shop : true;
+  const productVisible = (id: string, category: string) =>
+    category === 'vpn' ? (pageFlags ? pageFlags.v2ray : true) : shopOpen && (!visibleIds || visibleIds.has(id));
+
   const currentCurrency = props.currency || store?.currency || 'LKR';
   const cartCount = props.cartCount !== undefined ? props.cartCount : (store?.cartCount || 0);
 
@@ -135,18 +161,6 @@ export default function Navbar(props: NavbarProps) {
           icon: <Wallet className="w-4 h-4 text-[#3ad389]" />,
           detail: 'Top up & history',
           onSelect: () => router.push('/billing'),
-        },
-        {
-          id: 'vault',
-          label: 'Orders & Keys',
-          icon: <KeyRound className="w-4 h-4 text-zinc-300" />,
-          onSelect: () => router.push('/vault'),
-        },
-        {
-          id: 'v2ray-dash',
-          label: 'V2Ray Dashboard',
-          icon: <Radio className="w-4 h-4 text-[#3ad389]" />,
-          onSelect: () => router.push('/v2ray/dashboard'),
         },
         ...(cartCount > 0
           ? [
@@ -240,13 +254,17 @@ export default function Navbar(props: NavbarProps) {
   // Three clear groups: what to buy, your account, and help. Each page appears once.
   const navItems: CardNavItem[] = [
     {
-      label: 'Shop',
-      description: 'Browse everything we sell.',
+      label: shopOpen ? 'Shop' : 'V2Ray',
+      description: shopOpen ? 'Browse everything we sell.' : 'High-speed VLESS VPN for Sri Lanka.',
       links: [
-        { label: 'All Products', href: '/catalog' },
+        ...(shopOpen ? [{ label: 'All Products', href: '/catalog' }] : []),
         { label: 'VLESS VPN Packages', href: '/v2ray' },
-        { label: 'Gift Cards & Gaming', href: '/catalog?category=giftcard' },
-        { label: 'Subscriptions & Software', href: '/catalog?category=subscription' },
+        ...(shopOpen
+          ? [
+              { label: 'Gift Cards & Gaming', href: '/catalog?category=giftcard' },
+              { label: 'Subscriptions & Software', href: '/catalog?category=subscription' },
+            ]
+          : [{ label: '24-Hour Free Trial', href: '/v2ray' }]),
       ]
     },
     {
@@ -265,7 +283,7 @@ export default function Navbar(props: NavbarProps) {
       links: [
         { label: 'Setup Guide (NetMod / v2rayNG)', href: '/v2ray/guide' },
         { label: 'VLESS Line Check', href: '/v2ray#line-check' },
-        { label: 'Support Tickets', href: '/tickets' },
+        ...(!pageFlags || pageFlags.tickets ? [{ label: 'Support Tickets', href: '/tickets' }] : []),
         { label: 'WhatsApp Support', href: 'https://wa.me/94771234567' },
       ]
     }
@@ -308,9 +326,21 @@ export default function Navbar(props: NavbarProps) {
   // Dynamically filtered search cards when user types a query
   const searchCards = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return defaultSearchCards;
+    if (!q) {
+      return defaultSearchCards
+        .map((card) => ({
+          ...card,
+          links: (card.links || []).filter((l) => {
+            const m = /^\/products\/(.+)$/.exec(l.href || '');
+            if (!m) return shopOpen || !/^\/catalog/.test(l.href || '');
+            const prod = PRODUCTS.find((x) => x.id === m[1]);
+            return prod ? productVisible(prod.id, prod.category) : true;
+          }),
+        }))
+        .filter((card) => (card.links || []).length > 0);
+    }
 
-    const matches = PRODUCTS.filter((p) =>
+    const matches = PRODUCTS.filter((p) => productVisible(p.id, p.category)).filter((p) =>
       p.title.toLowerCase().includes(q) ||
       p.category.toLowerCase().includes(q) ||
       p.description.toLowerCase().includes(q)
@@ -385,7 +415,7 @@ export default function Navbar(props: NavbarProps) {
     }
 
     return resultCards.slice(0, 3);
-  }, [searchQuery]);
+  }, [searchQuery, pageFlags, visibleIds]);
 
   // Full-width search bar taking up the whole top bar when search is active
   const searchBarElement = (

@@ -9,6 +9,7 @@ import { fulfillOrder, recordFulfilledClients } from '@/lib/fulfillment';
 import { adminStore, AdminOrder, AdminOrderItem } from '@/lib/admin-store';
 import { analyzeBankReceipt } from '@/lib/receipt-verifier';
 import { resolveServerPrice } from '@/lib/pricing';
+import { getHiddenProductIds, getPageFlags } from '@/lib/site-config';
 
 // 'staff_grant' is internal only: customers can never choose it.
 const VALID_PAYMENT_METHODS = new Set(['bank_transfer', 'crypto', 'wallet']);
@@ -140,6 +141,9 @@ export async function POST(request: NextRequest) {
     }[] = [];
 
     const packageOverrides = await adminStore.getPackageOverrides();
+    const siteFlags = await getPageFlags();
+    const hiddenProducts = await getHiddenProductIds();
+    const buyerIsStaff = actor?.role === 'admin' || actor?.role === 'owner';
     for (let idx = 0; idx < cart.length; idx++) {
       const item = cart[idx] || {};
       const prodId = String(item.productId || item.id || '').trim();
@@ -158,6 +162,17 @@ export async function POST(request: NextRequest) {
           { error: 'This package is no longer available. Please remove it from your cart.' },
           { status: 400 }
         );
+      }
+
+      // Sections switched off in Admin -> Site pages, and products hidden in Inventory, cannot be bought.
+      if (!buyerIsStaff) {
+        const isVpnItem = Boolean(priced.packageId) || prodId.startsWith('v2ray-') || priced.catalogProduct?.category === 'vpn';
+        if (isVpnItem ? !siteFlags.v2ray : !siteFlags.shop || hiddenProducts.has(prodId)) {
+          return NextResponse.json(
+            { error: 'This item is not available right now. Please remove it from your cart.' },
+            { status: 400 }
+          );
+        }
       }
 
       const qty = Math.max(1, Math.min(20, Math.round(Number(item.quantity) || 1)));

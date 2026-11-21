@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import FeatureGate from '@/components/FeatureGate';
 
 export const metadata: Metadata = {
   title: 'Digital Catalog — Instant Codes & Subscriptions',
@@ -10,5 +11,9 @@ export default function CatalogLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <FeatureGate page="shop" name="Shop">
+      {children}
+    </FeatureGate>
+  );
 }

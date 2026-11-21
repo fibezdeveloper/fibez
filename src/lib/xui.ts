@@ -566,6 +566,27 @@ class XuiClient {
       .filter((c) => c?.email)
       .map((c) => ({ email: String(c.email), up: Number(c.traffic?.up) || 0, down: Number(c.traffic?.down) || 0 }));
   }
+
+  /** Every client's plan facts straight from the panel, keyed by lower-case UUID (one call). */
+  public async listClientPlans(): Promise<
+    Map<string, { email: string; totalBytes: number; expiryMs: number; enable: boolean; up: number; down: number }>
+  > {
+    const r = await this.apiRequest<any>('/panel/api/clients/list', 'GET');
+    const out = new Map<string, { email: string; totalBytes: number; expiryMs: number; enable: boolean; up: number; down: number }>();
+    for (const c of Array.isArray(r?.obj) ? r.obj : []) {
+      const uuid = String(c?.uuid || c?.id || '').toLowerCase();
+      if (!uuid) continue;
+      out.set(uuid, {
+        email: String(c.email || ''),
+        totalBytes: Number(c.totalGB) || 0,
+        expiryMs: Number(c.expiryTime) || 0,
+        enable: c.enable !== false,
+        up: Number(c.traffic?.up) || 0,
+        down: Number(c.traffic?.down) || 0,
+      });
+    }
+    return out;
+  }
 }
 
 export const xui = new XuiClient();

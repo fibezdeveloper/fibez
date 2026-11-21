@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import FeatureGate from '@/components/FeatureGate';
 
 export const metadata: Metadata = {
   title: 'Network & Node Infrastructure',
@@ -10,5 +11,9 @@ export default function InfrastructureLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <FeatureGate page="infrastructure" name="Infrastructure">
+      {children}
+    </FeatureGate>
+  );
 }

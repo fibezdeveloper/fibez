@@ -35,12 +35,14 @@ export async function GET(request: NextRequest) {
 
     const actor = await getVerifiedSessionUser();
     const isStaff = isStaffRole(actor?.role);
-    const includeInactive = isStaff && searchParams.get('all') === 'true';
+    const includeInactive = isStaff && (searchParams.get('all') === 'true' || Boolean(id));
 
     const data = await withRlsTransaction(buildRlsContext(actor), async (client) => {
       if (id) {
         const res = await client.query(
-          `SELECT * FROM public.products WHERE id = $1 LIMIT 1`,
+          includeInactive
+            ? `SELECT * FROM public.products WHERE id = $1 LIMIT 1`
+            : `SELECT * FROM public.products WHERE id = $1 AND is_active = TRUE LIMIT 1`,
           [id]
         );
         return { single: res.rows[0] ?? null };

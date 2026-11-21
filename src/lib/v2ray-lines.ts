@@ -14,8 +14,11 @@ export interface PurchasedV2RayLine {
   serverType: 'STANDARD' | 'LK_IP';
   location: string;
   quotaLabel: string;
+  /** Data cap in GB from the panel; 0 means unlimited. */
   quotaGB: number;
+  /** Days left on the panel (0 = expired or no expiry). */
   validityDays: number;
+  usedGB?: number;
   vlessUri: string;
   uuid: string;
   purchasedAt: string;

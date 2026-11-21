@@ -409,8 +409,9 @@ export default function V2RayDashboardPage() {
 
   // Quota and usage come from the panel. 0 = unlimited (never invent a limit).
   const totalLimitGB = useMemo(() => {
-    if (activePurchasedLine.quotaGB && activePurchasedLine.quotaGB > 0) return activePurchasedLine.quotaGB;
-    return customQuotaGB && customQuotaGB > 0 ? customQuotaGB : 0;
+    // Live panel value first (0 = unlimited); the line's own quota (also from the panel) as fallback.
+    if (customQuotaGB !== null) return customQuotaGB > 0 ? customQuotaGB : 0;
+    return activePurchasedLine.quotaGB > 0 ? activePurchasedLine.quotaGB : 0;
   }, [activePurchasedLine, customQuotaGB]);
 
   const totalUsedGB = liveUsageGB ?? 0;
@@ -644,121 +645,11 @@ export default function V2RayDashboardPage() {
               </div>
             </div>
             <p className="text-sm text-[#a1a4a5] mt-2.5 max-w-2xl leading-relaxed">
-              Your personalized VLESS connection config, live server speed benchmark, and real-time device usage telemetry.
+              Your VLESS configs, data usage and connected devices, read live from the V2Ray panel.
             </p>
           </div>
 
         </div>
-
-        {/* ======================================================== */}
-        {/* 0. MEMBER PROFILE & PRE-FUNDED WALLET STATUS (VMex Style) */}
-        {/* ======================================================== */}
-        <section className="mt-8 p-6 rounded-[20px] bg-gradient-to-b from-[#0e0e12] to-[#070709] border border-[#1f1f23] shadow-xl relative overflow-hidden">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            {/* User Identity & Member ID */}
-            <div className="flex items-start sm:items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-[#141418] border border-[#2b2b35] flex items-center justify-center text-[#3ad389] font-mono text-xl font-bold shadow-inner shrink-0">
-                <User className="w-7 h-7 text-[#3ad389]" />
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#3ad389]/10 border border-[#3ad389]/20 text-[11px] font-mono font-semibold text-[#3ad389]">
-                    Fibez Account
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#16161b] border border-[#252530] text-[10px] font-mono text-zinc-400">
-                    ID: {String(session?.user?.id || '').slice(0, 8)}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400">
-                    Verified Customer
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <h2 className="text-xl font-bold text-white tracking-tight">{displayName}</h2>
-                  <span className="text-xs font-mono text-zinc-500">/ {session?.user?.email}</span>
-                </div>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  Pre-funded billing account &middot; Commercial Bank Direct Settlement
-                </p>
-              </div>
-            </div>
-
-            {/* Wallet Balance & Configurations Grid */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Wallet Balance Card */}
-              <div className="p-3.5 sm:p-4 rounded-xl bg-[#0c0c0f] border border-[#24242d] flex items-center gap-3.5 min-w-[200px]">
-                <div className="w-10 h-10 rounded-xl bg-[#1a1a22] border border-[#2e2e3a] flex items-center justify-center text-emerald-400 shrink-0">
-                  <Wallet className="w-5 h-5 text-[#3ad389]" />
-                </div>
-                <div>
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Wallet Balance</div>
-                  <div className="text-xl font-bold font-mono text-white mt-0.5 flex items-baseline gap-1.5">
-                    <span>Rs {walletLkr.toLocaleString()}</span>
-                    <span className="text-[11px] font-normal text-zinc-400">LKR</span>
-                  </div>
-                </div>
-                <AnimatedButton
-                  as="a"
-                  href="/billing"
-                  variant="emerald"
-                  size="sm"
-                  className="ml-auto text-xs font-semibold font-mono"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Deposit</span>
-                </AnimatedButton>
-              </div>
-
-              {/* Active Configurations Counter */}
-              <div className="p-3.5 sm:p-4 rounded-xl bg-[#0c0c0f] border border-[#24242d] flex items-center gap-3.5 min-w-[170px]">
-                <div className="w-10 h-10 rounded-xl bg-[#1a1a22] border border-[#2e2e3a] flex items-center justify-center text-blue-400 shrink-0">
-                  <Layers className="w-5 h-5 text-blue-400" />
-                </div>
-                <div>
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Active Configs</div>
-                  <div className="text-xl font-bold font-mono text-white mt-0.5">
-                    {purchasedLines.length} <span className="text-xs font-normal text-zinc-400">/ {purchasedLines.length}</span>
-                  </div>
-                  <div className="text-[10px] text-zinc-400 mt-0.5">
-                    {purchasedLines.length > 0 ? 'Active lines' : 'No purchased lines'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Referral Reward Banner Strip */}
-          <div className="mt-5 pt-4 border-t border-[#18181f] flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2.5">
-              <Gift className="w-4 h-4 text-[#ffca16] shrink-0" />
-              <div className="text-zinc-300">
-                <span className="font-semibold text-white">Earn Rs 100.00 Wallet Credit</span> per friend who subscribes using your referral link.
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="px-3 py-1.5 rounded-lg bg-[#070709] border border-[#202028] font-mono text-[11px] text-zinc-300 select-all truncate max-w-[280px] sm:max-w-none">
-                {referralUrl || 'Loading your referral link...'}
-              </div>
-              <button
-                type="button"
-                onClick={() => referralUrl && copyToClipboard(referralUrl, 'referral-link')}
-                className="px-3 py-1.5 rounded-lg bg-[#18181f] hover:bg-[#23232c] border border-[#282833] text-zinc-200 hover:text-white font-mono text-[11px] flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
-              >
-                {copiedKey === 'referral-link' ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-[#3ad389]" />
-                    <span className="text-[#3ad389]">Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>Copy Link</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </section>
 
         {/* ======================================================== */}
         {/* 1. LINE STATUS (live from the panel)                      */}
@@ -952,7 +843,7 @@ export default function V2RayDashboardPage() {
                 <div className="flex items-center gap-2 self-start sm:self-auto">
                   <span className="px-3 py-1 rounded-[8px] bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-[#3ad389] flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#3ad389]" />
-                    <span>{isTrialClient ? '24 Hours Validity' : `${activePurchasedLine.validityDays} Days Active`}</span>
+                    <span>{isTrialClient ? '24 Hours Validity' : (expiryDaysLeft === null ? 'No expiry' : expiryDaysLeft <= 0 ? 'Expired' : `${expiryDaysLeft} Days Left`)}</span>
                   </span>
                   <Link
                     href="/v2ray"

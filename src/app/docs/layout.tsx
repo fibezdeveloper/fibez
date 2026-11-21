@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import FeatureGate from '@/components/FeatureGate';
 
 export const metadata: Metadata = {
   title: 'Client Documentation & Setup Guides',
@@ -10,5 +11,9 @@ export default function DocsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <FeatureGate page="docs" name="Docs">
+      {children}
+    </FeatureGate>
+  );
 }

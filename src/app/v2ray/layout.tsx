@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import FeatureGate from '@/components/FeatureGate';
 
 export const metadata: Metadata = {
   title: 'V2Ray Hub — High-Speed VLESS VPN for Sri Lanka',
@@ -10,5 +11,9 @@ export default function V2RayLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <FeatureGate page="v2ray" name="V2Ray">
+      {children}
+    </FeatureGate>
+  );
 }

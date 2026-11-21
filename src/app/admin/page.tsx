@@ -56,6 +56,7 @@ import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { normalizeIsp, V2RayIsp, V2RAY_PLAN_TIERS, LIVE_V2RAY_PACKAGES } from '@/lib/v2ray-catalog';
 import { PRODUCTS, ProductItem } from '@/lib/products';
 import WalletAdmin from '@/components/admin/WalletAdmin';
+import SitePagesAdmin from '@/components/admin/SitePagesAdmin';
 import DigitalProductThumbnail, { ProductBrandBadge, resolveBrandMeta } from '@/components/DigitalProductThumbnail';
 
 interface OrderItem {
@@ -286,7 +287,7 @@ const PACKAGE_PRESETS: PackagePreset[] = [
 ];
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'grant' | 'orders' | 'v2ray' | 'packages' | 'inventory' | 'tickets' | 'coupons' | 'wallet'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'grant' | 'orders' | 'v2ray' | 'packages' | 'inventory' | 'tickets' | 'coupons' | 'wallet' | 'pages'>('overview');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -365,6 +366,9 @@ export default function AdminPage() {
 
   // Windster Analytics & Filter Controls State
   const [panelState, setPanelState] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [productVisibility, setProductVisibility] = useState<Record<string, boolean>>({});
+  const [visibilityBusy, setVisibilityBusy] = useState<string | null>(null);
+  const [catalogShowAll, setCatalogShowAll] = useState(false);
   const [walletSummary, setWalletSummary] = useState<{
     totalBalanceLkr: number;
     accounts: number;
@@ -577,6 +581,10 @@ export default function AdminPage() {
       ]);
 
       if (walletRes?.summary) setWalletSummary(walletRes.summary);
+      fetch('/api/admin/products/visibility', { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => d?.visibility && setProductVisibility(d.visibility))
+        .catch(() => {});
       setPanelState(v2rayRes?.success ? 'online' : 'offline');
 
       if (pkgRes.success) {
@@ -1118,6 +1126,35 @@ export default function AdminPage() {
     }
   };
 
+  // Show / hide shop products on the storefront (one, several, or all)
+  const setProductsVisible = async (opts: { ids?: string[]; all?: boolean; isActive: boolean }) => {
+    const key = opts.all ? 'all' : (opts.ids || []).join(',');
+    setVisibilityBusy(key);
+    // Optimistic: flip immediately, restore if the server refuses.
+    const before = productVisibility;
+    setProductVisibility((prev) => {
+      const next = { ...prev };
+      if (opts.all) for (const k of Object.keys(next)) next[k] = opts.isActive;
+      for (const id of opts.ids || []) next[id] = opts.isActive;
+      return next;
+    });
+    try {
+      const res = await fetch('/api/admin/products/visibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(opts),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to update visibility');
+      showToast(opts.all ? `${data.changed} products ${opts.isActive ? 'shown' : 'hidden'}` : `Product ${opts.isActive ? 'shown' : 'hidden'}`, 'success');
+    } catch (e: any) {
+      setProductVisibility(before);
+      showToast(e.message, 'error');
+    } finally {
+      setVisibilityBusy(null);
+    }
+  };
+
   // Toggle Package Active State
   const handleTogglePackageActive = async (id: string) => {
     const current = adminPackages.find((p) => p.id === id);
@@ -1565,6 +1602,7 @@ export default function AdminPage() {
       label: 'Infrastructure',
       items: [
         { id: 'v2ray', label: 'V2Ray nodes', icon: Server, badge: null as number | null },
+        { id: 'pages', label: 'Site pages', icon: Globe2, badge: null as number | null },
         { id: 'grant', label: 'Grant VIP', icon: Gift, badge: null as number | null, ownerOnly: true },
       ],
     },
@@ -2864,74 +2902,68 @@ export default function AdminPage() {
               <Kpi label="Upload used" value={`${v2raySummary.totalUpGB.toFixed(1)} GB`} />
             </div>
 
-            {/* Inbounds Cards Grid with Real Health & Telemetry Status */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
+            {/* Inbounds: one full-width row per inbound (real numbers from the panel) */}
+            <div className="space-y-3">
               {inbounds.map((ib) => {
                 const totalTraffic = (ib.upGB || 0) + (ib.downGB || 0);
                 const downPct = totalTraffic > 0 ? Math.round(((ib.downGB || 0) / totalTraffic) * 100) : 0;
-                const upPct = 100 - downPct;
+                const upPct = totalTraffic > 0 ? 100 - downPct : 0;
+                const enabled = (ib as any).enable !== false;
 
                 return (
                   <div
                     key={ib.id}
-                    className="p-5 rounded-2xl bg-[#0c0c0e] border border-[#1f1f23] space-y-4 hover:border-zinc-700 transition-colors shadow-xl flex flex-col justify-between"
+                    className="p-4 sm:p-5 rounded-2xl bg-[#0c0c0e] border border-[#1f1f23] hover:border-zinc-700 transition-colors grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,0.7fr))_minmax(0,1.2fr)] gap-4 lg:items-center"
                   >
-                    <div>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider block">
-                            Inbound #{ib.id} • {ib.protocol.toUpperCase()}
-                          </span>
-                          <h3 className="text-sm font-bold text-white mt-0.5 truncate max-w-[160px]" title={ib.remark}>
-                            {ib.remark || 'Fibez Node'}
-                          </h3>
-                        </div>
-                        <span className="px-2 py-0.5 rounded font-mono text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                    {/* Identity */}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+                          Inbound #{ib.id} · {ib.protocol.toUpperCase()}
+                        </span>
+                        <span className="px-2 py-0.5 rounded font-mono text-[11px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
                           Port {ib.port}
                         </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 text-xs font-mono p-2.5 rounded-xl bg-[#141418] border border-[#1c1c22] mt-3">
-                        <div>
-                          <span className="text-[10px] text-zinc-400 block font-sans">Active Clients</span>
-                          <span className="text-white font-bold">{ib.clients?.length || 0}</span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-zinc-400 block font-sans">Total Traffic</span>
-                          <span className="text-[#3ad389] font-bold">{ib.totalTrafficGB} GB</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[11px] text-zinc-400 pt-2 font-mono">
-                        <span>↑ Up: {ib.upGB} GB</span>
-                        <span>↓ Down: {ib.downGB} GB</span>
-                      </div>
-                    </div>
-
-                    {/* Operational Health & Bandwidth Flow (Clean Unmetered Indicator) */}
-                    <div className="space-y-1.5 pt-2 border-t border-[#18181f]">
-                      <div className="flex items-center justify-between text-[10px] font-mono">
-                        <span className="text-zinc-400">Node Status</span>
-                        <span className="text-emerald-400 font-bold flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          Live • Unmetered
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-mono border ${
+                            enabled ? 'text-emerald-400 border-emerald-500/20' : 'text-zinc-400 border-zinc-700'
+                          }`}
+                        >
+                          {enabled ? 'Enabled' : 'Disabled'}
                         </span>
                       </div>
+                      <h3 className="text-sm font-semibold text-white mt-1 truncate" title={ib.remark}>
+                        {ib.remark || 'Fibez Node'}
+                      </h3>
+                    </div>
+
+                    {/* Numbers */}
+                    <div>
+                      <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Clients</div>
+                      <div className="text-lg font-mono font-semibold text-white">{ib.clients?.length || 0}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Total</div>
+                      <div className="text-lg font-mono font-semibold text-[#3ad389]">{ib.totalTrafficGB} GB</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Download</div>
+                      <div className="text-sm font-mono text-white">{ib.downGB} GB</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Upload</div>
+                      <div className="text-sm font-mono text-white">{ib.upGB} GB</div>
+                    </div>
+
+                    {/* Download / upload split */}
+                    <div>
                       <div className="w-full h-1.5 rounded-full bg-[#18181f] overflow-hidden flex">
-                        <div
-                          className="h-full bg-[#3ad389] transition-all duration-500"
-                          style={{ width: `${downPct}%` }}
-                          title={`Downlink: ${ib.downGB} GB (${downPct}%)`}
-                        />
-                        <div
-                          className="h-full bg-cyan-400 transition-all duration-500"
-                          style={{ width: `${upPct}%` }}
-                          title={`Uplink: ${ib.upGB} GB (${upPct}%)`}
-                        />
+                        <div className="h-full bg-[#3ad389]" style={{ width: `${downPct}%` }} title={`Download ${downPct}%`} />
+                        <div className="h-full bg-cyan-400" style={{ width: `${upPct}%` }} title={`Upload ${upPct}%`} />
                       </div>
-                      <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500">
-                        <span>↓ Down {downPct}%</span>
-                        <span>↑ Up {upPct}%</span>
+                      <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 mt-1.5">
+                        <span>↓ {downPct}%</span>
+                        <span>↑ {upPct}%</span>
                       </div>
                     </div>
                   </div>
@@ -4473,6 +4505,53 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* Storefront visibility: hide or show everything at once */}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="text-zinc-500 font-mono">
+                  {Object.values(productVisibility).filter(Boolean).length} of {Object.keys(productVisibility).length} visible on the storefront
+                </span>
+                <button
+                  type="button"
+                  disabled={visibilityBusy !== null}
+                  onClick={() => {
+                    if (window.confirm('Hide ALL shop products from the storefront? You can show them again any time.')) {
+                      setProductsVisible({ all: true, isActive: false });
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-[#141418] border border-zinc-800 text-zinc-300 hover:text-white hover:border-red-500/40 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <EyeOff className="w-3.5 h-3.5" />
+                  <span>Hide all</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={visibilityBusy !== null}
+                  onClick={() => setProductsVisible({ all: true, isActive: true })}
+                  className="px-3 py-1.5 rounded-xl bg-[#141418] border border-zinc-800 text-zinc-300 hover:text-white hover:border-[#3ad389]/50 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Show all</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={visibilityBusy !== null || filteredStockSummary.length === 0}
+                  onClick={() => setProductsVisible({ ids: filteredStockSummary.map((x) => x.productId), isActive: false })}
+                  className="px-3 py-1.5 rounded-xl bg-[#141418] border border-zinc-800 text-zinc-400 hover:text-white cursor-pointer disabled:opacity-50"
+                  title="Applies to the products matching the current filter and search"
+                >
+                  Hide shown ({filteredStockSummary.length})
+                </button>
+                <button
+                  type="button"
+                  disabled={visibilityBusy !== null || filteredStockSummary.length === 0}
+                  onClick={() => setProductsVisible({ ids: filteredStockSummary.map((x) => x.productId), isActive: true })}
+                  className="px-3 py-1.5 rounded-xl bg-[#141418] border border-zinc-800 text-zinc-400 hover:text-white cursor-pointer disabled:opacity-50"
+                  title="Applies to the products matching the current filter and search"
+                >
+                  Show shown ({filteredStockSummary.length})
+                </button>
+              </div>
+
               {/* Category Filter Pills */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
                 {[
@@ -4500,7 +4579,7 @@ export default function AdminPage() {
 
               {/* Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredStockSummary.slice(0, 12).map((s) => {
+                {(catalogShowAll ? filteredStockSummary : filteredStockSummary.slice(0, 12)).map((s) => {
                   const catalogItem = PRODUCTS.find((p) => p.id === s.productId) || {
                     id: s.productId,
                     title: s.title,
@@ -4518,6 +4597,8 @@ export default function AdminPage() {
                     <div
                       key={s.productId}
                       className={`group relative p-3.5 rounded-2xl bg-[#121216] border transition-all duration-200 flex flex-col justify-between ${
+                        productVisibility[s.productId] === false ? 'opacity-55' : ''
+                      } ${
                         isSelectedForAdd
                           ? 'border-[#3ad389] shadow-lg shadow-emerald-500/10 ring-1 ring-[#3ad389]/30'
                           : 'border-[#1f1f23] hover:border-zinc-700 hover:bg-[#16161b]'
@@ -4530,9 +4611,30 @@ export default function AdminPage() {
                         </div>
 
                         {/* Title & Brand */}
-                        <h4 className="text-xs font-bold text-white line-clamp-1 group-hover:text-[#3ad389] transition-colors" title={s.title}>
-                          {s.title}
-                        </h4>
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="text-xs font-bold text-white line-clamp-1 group-hover:text-[#3ad389] transition-colors" title={s.title}>
+                            {s.title}
+                          </h4>
+                          <button
+                            type="button"
+                            disabled={visibilityBusy !== null || !(s.productId in productVisibility)}
+                            onClick={() => setProductsVisible({ ids: [s.productId], isActive: productVisibility[s.productId] === false })}
+                            className={`relative inline-flex h-4 w-7 shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer disabled:opacity-40 ${
+                              productVisibility[s.productId] === false ? 'bg-zinc-800' : 'bg-[#3ad389]'
+                            }`}
+                            title={productVisibility[s.productId] === false ? 'Hidden from the storefront: click to show' : 'Visible on the storefront: click to hide'}
+                            aria-pressed={productVisibility[s.productId] !== false}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-3 w-3 rounded-full bg-black transition-transform ${
+                                productVisibility[s.productId] === false ? 'translate-x-0 bg-zinc-400' : 'translate-x-3'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                        {productVisibility[s.productId] === false && (
+                          <div className="mt-1 text-[10px] font-mono text-amber-300">Hidden from the storefront</div>
+                        )}
                         <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono mt-1">
                           <span className="capitalize">{s.category}</span>
                           <span>{s.region || 'Global'}</span>
@@ -4595,6 +4697,18 @@ export default function AdminPage() {
                   );
                 })}
               </div>
+
+              {filteredStockSummary.length > 12 && (
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setCatalogShowAll((v) => !v)}
+                    className="px-4 py-2 rounded-xl bg-[#141418] border border-zinc-800 text-xs font-mono text-zinc-300 hover:text-white cursor-pointer"
+                  >
+                    {catalogShowAll ? 'Show fewer' : `Show all ${filteredStockSummary.length} products`}
+                  </button>
+                </div>
+              )}
 
               {filteredStockSummary.length === 0 && (
                 <div className="py-8 text-center text-zinc-500 text-xs">
@@ -5043,6 +5157,8 @@ export default function AdminPage() {
         {/* TAB 6: COUPONS & PROMOTIONAL DISCOUNTS */}
         {/* ========================================================================= */}
         {activeTab === 'wallet' && <WalletAdmin />}
+
+        {activeTab === 'pages' && <SitePagesAdmin />}
 
         {activeTab === 'coupons' && (
           <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-200">

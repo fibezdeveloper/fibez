@@ -4,6 +4,7 @@ import { adminStore } from '@/lib/admin-store';
 import { createPurchasedLineFromCartItem, PurchasedV2RayLine } from '@/lib/v2ray-lines';
 import { renewalQuote } from '@/lib/pricing';
 import { dbReady } from '@/lib/db/tx';
+import { xui } from '@/lib/xui';
 import { getPanelClientsByUser, REFUND_WINDOW_HOURS } from '@/lib/wallet';
 
 export async function GET(req: NextRequest) {
@@ -35,6 +36,14 @@ export async function GET(req: NextRequest) {
     if (actor && dbReady()) {
       for (const c of await getPanelClientsByUser(actor.email).catch(() => [])) pcByUuid.set(c.uuid.toLowerCase(), c);
     }
+    // The panel is the source of truth for quota and expiry (what the customer actually bought).
+    let panelPlans: Awaited<ReturnType<typeof xui.listClientPlans>> | null = null;
+    try {
+      panelPlans = await xui.listClientPlans();
+    } catch (e) {
+      console.warn('panel plans unavailable, falling back to order data:', e);
+    }
+    const GB = 1024 * 1024 * 1024;
     const lines: PurchasedV2RayLine[] = [];
     const pendingOrders: { orderNumber: string; title: string; status: string }[] = [];
 
@@ -86,6 +95,15 @@ export async function GET(req: NextRequest) {
           else if (isTrial) line.status = 'TRIAL';
           const pc = pcByUuid.get(line.uuid.toLowerCase());
           line.expiresAt = pc?.expires_at ? new Date(pc.expires_at).toISOString() : null;
+          const plan = panelPlans?.get(line.uuid.toLowerCase());
+          if (plan) {
+            line.quotaGB = plan.totalBytes > 0 ? Math.round((plan.totalBytes / GB) * 10) / 10 : 0; // 0 = unlimited
+            line.quotaLabel = line.quotaGB > 0 ? `${line.quotaGB} GB` : 'Unlimited';
+            line.expiresAt = plan.expiryMs > 0 ? new Date(plan.expiryMs).toISOString() : null;
+            line.validityDays = plan.expiryMs > 0 ? Math.max(0, Math.ceil((plan.expiryMs - Date.now()) / 86400000)) : 0;
+            line.usedGB = Math.round(((plan.up + plan.down) / GB) * 100) / 100;
+            if (!plan.enable || (plan.expiryMs > 0 && plan.expiryMs < Date.now())) line.status = 'EXPIRED';
+          }
           line.renewable = Boolean(pc && pc.status === 'ACTIVE' && renewalQuote(item.productId, 1));
           const deliveredMs = new Date(ord.deliveredAt || ord.updatedAt).getTime();
           const paid = ord.totalAmountLKR > 0 && !isTrial && ord.paymentMethod !== 'staff_grant';

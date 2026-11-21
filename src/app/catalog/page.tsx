@@ -76,7 +76,7 @@ function CatalogContent() {
     fetch('/api/products')
       .then((res) => res.json())
       .then((data) => {
-        if (data.products && data.products.length > 0) {
+        if (Array.isArray(data.products)) {
           const mapped: ProductItem[] = data.products.map((p: any) => {
             const baseProd = PRODUCTS.find((x) => x.id === p.id);
             return {

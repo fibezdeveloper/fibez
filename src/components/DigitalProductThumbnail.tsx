@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { BRAND_LOGOS, type BrandLogoAsset } from '@/lib/brand-logos';
 import { ProductItem } from '@/lib/products';
 import { Sparkles, ShieldCheck } from 'lucide-react';
 
@@ -562,7 +563,7 @@ interface BrandMeta {
   renderLogo: () => React.ReactNode;
 }
 
-export function resolveBrandMeta(product: Partial<ProductItem>): BrandMeta {
+function resolveBrandMetaBase(product: Partial<ProductItem>): BrandMeta {
   const brand = (product.brand || '').toLowerCase().trim();
   const id = (product.id || '').toLowerCase();
   const title = (product.title || '').toLowerCase();
@@ -1213,6 +1214,31 @@ export function resolveBrandMeta(product: Partial<ProductItem>): BrandMeta {
       />
     ),
   };
+}
+
+/** The real logo file (see /public/brands) when we have one, else the drawn fallback above. */
+function BrandLogoImage({ asset }: { asset: BrandLogoAsset }) {
+  if (asset.kind === 'full') {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={asset.src} alt="" draggable={false} className="h-9 w-auto max-w-[170px] object-contain" />
+    );
+  }
+  return (
+    <div className="flex items-center gap-2">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={asset.src} alt="" draggable={false} className="h-8 w-auto max-w-[44px] object-contain" />
+      <span className="font-sans font-extrabold text-xl tracking-tight leading-none" style={{ color: asset.color }}>
+        {asset.label}
+      </span>
+    </div>
+  );
+}
+
+export function resolveBrandMeta(product: Partial<ProductItem>): BrandMeta {
+  const meta = resolveBrandMetaBase(product);
+  const asset = BRAND_LOGOS[meta.name];
+  return asset ? { ...meta, renderLogo: () => <BrandLogoImage asset={asset} /> } : meta;
 }
 
 export default function DigitalProductThumbnail({

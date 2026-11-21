@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import FeatureGate from '@/components/FeatureGate';
 
 export const metadata: Metadata = {
   title: 'Frequently Asked Questions — Fibez',
@@ -10,5 +11,9 @@ export default function FaqLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <FeatureGate page="faq" name="FAQ">
+      {children}
+    </FeatureGate>
+  );
 }
