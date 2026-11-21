@@ -1,5 +1,6 @@
 'use client';
 
+import { BANK_DETAILS } from '@/lib/bank-details';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
@@ -79,7 +80,7 @@ export default function BillingPage() {
   };
 
   const handleCopyAccount = () => {
-    navigator.clipboard.writeText('800923149102');
+    navigator.clipboard.writeText(BANK_DETAILS.accountNumber);
     setCopiedAcc(true);
     setTimeout(() => setCopiedAcc(false), 2000);
   };
@@ -284,16 +285,16 @@ export default function BillingPage() {
             <div className="p-4 rounded-xl bg-[#121217] border border-[#1f1f28] space-y-3 font-mono text-xs">
               <div>
                 <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">Bank Name</span>
-                <span className="text-white font-bold">Commercial Bank of Ceylon PLC</span>
+                <span className="text-white font-bold">{BANK_DETAILS.bankName}</span>
               </div>
               <div>
                 <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">Account Name</span>
-                <span className="text-zinc-200">Fibez Digital Network (Pvt) Ltd</span>
+                <span className="text-zinc-200">{BANK_DETAILS.accountName}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">Account Number</span>
-                  <span className="text-[#3ad389] font-black text-sm tracking-wider">8009 2314 9102</span>
+                  <span className="text-[#3ad389] font-black text-sm tracking-wider">{BANK_DETAILS.accountNumber}</span>
                 </div>
                 <button
                   type="button"
@@ -306,14 +307,14 @@ export default function BillingPage() {
               </div>
               <div>
                 <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">Branch</span>
-                <span className="text-zinc-300">Branch 014 — Colombo Main City Office</span>
+                <span className="text-zinc-300">{BANK_DETAILS.branch}</span>
               </div>
             </div>
 
             <div className="p-3.5 rounded-xl bg-[#141419] border border-[#202028] text-xs text-zinc-400 space-y-2 leading-relaxed">
               <div className="flex items-start gap-2 font-mono text-[11px]">
                 <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 text-[10px]">1</span>
-                <span>Transfer desired amount via ComBank Online or CDM deposit.</span>
+                <span>Transfer the amount by online banking, CEFT or a CDM deposit.</span>
               </div>
               <div className="flex items-start gap-2 font-mono text-[11px]">
                 <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 text-[10px]">2</span>

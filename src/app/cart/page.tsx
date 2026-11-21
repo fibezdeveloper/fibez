@@ -1,5 +1,6 @@
 'use client';
 
+import { BANK_DETAILS } from '@/lib/bank-details';
 import { useSiteFlag } from '@/lib/use-site-flags';
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -685,7 +686,7 @@ export default function CartPage() {
                   <span className="text-[9px] font-mono text-[#3ad389] uppercase font-bold">Fastest</span>
                 </div>
                 <div className="text-xs font-mono font-medium text-white">Bank Transfer / CDM</div>
-                <div className="text-[10px] font-mono text-[#a1a4a5] mt-0.5">ComBank / Sampath / BOC</div>
+                <div className="text-[10px] font-mono text-[#a1a4a5] mt-0.5">Commercial Bank</div>
               </button>
 
               <button
@@ -743,67 +744,49 @@ export default function CartPage() {
             {paymentMethod === 'bank_transfer' && (
               <div className="p-5 rounded-[16px] bg-[#141417] border border-[#222228] text-xs font-mono space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-[#222228]">
-                  <span className="text-white font-semibold">
-                    Supported Sri Lankan Banks
-                  </span>
-                  <span className="text-[10px] text-zinc-400">Transfer or Cash CDM</span>
+                  <span className="text-white font-semibold">Bank transfer details</span>
+                  <span className="text-[10px] text-zinc-400">Transfer or cash CDM deposit</span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                  {/* ComBank */}
-                  <div className="p-3 rounded-xl bg-[#0c0c0e] border border-white/10 hover:border-[#3ad389]/40 transition-colors">
-                    <div className="text-zinc-400 text-[10px] uppercase font-bold text-[#3ad389]">Commercial Bank</div>
-                    <div className="text-white font-bold text-xs mt-1">8002914820</div>
-                    <div className="text-[10px] text-zinc-500">Colombo Main</div>
+                <div className="p-4 rounded-xl bg-[#0c0c0e] border border-white/10 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-zinc-500">Account number</div>
+                      <div className="text-[#3ad389] font-black text-lg tracking-wider mt-0.5">{BANK_DETAILS.accountNumber}</div>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => handleCopyAcc('8002914820')}
-                      className="mt-2 text-[10px] text-zinc-400 hover:text-white flex items-center gap-1"
+                      onClick={() => handleCopyAcc(BANK_DETAILS.accountNumber)}
+                      className="px-2.5 py-1.5 rounded-lg bg-[#1a1a1f] hover:bg-[#25252c] text-[11px] text-zinc-300 hover:text-white flex items-center gap-1.5 border border-white/5 cursor-pointer"
                     >
-                      {copiedBankAcc === '8002914820' ? <Check className="w-3 h-3 text-[#3ad389]" /> : <Copy className="w-3 h-3" />}
-                      <span>{copiedBankAcc === '8002914820' ? 'Copied' : 'Copy Acc #'}</span>
+                      {copiedBankAcc === BANK_DETAILS.accountNumber ? <Check className="w-3.5 h-3.5 text-[#3ad389]" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedBankAcc === BANK_DETAILS.accountNumber ? 'Copied' : 'Copy'}</span>
                     </button>
                   </div>
-
-                  {/* Sampath */}
-                  <div className="p-3 rounded-xl bg-[#0c0c0e] border border-white/10 hover:border-[#3ad389]/40 transition-colors">
-                    <div className="text-zinc-400 text-[10px] uppercase font-bold text-amber-400">Sampath Bank</div>
-                    <div className="text-white font-bold text-xs mt-1">100299182390</div>
-                    <div className="text-[10px] text-zinc-500">Colombo 03</div>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyAcc('100299182390')}
-                      className="mt-2 text-[10px] text-zinc-400 hover:text-white flex items-center gap-1"
-                    >
-                      {copiedBankAcc === '100299182390' ? <Check className="w-3 h-3 text-[#3ad389]" /> : <Copy className="w-3 h-3" />}
-                      <span>{copiedBankAcc === '100299182390' ? 'Copied' : 'Copy Acc #'}</span>
-                    </button>
-                  </div>
-
-                  {/* BOC */}
-                  <div className="p-3 rounded-xl bg-[#0c0c0e] border border-white/10 hover:border-[#3ad389]/40 transition-colors">
-                    <div className="text-zinc-400 text-[10px] uppercase font-bold text-sky-400">Bank of Ceylon</div>
-                    <div className="text-white font-bold text-xs mt-1">00928172901</div>
-                    <div className="text-[10px] text-zinc-500">Kollupitiya</div>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyAcc('00928172901')}
-                      className="mt-2 text-[10px] text-zinc-400 hover:text-white flex items-center gap-1"
-                    >
-                      {copiedBankAcc === '00928172901' ? <Check className="w-3 h-3 text-[#3ad389]" /> : <Copy className="w-3 h-3" />}
-                      <span>{copiedBankAcc === '00928172901' ? 'Copied' : 'Copy Acc #'}</span>
-                    </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-zinc-500">Account name</div>
+                      <div className="text-white font-semibold text-xs mt-0.5">{BANK_DETAILS.accountName}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-zinc-500">Bank</div>
+                      <div className="text-white font-semibold text-xs mt-0.5">{BANK_DETAILS.bankName}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-zinc-500">Branch</div>
+                      <div className="text-white font-semibold text-xs mt-0.5">{BANK_DETAILS.branch}</div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="text-[11px] text-zinc-300">
-                  Beneficiary Name: <span className="text-white font-semibold">Fibez Digital Infrastructure Ltd</span>
+                <div className="text-[11px] text-zinc-400">
+                  Transfers from any bank work (CEFT or online banking). Put your order number in the remarks if you can.
                 </div>
 
                 {/* Slip Upload & Interactive Preview */}
                 <div className="pt-2 border-t border-[#222228]">
                   <label className="block text-[11px] text-[#a1a4a5] mb-2 font-medium">
-                    Upload Bank Transfer Slip (PNG, JPG or PDF from ComBank / Sampath app):
+                    Upload Bank Transfer Slip (PNG, JPG or PDF from your banking app):
                   </label>
 
                   {uploadedSlip ? (

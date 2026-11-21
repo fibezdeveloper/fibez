@@ -6,8 +6,6 @@ import FibezLogo from '@/components/FibezLogo';
 import { useStore, SocialLinkConfig } from '@/lib/store-context';
 import { useSiteFlags } from '@/lib/use-site-flags';
 import { 
-  Landmark, 
-  ShieldCheck, 
   ArrowUpRight, 
   Headphones, 
   FileText, 
@@ -275,32 +273,12 @@ export default function Footer() {
 
         </div>
 
-        {/* Bottom Row: Copyright & Bank Transfer Logo (with reserved clearance for BackToTop button) */}
+        {/* Bottom Row: Copyright (with reserved clearance for BackToTop button) */}
         <div className="pt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pr-0 sm:pr-24 lg:pr-28">
           
           {/* Copyright */}
           <div className="font-mono text-xs text-zinc-500">
             © 2026 FIBEZ DIGITAL INC. ALL RIGHTS RESERVED.
-          </div>
-
-          {/* Payment Method: Strictly Manual Bank Wire Logo & CDM Badge */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-mono text-zinc-300 hover:border-white/20 transition-colors">
-              <Landmark className="w-4 h-4 text-emerald-400 shrink-0" />
-              <div className="flex flex-col text-left">
-                <span className="text-[11px] font-semibold text-white tracking-wide">
-                  Manual Bank Transfer / CDM
-                </span>
-                <span className="text-[9px] text-zinc-400">
-                  Commercial Bank · Sampath Bank
-                </span>
-              </div>
-            </div>
-
-            <div className="hidden md:flex items-center gap-1.5 text-[11px] font-mono text-zinc-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-zinc-400" />
-              <span>Verified Slip Deposit</span>
-            </div>
           </div>
 
         </div>
