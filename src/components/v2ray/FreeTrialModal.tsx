@@ -21,9 +21,6 @@ import {
   KeyRound,
   CheckCircle2,
   AlertCircle,
-  Radio,
-  Server,
-  Layers,
   Smartphone
 } from 'lucide-react';
 
@@ -160,6 +157,7 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
   const { data: session, isPending: sessionLoading } = authClient.useSession();
 
   const [selectedPackageId, setSelectedPackageId] = useState<string>('dialog-zoom-router');
+  const [selectedIsp, setSelectedIsp] = useState<TrialPackageOption['isp']>('Dialog');
   const [isLoading, setIsLoading] = useState(false);
   const [trialData, setTrialData] = useState<any | null>(null);
   const [copied, setCopied] = useState(false);
@@ -169,6 +167,14 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
   if (!isOpen) return null;
 
   const selectedPkg = TRIAL_PACKAGES.find((p) => p.id === selectedPackageId) || TRIAL_PACKAGES[0];
+  const networks = Array.from(new Set(TRIAL_PACKAGES.map((p) => p.isp)));
+  const networkPackages = TRIAL_PACKAGES.filter((p) => p.isp === selectedIsp);
+
+  const pickNetwork = (isp: TrialPackageOption['isp']) => {
+    setSelectedIsp(isp);
+    const first = TRIAL_PACKAGES.find((p) => p.isp === isp);
+    if (first) setSelectedPackageId(first.id);
+  };
 
   const handleGenerate = async () => {
     setIsLoading(true);
@@ -216,7 +222,7 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-2xl bg-[#0e0e12] border border-[#23232d] rounded-2xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
+      <div className="relative w-full max-w-xl bg-[#0e0e12] border border-[#23232d] rounded-2xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
         
         {/* Close Button */}
         <button
@@ -254,15 +260,15 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
               <ul className="space-y-2 text-xs text-zinc-300">
                 <li className="flex items-center gap-2.5">
                   <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-[#3ad389] flex items-center justify-center text-[10px] shrink-0 font-bold">✓</span>
-                  <span><strong>10 GB High-Speed Bandwidth</strong> — unthrottled Singapore Equinix SG3 connection</span>
+                  <span><strong>10 GB of fast data</strong> — enough to try streaming, calls and browsing</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-[#3ad389] flex items-center justify-center text-[10px] shrink-0 font-bold">✓</span>
-                  <span><strong>24-Hour Active Validity</strong> — instant automated provisioning on live inbounds</span>
+                  <span><strong>24 hours free</strong> — your line is ready in seconds</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-[#3ad389] flex items-center justify-center text-[10px] shrink-0 font-bold">✓</span>
-                  <span><strong>2 Devices / 2 IPs HWID Limit</strong> — connect both PC and smartphone simultaneously</span>
+                  <span><strong>2 devices at once</strong> — use your phone and PC together</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-[#3ad389] flex items-center justify-center text-[10px] shrink-0 font-bold">✓</span>
@@ -306,17 +312,15 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
           /* ------------------------------------------------------------- */
           <div className="space-y-5">
             <div>
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-mono text-emerald-400 mb-2">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>AUTHENTICATED · 24-HOUR FREE TRIAL</span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                Generate 24-Hour Free VLESS Trial
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white pr-10">
+                Get your free 24-hour trial
               </h2>
-              <div className="flex items-center gap-2 mt-2 px-3 py-1.5 rounded-lg bg-[#141418] border border-[#23232d] text-xs font-mono text-zinc-300">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Claiming trial as: <strong className="text-white">{session?.user?.email}</strong></span>
-              </div>
+              <p className="text-sm text-zinc-400 mt-1">
+                Pick the SIM or internet you use. We set up your line in seconds.
+              </p>
+              <p className="text-xs text-zinc-500 mt-2 truncate">
+                Trial will be saved to <span className="text-zinc-300">{session?.user?.email}</span>
+              </p>
             </div>
 
             {errorMsg && (
@@ -326,92 +330,86 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
               </div>
             )}
 
-            {/* Select Real Package */}
+            {/* Step 1: network */}
             <div>
-              <div className="flex items-center justify-between mb-2.5">
-                <label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400 font-semibold">
-                  Select Your Sri Lankan Package / SIM
-                </label>
-                <span className="text-[11px] font-mono text-[#3ad389]">
-                  {TRIAL_PACKAGES.length} Live Inbound Targets
-                </span>
+              <div className="text-sm font-semibold text-white mb-2.5 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-[#3ad389] text-black text-[11px] font-bold flex items-center justify-center">1</span>
+                Which network do you use?
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[260px] overflow-y-auto pr-1">
-                {TRIAL_PACKAGES.map((pkg) => {
-                  const isSelected = selectedPackageId === pkg.id;
-                  let ispBadgeColor = 'bg-amber-500/10 text-amber-300 border-amber-500/30';
-                  if (pkg.isp === 'SLT') ispBadgeColor = 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30';
-                  if (pkg.isp === 'Airtel') ispBadgeColor = 'bg-rose-500/10 text-rose-300 border-rose-500/30';
-                  if (pkg.isp === 'Mobitel') ispBadgeColor = 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30';
-                  if (pkg.isp === 'Hutch') ispBadgeColor = 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30';
-
+              <div className="flex flex-wrap gap-2">
+                {networks.map((isp) => {
+                  const active = selectedIsp === isp;
                   return (
                     <button
-                      key={pkg.id}
+                      key={isp}
                       type="button"
-                      onClick={() => setSelectedPackageId(pkg.id)}
-                      className={`p-3 rounded-xl border text-left transition-all relative ${
-                        isSelected
-                          ? 'bg-[#181820] border-[#3ad389] text-white shadow-lg ring-1 ring-[#3ad389]/30'
-                          : 'bg-[#121216] border-[#22222a] text-zinc-300 hover:border-zinc-600 hover:bg-[#15151c]'
+                      onClick={() => pickNetwork(isp)}
+                      className={`px-4 py-2 rounded-full border text-sm font-semibold transition-colors ${
+                        active
+                          ? 'bg-[#3ad389] border-[#3ad389] text-black'
+                          : 'bg-[#121216] border-[#2a2a33] text-zinc-300 hover:border-zinc-500 hover:text-white'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-1 mb-1">
-                        <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold border ${ispBadgeColor}`}>
-                          {pkg.isp}
-                        </span>
-                        <span className="text-[10px] font-mono text-zinc-500">
-                          Port {pkg.port}
-                        </span>
-                      </div>
-                      <div className="font-bold text-xs truncate text-white">
-                        {pkg.title}
-                      </div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5 truncate">
-                        {pkg.reloadDesc}
-                      </div>
+                      {isp}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Dynamic SNI & Live Inbound Route Preview */}
-            <div className="p-3.5 rounded-xl bg-[#141419] border border-[#23232d] space-y-2.5">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-zinc-400 flex items-center gap-1.5">
-                  <Radio className="w-3.5 h-3.5 text-[#3ad389]" />
-                  <span>Target SNI Masquerade:</span>
-                </span>
-                <span className="px-2.5 py-0.5 rounded font-mono font-bold bg-[#3ad389]/15 text-[#3ad389] border border-[#3ad389]/30 text-xs">
-                  {selectedPkg.sni}
-                </span>
+            {/* Step 2: package */}
+            <div>
+              <div className="text-sm font-semibold text-white mb-2.5 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-[#3ad389] text-black text-[11px] font-bold flex items-center justify-center">2</span>
+                Which package do you have?
               </div>
-
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-zinc-400 flex items-center gap-1.5">
-                  <Server className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Target Inbound Gateway:</span>
-                </span>
-                <span className="text-zinc-200 font-bold">
-                  {selectedPkg.inboundName}
-                </span>
+              <div className="grid gap-2">
+                {networkPackages.map((pkg) => {
+                  const isSelected = selectedPackageId === pkg.id;
+                  return (
+                    <button
+                      key={pkg.id}
+                      type="button"
+                      onClick={() => setSelectedPackageId(pkg.id)}
+                      className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-colors ${
+                        isSelected
+                          ? 'bg-[#3ad389]/10 border-[#3ad389]'
+                          : 'bg-[#121216] border-[#22222a] hover:border-zinc-600'
+                      }`}
+                    >
+                      <span
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                          isSelected ? 'border-[#3ad389] bg-[#3ad389]' : 'border-zinc-600'
+                        }`}
+                      >
+                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-black" />}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-white truncate">{pkg.title}</span>
+                        <span className="block text-xs text-zinc-400 truncate">{pkg.reloadDesc}</span>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
+            </div>
 
-              {/* Specs Pills: 10GB, 24 Hours, 2 Devices */}
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#1f1f27] text-center text-[11px] font-mono">
-                <div className="p-2 rounded-lg bg-[#0e0e12] border border-[#1c1c24]">
-                  <span className="text-zinc-500 block text-[9px] uppercase tracking-wider">Quota Allowance</span>
-                  <span className="text-[#3ad389] font-bold">10 GB High-Speed</span>
-                </div>
-                <div className="p-2 rounded-lg bg-[#0e0e12] border border-[#1c1c24]">
-                  <span className="text-zinc-500 block text-[9px] uppercase tracking-wider">Active Period</span>
-                  <span className="text-white font-bold">24 Hours (1 Day)</span>
-                </div>
-                <div className="p-2 rounded-lg bg-[#0e0e12] border border-[#1c1c24]">
-                  <span className="text-zinc-500 block text-[9px] uppercase tracking-wider">Device / HWID</span>
-                  <span className="text-cyan-400 font-bold">2 Devices (2 IPs)</span>
-                </div>
+            {/* What you get */}
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="p-3 rounded-xl bg-[#131318] border border-[#23232d]">
+                <Database className="w-4 h-4 text-[#3ad389] mx-auto mb-1" />
+                <div className="text-sm font-bold text-white">10 GB</div>
+                <div className="text-[11px] text-zinc-500">data</div>
+              </div>
+              <div className="p-3 rounded-xl bg-[#131318] border border-[#23232d]">
+                <Clock className="w-4 h-4 text-[#3ad389] mx-auto mb-1" />
+                <div className="text-sm font-bold text-white">24 hours</div>
+                <div className="text-[11px] text-zinc-500">free access</div>
+              </div>
+              <div className="p-3 rounded-xl bg-[#131318] border border-[#23232d]">
+                <Smartphone className="w-4 h-4 text-[#3ad389] mx-auto mb-1" />
+                <div className="text-sm font-bold text-white">2 devices</div>
+                <div className="text-[11px] text-zinc-500">at once</div>
               </div>
             </div>
 
@@ -426,12 +424,12 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
                 {isLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                    <span>Provisioning VLESS Client on Inbound #{selectedPkg.inboundId}...</span>
+                    <span>Setting up your line...</span>
                   </>
                 ) : (
                   <>
                     <Zap className="w-4 h-4 fill-current text-black" />
-                    <span>Generate 24-Hour VLESS Trial Now</span>
+                    <span>Get my free trial</span>
                   </>
                 )}
               </button>
@@ -471,12 +469,8 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
                   <div className="font-semibold text-white text-sm">
                     {trialData.title || `VLESS VPN (${trialData.isp})`}
                   </div>
-                  <div className="text-xs text-zinc-400 font-mono flex items-center gap-2 mt-0.5">
-                    <span>SNI: <strong className="text-[#3ad389]">{trialData.sni}</strong></span>
-                    <span>·</span>
-                    <span>Port: <strong className="text-white">{trialData.port || selectedPkg.port}</strong></span>
-                    <span>·</span>
-                    <span>Ref: {trialData.id}</span>
+                  <div className="text-xs text-zinc-400 mt-0.5">
+                    {selectedPkg.reloadDesc}
                   </div>
                 </div>
               </div>
