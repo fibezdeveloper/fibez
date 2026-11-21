@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { buildRlsContext, isStaffRole, requireAuth } from '@/lib/dal';
+import { adminSql, buildRlsContext, isStaffRole, requireAuth } from '@/lib/dal';
 import { withRlsTransaction } from '@/lib/db/rls';
 import { parseAttachments } from '@/lib/ticket-attachments';
 
@@ -59,6 +59,23 @@ export async function GET(
     }
     if (result === 'FORBIDDEN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Staff see each sender's email on hover. Customers never get staff emails.
+    if (isStaff && adminSql) {
+      const ids = [...new Set(result.messages.map((m: { sender_id: string | null }) => m.sender_id).filter(Boolean))] as string[];
+      if (ids.length > 0) {
+        try {
+          const rows = await adminSql`SELECT id::text AS id, email FROM neon_auth."user" WHERE id::text = ANY(${ids})`;
+          const emailById = new Map<string, string>(rows.map((r) => [String(r.id), String(r.email)]));
+          result.messages = result.messages.map((m: { sender_id: string | null }) => ({
+            ...m,
+            sender_email: (m.sender_id && emailById.get(m.sender_id)) || null,
+          }));
+        } catch (err) {
+          console.error('Failed to resolve ticket sender emails:', err);
+        }
+      }
     }
 
     return NextResponse.json(result);

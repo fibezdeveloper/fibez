@@ -49,6 +49,7 @@ export interface TicketMessage {
   sender_id: string | null;
   sender_name: string;
   sender_role: 'user' | 'admin' | 'owner';
+  sender_email?: string | null;
   message: string;
   attachments?: TicketAttachment[] | null;
   created_at: string;
@@ -64,6 +65,21 @@ const CATEGORIES = [
   'Billing & Slip',
   'General',
 ];
+
+// Owner = red, admin = blue, customer = white.
+const ROLE_STYLES: Record<string, { name: string; badge: string; label: string }> = {
+  owner: { name: 'text-red-400', badge: 'bg-red-500/15 text-red-400 border-red-500/40', label: 'Owner' },
+  admin: { name: 'text-sky-400', badge: 'bg-sky-500/15 text-sky-400 border-sky-500/40', label: 'Admin' },
+  user: { name: 'text-white', badge: 'bg-white/10 text-white border-white/20', label: 'Customer' },
+};
+
+// Hover text for a sender's name. Customers' own emails come from the ticket; staff emails
+// are only sent to staff, so a customer just sees the display name for staff messages.
+function senderTooltip(msg: TicketMessage, ticket: Ticket): string {
+  const email = msg.sender_email || (msg.sender_role === 'user' ? ticket.customer_email : '');
+  const who = msg.sender_role === 'user' ? ticket.customer_name || msg.sender_name : msg.sender_name;
+  return email ? `${who} (${email})` : who;
+}
 
 const STATUS_COLORS: Record<string, string> = {
   OPEN: 'bg-white/10 text-white border-white/20',
@@ -405,16 +421,19 @@ export default function TicketCenter({
                   >
                     <div className="flex items-center justify-between text-[11px]">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-white">{msg.sender_name}</span>
-                        {isAdmin ? (
-                          <span className="px-1.5 py-0.2 rounded bg-white/15 text-white text-[9px] uppercase tracking-wider font-bold">
-                            {msg.sender_role === 'owner' ? 'Owner' : 'Support Desk'}
-                          </span>
-                        ) : (
-                          <span className="px-1.5 py-0.2 rounded bg-white/5 text-zinc-400 text-[9px] uppercase tracking-wider">
-                            Customer
-                          </span>
-                        )}
+                        <span
+                          className={`font-bold cursor-help ${ROLE_STYLES[msg.sender_role]?.name ?? 'text-white'}`}
+                          title={senderTooltip(msg, activeTicket)}
+                        >
+                          {msg.sender_name}
+                        </span>
+                        <span
+                          className={`px-1.5 py-0.2 rounded border text-[9px] uppercase tracking-wider font-bold ${
+                            ROLE_STYLES[msg.sender_role]?.badge ?? ROLE_STYLES.user.badge
+                          }`}
+                        >
+                          {ROLE_STYLES[msg.sender_role]?.label ?? 'Customer'}
+                        </span>
                       </div>
                       <span className="text-[#a1a4a5]">{formatDate(msg.created_at)}</span>
                     </div>
