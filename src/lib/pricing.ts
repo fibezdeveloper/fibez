@@ -30,7 +30,15 @@ function usd(lkr: number): number {
   return Number((lkr / 305).toFixed(2));
 }
 
-export function resolveServerPrice(productId: string, variantLabel: string): ResolvedPrice | null {
+/**
+ * `knownPackageIds` (checkout passes the custom packages from the admin store): when given, a V2Ray card id
+ * must name a package that really exists, so made-up package keys cannot be bought at plan prices.
+ */
+export function resolveServerPrice(
+  productId: string,
+  variantLabel: string,
+  knownPackageIds?: string[]
+): ResolvedPrice | null {
   // 1. Plain catalog product (+ duration/denomination multiplier chosen by label)
   const product = PRODUCTS.find((p) => p.id === productId);
   if (product) {
@@ -50,6 +58,7 @@ export function resolveServerPrice(productId: string, variantLabel: string): Res
     const plan = V2RAY_PLAN_TIERS.find((t) => t.id === card[2]);
     const months = Number(card[4]);
     const discount = DURATION_DISCOUNTS.find((d) => d.months === months);
+    if (knownPackageIds && !LIVE_V2RAY_PACKAGES.some((p) => p.id === card[1]) && !knownPackageIds.includes(card[1])) return null;
     if (plan && discount) {
       const base = card[3] === 'lk_ip' ? plan.lkIpPriceLKR : plan.monthlyPriceLKR;
       const total = Math.round(base * (1 - discount.discountPercent / 100)) * months;

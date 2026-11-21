@@ -10,6 +10,7 @@ import {
   V2RayPlanTier,
 } from '@/lib/v2ray-catalog';
 import { useStore } from '@/lib/store-context';
+import { useSiteFlags } from '@/lib/use-site-flags';
 import V2RayThumbnail from './V2RayThumbnail';
 import { AnimatedButton } from '@/components/ui/AnimatedButton';
 import { Meteors } from '@/components/ui/meteors';
@@ -54,7 +55,11 @@ export default function V2RayPackageCard({
 
   const [selectedPlanId, setSelectedPlanId] = useState('basic');
   const [selectedMonths, setSelectedMonths] = useState(1);
-  const [serverType, setServerType] = useState<'standard' | 'lk_ip'>(defaultServerType);
+  const siteFlags = useSiteFlags();
+  const lkIpOpen = siteFlags?.lk_ip === true && pkg.hasSriLankanIpOption;
+  const [serverTypeState, setServerType] = useState<'standard' | 'lk_ip'>(defaultServerType);
+  // Never sell the Sri Lanka IP variant while the option is switched off.
+  const serverType: 'standard' | 'lk_ip' = lkIpOpen ? serverTypeState : 'standard';
   const [copiedCode, setCopiedCode] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -314,7 +319,7 @@ export default function V2RayPackageCard({
 
               {/* Scrollable choices */}
               <div className="px-5 pb-4 overflow-y-auto space-y-5">
-                {pkg.hasSriLankanIpOption && (
+                {lkIpOpen && (
                   <div>
                     <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Server location</div>
                     <div className="grid grid-cols-2 gap-2">

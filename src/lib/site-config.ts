@@ -11,6 +11,7 @@ export const PAGE_DEFS = [
   { key: 'docs', label: 'Docs', description: 'Documentation pages' },
   { key: 'faq', label: 'FAQ', description: 'Frequently asked questions' },
   { key: 'infrastructure', label: 'Infrastructure', description: 'Service status page' },
+  { key: 'lk_ip', label: 'Sri Lanka IP option', description: 'Offer the Sri Lanka IP choice (+Rs 300) when buying a V2Ray plan. Off = Singapore only.' },
 ] as const;
 
 export type PageKey = (typeof PAGE_DEFS)[number]['key'];
@@ -23,6 +24,7 @@ export const DEFAULT_FLAGS: PageFlags = {
   docs: true,
   faq: true,
   infrastructure: true,
+  lk_ip: false, // hidden until the Sri Lanka IP gateway is ready
 };
 
 let cache: { at: number; flags: PageFlags } | null = null;

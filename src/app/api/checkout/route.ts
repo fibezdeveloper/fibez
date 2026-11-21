@@ -141,6 +141,7 @@ export async function POST(request: NextRequest) {
     }[] = [];
 
     const packageOverrides = await adminStore.getPackageOverrides();
+    const customPackageIds = (await adminStore.getCustomPackages()).map((p: { id: string }) => p.id);
     const siteFlags = await getPageFlags();
     const hiddenProducts = await getHiddenProductIds();
     const buyerIsStaff = actor?.role === 'admin' || actor?.role === 'owner';
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
       const item = cart[idx] || {};
       const prodId = String(item.productId || item.id || '').trim();
       const variantLabel = typeof item.variantTitle === 'string' ? item.variantTitle.trim() : '';
-      const priced = resolveServerPrice(prodId, variantLabel);
+      const priced = resolveServerPrice(prodId, variantLabel, customPackageIds);
       if (!priced) {
         return NextResponse.json(
           { error: `Unknown or unavailable product in cart: ${prodId.slice(0, 80) || '(empty)'}` },
@@ -173,6 +174,14 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
+      }
+
+      // The Sri Lanka IP variant (…-lk_ip-…) is only sold while the owner has it switched on.
+      if (!buyerIsStaff && !siteFlags.lk_ip && /-lk_ip(-\d+m)?$/.test(prodId)) {
+        return NextResponse.json(
+          { error: 'Sri Lanka IP is not available right now. Please choose the Singapore option.' },
+          { status: 400 }
+        );
       }
 
       const qty = Math.max(1, Math.min(20, Math.round(Number(item.quantity) || 1)));

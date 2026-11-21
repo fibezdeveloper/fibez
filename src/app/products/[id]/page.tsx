@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, use, Suspense } from 'react';
+import React, { useState, use, Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, notFound } from 'next/navigation';
 import { PRODUCTS, ProductItem } from '@/lib/products';
@@ -33,6 +33,7 @@ import { V2RAY_QUOTA_TIERS, LIVE_V2RAY_PACKAGES, V2RayPackageDef } from '@/lib/v
 import { AnimatedNumber, QuantityStepper } from '@/components/ui/AnimatedNumber';
 import { AnimatedButton } from '@/components/ui/AnimatedButton';
 import { ShareSheet } from '@/components/ui/ShareSheet';
+import { useSiteFlags } from '@/lib/use-site-flags';
 
 function ProductDetailContent({
   params,
@@ -50,7 +51,13 @@ function ProductDetailContent({
 
   const [selectedDurationIndex, setSelectedDurationIndex] = useState(0);
   const [selectedQuotaId, setSelectedQuotaId] = useState<string>('unlimited');
+  const siteFlags = useSiteFlags();
+  const lkIpOpen = siteFlags?.lk_ip === true;
   const [serverType, setServerType] = useState<'STANDARD' | 'LK_IP'>('STANDARD');
+  // The Sri Lanka IP variant is only sellable while the owner has it switched on.
+  useEffect(() => {
+    if (!lkIpOpen && serverType === 'LK_IP') setServerType('STANDARD');
+  }, [lkIpOpen, serverType]);
   const [copiedReload, setCopiedReload] = useState(false);
   const [orderQuantity, setOrderQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
@@ -579,8 +586,8 @@ function ProductDetailContent({
                   </div>
                 </div>
 
-                {/* Server Routing Gateway Toggle */}
-                <div>
+                {/* Server Routing Gateway Toggle (hidden while Sri Lanka IP is switched off) */}
+                {lkIpOpen && <div>
                   <label className="block text-xs font-mono text-zinc-300 font-semibold uppercase tracking-wider mb-2">
                     Select Server Gateway
                   </label>
@@ -625,7 +632,7 @@ function ProductDetailContent({
                       </div>
                     </button>
                   </div>
-                </div>
+                </div>}
 
                 {/* Network & Order Summary */}
                 <div className="p-3.5 rounded-[14px] bg-[#070709] border border-[#1b1b20] space-y-1.5 text-xs font-mono">
