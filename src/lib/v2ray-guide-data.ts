@@ -444,7 +444,7 @@ export const GUIDE_COPY: Record<GuideLang, GuideCopyBundle> = {
     pipelineLabel: 'Connection Pipeline',
     pipelineSteps: [
       'Your Device (NetMod / v2rayNG)',
-      'Your ISP Sees Allowed Traffic',
+      'ISP Sees Allowed',
       'Fibez VLESS Node (Singapore)',
       'Unrestricted Open Web',
     ],
