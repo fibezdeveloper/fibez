@@ -243,9 +243,9 @@ export default function V2RayPage() {
                 text="Welcome to "
                 words={[
                   "Fibez V2Ray",
-                  "Abroad",
                   "Singapore Direct",
-                  "Airflight"
+                  "Unthrottled Speed",
+                  "Every Sri Lankan SIM"
                 ]}
               />
             </div>
