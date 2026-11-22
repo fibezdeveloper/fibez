@@ -162,6 +162,16 @@ const NETWORK_LOGO: Record<string, string> = {
   Mobitel: '/images/isps/mobitel.svg',
 };
 
+// The logo files have different shapes (Airtel is nearly square, the rest are wide wordmarks), so each
+// gets its own size inside the tile to look about equally big.
+const LOGO_SIZE: Record<string, React.CSSProperties> = {
+  Dialog: { width: '84%', height: 'auto' },
+  SLT: { width: '96%', height: 'auto' },
+  Mobitel: { width: '96%', height: 'auto' },
+  Hutch: { width: '84%', height: 'auto' },
+  Airtel: { height: '82%', width: 'auto' },
+};
+
 export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps) {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
 
@@ -363,7 +373,7 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
                     >
                       <span className="w-full aspect-[4/3] rounded-xl bg-white flex items-center justify-center p-2">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={NETWORK_LOGO[isp]} alt="" className="max-w-full max-h-full object-contain" draggable={false} />
+                        <img src={NETWORK_LOGO[isp]} alt="" style={LOGO_SIZE[isp]} className="object-contain" draggable={false} />
                       </span>
                       <span className={`text-[11px] font-semibold ${active ? 'text-white' : 'text-zinc-400'}`}>{isp}</span>
                       {active && (

@@ -126,7 +126,8 @@ export default function V2RayGuidePage() {
               itemStyle="pill"
               hoverEffect="fill"
               indicator="pill"
-              highlightColor="#8b5cf6"
+              highlightColor="linear-gradient(90deg, #2a2590 0%, #5b21b6 100%)"
+              highlightTextColor="#ffffff"
               ariaLabel="Guide sections"
               items={SECTION_IDS.map((id, i) => ({ label: copy.navLabels[i], href: `#${id}` }))}
               activeHref={`#${activeSection}`}

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { LiquidButton } from '@/components/ui/liquid-button';
 import {
   VISUAL_PACKAGES,
   VisualPackageCard,
@@ -34,6 +35,7 @@ export default function GuidePackageGallery({
   title,
   subtitle,
 }: GuidePackageGalleryProps) {
+  const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<GalleryFilter>('ALL');
   const [lightboxPkg, setLightboxPkg] = useState<VisualPackageCard | null>(null);
 
@@ -132,14 +134,16 @@ export default function GuidePackageGallery({
             </div>
 
             {/* Footer Link */}
-            <div className="px-4 py-3 border-t border-[#181820] bg-[#0b0b0f] flex items-center justify-end text-xs font-mono">
-              <Link
-                href={`/products/${pkg.productId}`}
-                className="text-white hover:text-[#3ad389] flex items-center gap-1 transition-colors font-semibold"
+            <div className="px-4 py-3 border-t border-[#181820] bg-[#0b0b0f]">
+              <LiquidButton
+                size="sm"
+                variant="accent"
+                className="w-full"
+                onClick={() => router.push(`/products/${pkg.productId}`)}
               >
-                <span>View VLESS</span>
+                <span>Buy now</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+              </LiquidButton>
             </div>
           </div>
         ))}
