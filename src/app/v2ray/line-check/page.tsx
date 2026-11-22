@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import LineCheck from '@/components/v2ray/LineCheck';
+import PredictiveArcBackground from '@/components/PredictiveArcBackground';
 
 export const metadata: Metadata = {
   title: 'Line Check — Fibez V2Ray',
@@ -10,7 +11,9 @@ export const metadata: Metadata = {
 
 export default function LineCheckPage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-28 pb-24">
+    <div className="relative isolate">
+      <PredictiveArcBackground />
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-28 pb-24">
       <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 mb-4">
         <Link href="/" className="hover:text-white transition-colors">Home</Link>
         <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
@@ -27,6 +30,7 @@ export default function LineCheckPage() {
       </header>
 
       <LineCheck />
+      </div>
     </div>
   );
 }

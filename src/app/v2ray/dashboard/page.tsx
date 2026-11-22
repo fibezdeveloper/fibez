@@ -1,5 +1,6 @@
 'use client';
 
+import PredictiveArcBackground from '@/components/PredictiveArcBackground';
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import QRCode from 'qrcode';
@@ -583,7 +584,9 @@ export default function V2RayDashboardPage() {
     );
   }
   return (
-    <div className="min-h-screen bg-[#000000] text-[#ededed] pt-24 pb-32">
+    <div className="relative isolate min-h-screen bg-[#000000] text-[#ededed] pt-24 pb-32">
+      {/* Same arch as the other V2Ray pages, softened so the numbers on top stay easy to read */}
+      <PredictiveArcBackground className="[&>canvas]:blur-[3px] [&>canvas]:scale-105" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-xs font-mono text-[#a1a4a5] mb-6">
