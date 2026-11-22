@@ -9,6 +9,7 @@ import GuidePackageGallery from '@/components/v2ray/GuidePackageGallery';
 import GuidePlanWizard from '@/components/v2ray/GuidePlanWizard';
 import GuideFaqSection from '@/components/v2ray/GuideFaqSection';
 import GuideDeviceSetup from '@/components/v2ray/GuideDeviceSetup';
+import PillNav from '@/components/PillNav';
 import PredictiveArcBackground from '@/components/PredictiveArcBackground';
 import { Activity, AlertCircle, ArrowRight, ChevronDown, Globe, Layers, ShieldCheck, Terminal } from 'lucide-react';
 
@@ -111,26 +112,23 @@ export default function V2RayGuidePage() {
       </section>
 
       {/* Jump menu: stays under the top bar while you scroll */}
-      <nav
-        aria-label="Guide sections"
-        className="sticky top-[84px] z-30 border-y border-[#181820] bg-[#070709]/85 backdrop-blur-md"
-      >
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
-          {SECTION_IDS.map((id, i) => (
-            <a
-              key={id}
-              href={`#${id}`}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border transition-colors ${
-                activeSection === id
-                  ? 'bg-white text-black border-white font-semibold'
-                  : 'bg-transparent text-zinc-400 border-white/10 hover:text-white hover:border-white/30'
-              }`}
-            >
-              {copy.navLabels[i]}
-            </a>
-          ))}
+      <div className="sticky top-[84px] z-30 pointer-events-none">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-2.5">
+          <div className="pointer-events-auto">
+            <PillNav
+              layout="joined"
+              size="sm"
+              itemStyle="pill"
+              hoverEffect="fill"
+              indicator="pill"
+              highlightColor="#8b5cf6"
+              ariaLabel="Guide sections"
+              items={SECTION_IDS.map((id, i) => ({ label: copy.navLabels[i], href: `#${id}` }))}
+              activeHref={`#${activeSection}`}
+            />
+          </div>
         </div>
-      </nav>
+      </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 space-y-16">
         {/* 1. Find a plan */}
