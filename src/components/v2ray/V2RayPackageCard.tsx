@@ -53,7 +53,15 @@ export default function V2RayPackageCard({
   const router = useRouter();
   const { addToCart, setIsCartOpen } = useStore();
 
-  const [selectedPlanId, setSelectedPlanId] = useState('basic');
+  // Nothing is chosen until the visitor picks a plan; the duration, coupon and total then open up.
+  const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [promoInput, setPromoInput] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; percent: number } | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [refInput, setRefInput] = useState('');
+  const [appliedRef, setAppliedRef] = useState<{ code: string; discountLKR: number } | null>(null);
+  const [refError, setRefError] = useState<string | null>(null);
   const [selectedMonths, setSelectedMonths] = useState(1);
   const siteFlags = useSiteFlags();
   const lkIpOpen = siteFlags?.lk_ip === true && pkg.hasSriLankanIpOption;
@@ -101,11 +109,17 @@ export default function V2RayPackageCard({
   }, [defaultServerType]);
 
   // Active plan tier
-  const activePlan: V2RayPlanTier =
-    V2RAY_PLAN_TIERS.find((t) => t.id === selectedPlanId) || V2RAY_PLAN_TIERS[0];
+  const chosenPlan: V2RayPlanTier | undefined = V2RAY_PLAN_TIERS.find((t) => t.id === selectedPlanId);
+  const activePlan: V2RayPlanTier = chosenPlan || V2RAY_PLAN_TIERS[0];
 
   const durationDiscount =
     DURATION_DISCOUNTS.find((d) => d.months === selectedMonths) || DURATION_DISCOUNTS[0];
+
+  const monthlyFor = (tier: V2RayPlanTier, months: number) => {
+    const base = serverType === 'lk_ip' ? tier.lkIpPriceLKR : tier.monthlyPriceLKR;
+    const pct = (DURATION_DISCOUNTS.find((d) => d.months === months) || DURATION_DISCOUNTS[0]).discountPercent;
+    return Math.round(base * (1 - pct / 100)) * months;
+  };
 
   const baseMonthlyPrice =
     serverType === 'lk_ip' ? activePlan.lkIpPriceLKR : activePlan.monthlyPriceLKR;
@@ -116,7 +130,52 @@ export default function V2RayPackageCard({
   const totalPriceLKR = discountedMonthlyPrice * selectedMonths;
   const originalTotalPriceLKR = baseMonthlyPrice * selectedMonths;
   const totalSavingsLKR = originalTotalPriceLKR - totalPriceLKR;
+  const promoDiscountLKR = appliedPromo ? Math.round(totalPriceLKR * (appliedPromo.percent / 100)) : 0;
+  const refDiscountLKR = appliedRef ? appliedRef.discountLKR : 0;
+  const payableLKR = Math.max(0, totalPriceLKR - promoDiscountLKR - refDiscountLKR);
   const priceUSD = parseFloat((totalPriceLKR / 305).toFixed(2));
+
+  const applyPromo = async () => {
+    setPromoError(null);
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    try {
+      const res = await fetch(`/api/coupons?code=${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setAppliedPromo({ code: data.code, percent: data.discountPercent || 10 });
+        try { localStorage.setItem('fibez_promo', data.code); } catch {}
+      } else {
+        setAppliedPromo(null);
+        setPromoError(data.message || data.error || 'That code is not valid.');
+      }
+    } catch {
+      setPromoError('Could not check the code. Try again.');
+    }
+  };
+
+  const applyReferral = async () => {
+    setRefError(null);
+    const code = refInput.trim().toUpperCase();
+    if (!code) return;
+    try {
+      const res = await fetch('/api/referrals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'validate', code }),
+      });
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setAppliedRef({ code, discountLKR: data.discountLKR || 50 });
+        try { localStorage.setItem('fibez_ref', code); } catch {}
+      } else {
+        setAppliedRef(null);
+        setRefError(data.message || 'Referral code not found or expired.');
+      }
+    } catch {
+      setRefError('Could not check the code. Try again.');
+    }
+  };
 
   const copyReloadCode = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -127,6 +186,7 @@ export default function V2RayPackageCard({
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!chosenPlan) return;
     const productItem = {
       id: `${pkg.id}-${activePlan.id}-${serverType}-${selectedMonths}m`,
       category: 'vpn' as const,
@@ -170,12 +230,12 @@ export default function V2RayPackageCard({
       onClick={toggleExpand}
       className={`group relative rounded-[20px] bg-[#09090c] border transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer select-none ${
         isCardActive
-          ? 'border-[#2563eb]/60 shadow-[0_0_35px_-8px_rgba(37,99,235,0.28)] ring-1 ring-[#2563eb]/40'
+          ? 'border-[#8b5cf6]/60 shadow-[0_0_35px_-8px_rgba(124,58,237,0.32)] ring-1 ring-[#8b5cf6]/40'
           : 'border-[#1b1b20] hover:border-zinc-700/80 hover:shadow-lg'
       }`}
     >
       {/* Proximity Glowing Border Effect */}
-      <GlowingEffect color="rgba(37, 99, 235, 0.85)" proximity={55} />
+      <GlowingEffect color="rgba(139, 92, 246, 0.85)" proximity={55} />
 
       {/* Top Banner Ribbon for Popular / Bestsellers */}
       {pkg.badge && (
@@ -212,7 +272,7 @@ export default function V2RayPackageCard({
         {/* Title & Target Indicator */}
         <div className="flex items-start justify-between gap-2 mt-1">
           <div>
-            <h3 className="text-base font-bold text-white tracking-tight group-hover:text-[#5b8cff] transition-colors line-clamp-1">
+            <h3 className="text-base font-bold text-white tracking-tight group-hover:text-[#b79cff] transition-colors line-clamp-1">
               {pkg.title}
             </h3>
             <span className="text-[11px] font-mono text-zinc-400 flex items-center gap-1.5 mt-0.5">
@@ -267,7 +327,7 @@ export default function V2RayPackageCard({
           </div>
 
           <AnimatedButton
-            variant="blue"
+            variant="purple"
             size="sm"
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
@@ -287,7 +347,7 @@ export default function V2RayPackageCard({
             className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
             role="dialog"
             aria-modal="true"
-            aria-label={`Choose a plan for ${pkg.title}`}
+            aria-label={`Select a package for ${pkg.title}`}
             onClick={(e) => {
               e.stopPropagation();
               toggleExpand();
@@ -297,30 +357,57 @@ export default function V2RayPackageCard({
 
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full sm:max-w-lg max-h-[92dvh] flex flex-col rounded-t-[24px] sm:rounded-[24px] bg-[#0b0b0f] border border-[#26262d] shadow-2xl animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
+              className="relative w-full sm:max-w-lg max-h-[92dvh] flex flex-col rounded-t-[24px] sm:rounded-[24px] bg-[#0c0a14] border border-[#2a2340] shadow-2xl shadow-[#7c3aed]/10 animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
             >
               {/* Header */}
-              <div className="flex items-start justify-between gap-3 p-5 pb-3">
-                <div className="min-w-0">
-                  <h3 className="text-lg font-bold text-white tracking-tight truncate">{pkg.title}</h3>
-                  <p className="text-xs text-zinc-400 mt-0.5 truncate">
-                    {pkg.targetMedium} · {pkg.carrierSpeedNote}
-                  </p>
-                </div>
+              <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-4 border-b border-[#221c36]">
+                <h3 className="text-lg font-bold text-white tracking-tight">Select Package</h3>
                 <button
                   type="button"
                   onClick={toggleExpand}
                   aria-label="Close"
-                  className="p-2 -m-1 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                  className="p-2 -m-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Scrollable choices */}
-              <div className="px-5 pb-4 overflow-y-auto space-y-5">
+              <div className="overflow-y-auto">
+                {/* What you are buying */}
+                <div className="px-5 py-4 space-y-3 border-b border-[#221c36]">
+                  <div className="min-w-0">
+                    <div className="text-base font-bold text-white leading-snug">{pkg.title}</div>
+                    <div className="text-xs text-zinc-400 mt-0.5">{pkg.isp} · {pkg.categoryLabel}</div>
+                  </div>
+                  <div className="space-y-1.5 text-sm text-zinc-200">
+                    <div className="flex items-center gap-2.5">
+                      <Server className="w-4 h-4 text-[#a78bfa] shrink-0" />
+                      <span>{serverType === 'lk_ip' ? 'Sri Lanka IP' : 'Singapore server'}</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <Clock className="w-4 h-4 text-[#a78bfa] shrink-0" />
+                      <span>{chosenPlan ? `${selectedMonths * 30} days` : '30 days per month'}</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <ShieldCheck className="w-4 h-4 text-[#a78bfa] shrink-0" />
+                      <span>Torrent traffic is blocked</span>
+                    </div>
+                  </div>
+                  <ul className="space-y-1.5 text-sm text-zinc-300">
+                    <li className="flex items-start gap-2.5"><span className="w-1.5 h-1.5 rounded-full bg-[#a78bfa] mt-2 shrink-0" />{pkg.targetMedium}</li>
+                    <li className="flex items-start gap-2.5"><span className="w-1.5 h-1.5 rounded-full bg-[#a78bfa] mt-2 shrink-0" />{pkg.carrierSpeedNote}</li>
+                    {chosenPlan && (
+                      <li className="flex items-start gap-2.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#a78bfa] mt-2 shrink-0" />
+                        {chosenPlan.deviceLimit} device{chosenPlan.deviceLimit > 1 ? 's' : ''}
+                        {chosenPlan.configsCount > 1 ? ` · ${chosenPlan.configsCount} configs` : ''}
+                      </li>
+                    )}
+                  </ul>
+                </div>
+
                 {lkIpOpen && (
-                  <div>
+                  <div className="px-5 py-4 border-b border-[#221c36]">
                     <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Server location</div>
                     <div className="grid grid-cols-2 gap-2">
                       {[
@@ -333,8 +420,8 @@ export default function V2RayPackageCard({
                           onClick={() => setServerType(o.id as 'standard' | 'lk_ip')}
                           className={`text-left p-3 rounded-xl border transition-colors cursor-pointer ${
                             serverType === o.id
-                              ? 'bg-[#2563eb]/10 border-[#3b82f6]'
-                              : 'bg-[#111116] border-[#202028] hover:border-zinc-600'
+                              ? 'bg-[#7c3aed]/15 border-[#8b5cf6]'
+                              : 'bg-[#120f1d] border-[#2a2340] hover:border-zinc-600'
                           }`}
                         >
                           <div className="text-sm font-semibold text-white">{o.title}</div>
@@ -345,8 +432,9 @@ export default function V2RayPackageCard({
                   </div>
                 )}
 
-                <div>
-                  <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Plan</div>
+                {/* Step 1: data package */}
+                <div className="px-5 py-4 border-b border-[#221c36]">
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Data package</div>
                   <div className="space-y-2">
                     {V2RAY_PLAN_TIERS.map((tier) => {
                       const monthly = serverType === 'lk_ip' ? tier.lkIpPriceLKR : tier.monthlyPriceLKR;
@@ -357,12 +445,12 @@ export default function V2RayPackageCard({
                           type="button"
                           onClick={() => setSelectedPlanId(tier.id)}
                           className={`w-full text-left p-3 rounded-xl border transition-colors cursor-pointer flex items-center gap-3 ${
-                            selected ? 'bg-[#2563eb]/10 border-[#3b82f6]' : 'bg-[#111116] border-[#202028] hover:border-zinc-600'
+                            selected ? 'bg-[#7c3aed]/15 border-[#8b5cf6]' : 'bg-[#120f1d] border-[#2a2340] hover:border-zinc-600'
                           }`}
                         >
                           <span
                             className={`w-4 h-4 rounded-full border shrink-0 flex items-center justify-center ${
-                              selected ? 'border-[#3b82f6] bg-[#3b82f6]' : 'border-zinc-600'
+                              selected ? 'border-[#8b5cf6] bg-[#8b5cf6]' : 'border-zinc-600'
                             }`}
                           >
                             {selected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
@@ -371,7 +459,7 @@ export default function V2RayPackageCard({
                             <span className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm font-semibold text-white capitalize">{tier.name.toLowerCase()}</span>
                               {tier.badge && (
-                                <span className="px-1.5 rounded text-[9px] font-mono font-bold bg-[#2563eb]/20 text-[#7aa2ff] border border-[#3b82f6]/30">
+                                <span className="px-1.5 rounded text-[9px] font-mono font-bold bg-[#7c3aed]/25 text-[#c4b5fd] border border-[#8b5cf6]/40">
                                   {tier.badge}
                                 </span>
                               )}
@@ -390,63 +478,155 @@ export default function V2RayPackageCard({
                       );
                     })}
                   </div>
-                  <p className="text-[11px] text-zinc-500 mt-2 leading-snug">{activePlan.features}</p>
+                  {chosenPlan && <p className="text-[11px] text-zinc-500 mt-2 leading-snug">{chosenPlan.features}</p>}
                 </div>
 
-                <div>
-                  <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 mb-2">How long</div>
-                  <div className="grid grid-cols-4 gap-2">
-                    {DURATION_DISCOUNTS.map((d) => {
-                      const selected = selectedMonths === d.months;
-                      return (
-                        <button
-                          key={d.months}
-                          type="button"
-                          onClick={() => setSelectedMonths(d.months)}
-                          className={`py-2 rounded-xl border text-center transition-colors cursor-pointer ${
-                            selected
-                              ? 'bg-[#2563eb] border-[#3b82f6] text-white'
-                              : 'bg-[#111116] border-[#202028] text-zinc-200 hover:border-zinc-600'
-                          }`}
-                        >
-                          <div className="text-sm font-bold">{d.months}</div>
-                          <div className={`text-[10px] ${selected ? 'text-white/80' : d.discountPercent > 0 ? 'text-[#7aa2ff]' : 'text-zinc-500'}`}>
-                            {d.discountPercent > 0 ? `save ${d.discountPercent}%` : d.months === 1 ? 'month' : 'months'}
+                {/* Step 2 and 3 open once a package is chosen */}
+                {chosenPlan && (
+                  <>
+                    <div className="px-5 py-4 border-b border-[#221c36] animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 mb-2">How long</div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {DURATION_DISCOUNTS.map((d) => {
+                          const selected = selectedMonths === d.months;
+                          const total = monthlyFor(chosenPlan, d.months);
+                          const full = (serverType === 'lk_ip' ? chosenPlan.lkIpPriceLKR : chosenPlan.monthlyPriceLKR) * d.months;
+                          return (
+                            <button
+                              key={d.months}
+                              type="button"
+                              onClick={() => setSelectedMonths(d.months)}
+                              className={`p-2.5 rounded-xl border text-left transition-colors cursor-pointer ${
+                                selected
+                                  ? 'bg-[#7c3aed]/20 border-[#8b5cf6] ring-1 ring-[#8b5cf6]/50'
+                                  : 'bg-[#120f1d] border-[#2a2340] hover:border-zinc-600'
+                              }`}
+                            >
+                              <div className="text-sm font-bold text-white">
+                                {d.months} {d.months === 1 ? 'month' : 'months'}
+                              </div>
+                              <div className="text-xs text-zinc-300 mt-0.5">Rs {total.toLocaleString()}</div>
+                              <div className={`text-[10px] mt-0.5 ${d.discountPercent > 0 ? 'text-[#c4b5fd] font-semibold' : 'text-zinc-500'}`}>
+                                {d.discountPercent > 0 ? `−${d.discountPercent}% · save ${(full - total).toLocaleString()}` : '30 days'}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="border-b border-[#221c36] animate-in fade-in slide-in-from-top-2 duration-200">
+                      <button
+                        type="button"
+                        onClick={() => setCouponOpen((v) => !v)}
+                        aria-expanded={couponOpen}
+                        className="w-full flex items-center justify-between gap-3 px-5 py-3.5 text-sm text-zinc-200 hover:text-white cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <Sparkles className="w-4 h-4 text-[#a78bfa]" />
+                          <span>Coupon or referral code</span>
+                          {(appliedPromo || appliedRef) && (
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#7c3aed]/25 text-[#c4b5fd] border border-[#8b5cf6]/40">applied</span>
+                          )}
+                        </span>
+                        {couponOpen ? <ChevronUp className="w-4 h-4 text-zinc-400" /> : <ChevronDown className="w-4 h-4 text-zinc-400" />}
+                      </button>
+
+                      {couponOpen && (
+                        <div className="px-5 pb-4 space-y-3">
+                          <div>
+                            <div className="flex gap-2">
+                              <input
+                                value={promoInput}
+                                onChange={(e) => setPromoInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && applyPromo()}
+                                placeholder="DISCOUNT CODE"
+                                className="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-black border border-[#2a2340] text-sm text-white placeholder-zinc-600 uppercase font-mono focus:outline-none focus:border-[#8b5cf6]"
+                              />
+                              <button
+                                type="button"
+                                onClick={applyPromo}
+                                className="px-4 rounded-xl bg-[#1a1530] hover:bg-[#241c42] border border-[#2a2340] text-xs font-mono font-bold text-white cursor-pointer"
+                              >
+                                APPLY
+                              </button>
+                            </div>
+                            {appliedPromo && (
+                              <p className="text-[11px] text-[#c4b5fd] mt-1.5">&ldquo;{appliedPromo.code}&rdquo; applied: {appliedPromo.percent}% off</p>
+                            )}
+                            {promoError && <p className="text-[11px] text-rose-400 mt-1.5">{promoError}</p>}
                           </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+
+                          <div>
+                            <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1.5">Referral code (optional)</div>
+                            <div className="flex gap-2">
+                              <input
+                                value={refInput}
+                                onChange={(e) => setRefInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && applyReferral()}
+                                placeholder="Enter referral code"
+                                className="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-black border border-[#2a2340] text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#8b5cf6]"
+                              />
+                              <button
+                                type="button"
+                                onClick={applyReferral}
+                                className="px-4 rounded-xl bg-[#1a1530] hover:bg-[#241c42] border border-[#2a2340] text-xs font-mono font-bold text-white cursor-pointer"
+                              >
+                                APPLY
+                              </button>
+                            </div>
+                            {appliedRef && (
+                              <p className="text-[11px] text-[#c4b5fd] mt-1.5">&ldquo;{appliedRef.code}&rdquo; applied: Rs {appliedRef.discountLKR} off</p>
+                            )}
+                            {refError && <p className="text-[11px] text-rose-400 mt-1.5">{refError}</p>}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* Sticky footer: total + the one action */}
-              <div className="p-5 pt-4 border-t border-[#1d1d24] bg-[#0b0b0f] rounded-b-[24px] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-                <div className="flex items-end justify-between mb-3">
-                  <div>
-                    <div className="text-[11px] text-zinc-400">
-                      {activePlan.name.charAt(0) + activePlan.name.slice(1).toLowerCase()} · {selectedMonths} month{selectedMonths > 1 ? 's' : ''}
+              {/* Totals and the one action */}
+              <div className="px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] border-t border-[#221c36] bg-[#0c0a14] rounded-b-[24px]">
+                {chosenPlan ? (
+                  <div className="space-y-1.5 mb-3">
+                    <div className="flex items-center justify-between text-sm text-zinc-300">
+                      <span>Subtotal</span>
+                      <span className="font-mono">{totalPriceLKR.toLocaleString()} LKR</span>
                     </div>
-                    <div className="text-2xl font-black font-mono text-white flex items-baseline gap-1">
-                      {totalPriceLKR.toLocaleString()} <span className="text-xs font-sans font-medium text-zinc-400">LKR</span>
+                    {(promoDiscountLKR > 0 || refDiscountLKR > 0) && (
+                      <div className="flex items-center justify-between text-sm text-[#c4b5fd]">
+                        <span>Discount</span>
+                        <span className="font-mono">−{(promoDiscountLKR + refDiscountLKR).toLocaleString()} LKR</span>
+                      </div>
+                    )}
+                    <div className="flex items-end justify-between pt-1">
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">Total</span>
+                      <span className="text-right">
+                        <span className="block text-2xl font-black font-mono text-white leading-none">
+                          {payableLKR.toLocaleString()} <span className="text-xs font-sans font-medium text-zinc-400">LKR</span>
+                        </span>
+                        <span className="block text-[11px] text-zinc-500 mt-1">≈ ${(payableLKR / 305).toFixed(2)} USD</span>
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right text-[11px]">
-                    {totalSavingsLKR > 0 && <div className="text-[#7aa2ff] font-semibold">You save Rs {totalSavingsLKR.toLocaleString()}</div>}
-                    <div className="text-zinc-500">≈ ${(totalPriceLKR / 305).toFixed(2)} USD</div>
-                  </div>
-                </div>
+                ) : (
+                  <p className="text-xs text-zinc-500 mb-3">Choose a data package to see the price.</p>
+                )}
 
                 <button
                   type="button"
+                  disabled={!chosenPlan}
                   onClick={handleInstantBuy}
-                  className="w-full py-3 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  className="w-full py-3 rounded-xl bg-[#6d28d9] hover:bg-[#5b21b6] disabled:bg-[#1c1730] disabled:text-zinc-500 disabled:cursor-not-allowed text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
-                  <span>Buy now</span>
+                  <span>Proceed to Payment</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
+                  disabled={!chosenPlan}
                   onClick={(e) => {
                     handleAddToCart(e);
                     window.setTimeout(() => {
@@ -454,7 +634,7 @@ export default function V2RayPackageCard({
                       else setLocalExpanded(false);
                     }, 700);
                   }}
-                  className="w-full mt-2 py-2 text-xs font-mono text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                  className="w-full mt-2 py-2 text-xs font-mono text-zinc-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
                   {isAdded ? 'Added to cart ✓' : 'Add to cart and keep browsing'}
                 </button>

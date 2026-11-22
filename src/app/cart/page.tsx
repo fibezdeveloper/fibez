@@ -124,6 +124,17 @@ export default function CartPage() {
         .catch(() => {});
     }
 
+    // A coupon entered in the V2Ray plan sheet
+    const savedPromo = localStorage.getItem('fibez_promo');
+    if (savedPromo) {
+      fetch(`/api/coupons?code=${encodeURIComponent(savedPromo)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.valid) setAppliedPromo({ code: data.code, percent: data.discountPercent || 10 });
+        })
+        .catch(() => {});
+    }
+
     // Wallet balance (server ledger) if signed in
     fetch('/api/wallet', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
@@ -260,6 +271,7 @@ export default function CartPage() {
         );
         clearCart();
         setTimeout(() => {
+          try { localStorage.removeItem('fibez_promo'); } catch {}
           router.push(hadVpn && session?.user ? '/v2ray/dashboard' : `/vault?order=${data.orderNumber}`);
         }, 1200);
       } else {
