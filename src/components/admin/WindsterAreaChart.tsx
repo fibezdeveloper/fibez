@@ -95,10 +95,14 @@ export default function WindsterAreaChart({
       const p2 = points[i + 1];
       const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
 
+      // Keep each control point between its two neighbours' heights so the curve never overshoots
+      // (a spike next to zeros used to dip below the baseline).
+      const lo = Math.min(p1.y, p2.y);
+      const hi = Math.max(p1.y, p2.y);
       const cp1x = p1.x + (p2.x - p0.x) / 6;
-      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp1y = Math.min(hi, Math.max(lo, p1.y + (p2.y - p0.y) / 6));
       const cp2x = p2.x - (p3.x - p1.x) / 6;
-      const cp2y = p2.y - (p3.y - p1.y) / 6;
+      const cp2y = Math.min(hi, Math.max(lo, p2.y - (p3.y - p1.y) / 6));
 
       d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
     }

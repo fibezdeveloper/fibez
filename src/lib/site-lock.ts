@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { LAUNCH_DATE } from '@/lib/launch-date';
 
 /**
  * Server-side pre-launch lock.
@@ -13,7 +14,7 @@ import crypto from 'crypto';
  *   UNLOCK_SECRET    random signing secret, 32+ chars
  */
 
-export const LAUNCH_DATE = new Date('2026-12-12T00:00:00+05:30').getTime();
+export { LAUNCH_DATE };
 export const UNLOCK_COOKIE = 'fibez_unlocked_token';
 export const UNLOCK_TTL_SECONDS = 60 * 60 * 4; // 4 hours, then the operator must log in again
 
@@ -90,6 +91,10 @@ export function isLockExempt(pathname: string): boolean {
     pathname === '/api/unlock' ||
     // Vercel Cron cannot hold the unlock cookie; the route itself requires CRON_SECRET.
     pathname === '/api/cron/usage-snapshot' ||
+    pathname === '/api/cron/telegram-reminders' ||
+    // Telegram's servers cannot hold the unlock cookie; the route itself checks the webhook secret.
+    pathname === '/api/telegram/webhook' ||
+    pathname === '/api/telegram/admin-webhook' ||
     pathname.startsWith('/_next/')
   );
 }

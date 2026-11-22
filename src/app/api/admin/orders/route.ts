@@ -8,8 +8,7 @@ import { resolveV2RayProvisioning } from '@/lib/pricing';
 import { PRODUCTS } from '@/lib/products';
 import { analyzeBankReceipt } from '@/lib/receipt-verifier';
 import { getWhatsAppDispatchUrl, buildWhatsAppDispatchMessage } from '@/lib/whatsapp';
-import { awardReferral } from '@/lib/wallet';
-import { fulfillOrder, recordFulfilledClients, revokeOrderLines } from '@/lib/fulfillment';
+import { approveOrder, rejectOrder } from '@/lib/order-review';
 import { dbReady } from '@/lib/db/tx';
 import { getObjectDownloadUrl, BUCKET_NAME } from '@/lib/storage';
 
@@ -121,45 +120,17 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Idempotency: approving twice would provision a second 3x-ui client / burn another stock key.
-    if (action === 'APPROVE' && order.paymentStatus === 'VERIFIED' && order.fulfillmentStatus === 'DELIVERED') {
-      return NextResponse.json({ error: 'Order is already approved and delivered' }, { status: 409 });
-    }
-
     if (action === 'APPROVE') {
       const manualKeys: Record<string, string> =
         body.manualKeys && typeof body.manualKeys === 'object' ? body.manualKeys : {};
 
-      const result = await fulfillOrder(order, manualKeys);
+      const result = await approveOrder(order, guard.user.email, reviewNotes, manualKeys);
       if (!result.ok) {
-        return NextResponse.json({ error: `${result.error} The order was NOT approved.` }, { status: result.status });
+        return NextResponse.json({ error: result.error }, { status: result.status });
       }
-      const { itemKeys, panelClients, dispensedPayload } = result;
+      const { dispensedPayload } = result;
       const firstItem = order.items[0];
 
-      // Referral reward goes to the referrer's WALLET (once per order, idempotent).
-      let referralAwardResult: { awarded: boolean } | null = null;
-      if (order.referralCode && dbReady()) {
-        try {
-          referralAwardResult = await awardReferral({
-            orderNumber: order.orderNumber,
-            code: order.referralCode,
-            buyerEmail: order.customerEmail,
-          });
-        } catch (refErr) {
-          console.error('Referral reward failed (order still approved):', refErr);
-        }
-      }
-
-      const updated = await adminStore.updateOrderStatus(orderNumber, {
-        paymentStatus: 'VERIFIED',
-        fulfillmentStatus: 'DELIVERED',
-        reviewedBy: guard.user.email,
-        reviewNotes: reviewNotes || 'Bank receipt verified and approved by admin.',
-        itemKeys,
-        metadata: { panelClients },
-      });
-      await recordFulfilledClients(order, panelClients);
       // Build WhatsApp Automated Dispatch URL
       const whatsAppUrl = getWhatsAppDispatchUrl({
         customerName: order.customerName,
@@ -182,21 +153,14 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: `Order ${orderNumber} approved and credentials dispensed!`,
-        order: updated,
+        order: result.order,
         dispensedPayload,
         whatsAppUrl,
         whatsAppMessage,
-        referralAwarded: referralAwardResult?.awarded ? 100 : 0,
+        referralAwarded: result.referralAwarded ? 100 : 0,
       });
     } else if (action === 'REJECT') {
-      // Rejecting (or revoking) an order that already got V2Ray lines removes them from the panel.
-      const revokedClients = await revokeOrderLines(order);
-      const updated = await adminStore.updateOrderStatus(orderNumber, {
-        paymentStatus: 'FAILED',
-        fulfillmentStatus: 'REVOKED',
-        reviewedBy: guard.user.email,
-        reviewNotes: reviewNotes || 'Payment rejected. Receipt could not be validated.',
-      });
+      const { order: updated, revokedClients } = await rejectOrder(order, guard.user.email, reviewNotes);
 
       return NextResponse.json({
         success: true,

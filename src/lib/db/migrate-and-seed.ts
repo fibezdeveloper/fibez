@@ -312,23 +312,7 @@ async function runMigrationAndSeed() {
   }
   console.log(`✓ Synced ${productCount} products and ${variantCount} variants`);
 
-  // Step 5: Seed Promo Codes
-  console.log('\n--- Step 5: Seeding Promo Codes ---');
-  const promoList = [
-    { code: 'FIBEZ10', percent: 10, fixed: 0, minSpend: 0, maxUses: 1000 },
-    { code: 'WELCOME', percent: 10, fixed: 0, minSpend: 0, maxUses: 10000 },
-    { code: 'FIBEZ20', percent: 20, fixed: 0, minSpend: 0, maxUses: 1000 },
-  ];
-
-  for (const pr of promoList) {
-    const promoId = `promo_${pr.code.toLowerCase()}`;
-    await sql`
-      INSERT INTO promo_codes (id, code, discount_percent, discount_fixed_lkr, min_spend_lkr, max_uses, times_used, is_active)
-      VALUES (${promoId}, ${pr.code}, ${pr.percent}, ${pr.fixed}, ${pr.minSpend}, ${pr.maxUses}, 0, TRUE)
-      ON CONFLICT (code) DO NOTHING;
-    `;
-  }
-  console.log(`✓ Seeded ${promoList.length} promotional discount codes`);
+  // Step 5: no promo codes are seeded. The owner creates every coupon in Admin -> Coupons.
 
   // Step 6: Seed Store Settings (Bank Transfer, Crypto, Socials, Rates)
   console.log('\n--- Step 6: Seeding Store Settings ---');

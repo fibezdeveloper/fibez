@@ -7,10 +7,10 @@ import { BackgroundBeams } from '@/components/ui/background-beams';
 import { Meteors } from '@/components/ui/meteors';
 import FibezLogo from '@/components/FibezLogo';
 import { useDevicePerf } from '@/lib/use-device-perf';
+import { LAUNCH_DATE } from '@/lib/launch-date';
 import { ShieldCheck, Lock, Zap, Radio, Sparkles, ArrowRight } from 'lucide-react';
 
-// Target launch date: December 12, 2026 at 12:00 AM Sri Lanka Time (GMT+5:30)
-const LAUNCH_DATE = new Date('2026-12-12T00:00:00+05:30').getTime();
+// Target launch date: shared with the server lock (src/lib/launch-date.ts)
 
 interface TimeLeft {
   days: number;
@@ -92,7 +92,7 @@ export function SiteLockCountdown() {
         {/* Release Announcement Eyebrow */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-xs md:text-sm font-mono text-zinc-300 mb-6 backdrop-blur-md">
           <Sparkles className="w-4 h-4 text-[#3ad389]" />
-          <span>V2Ray Reality Engine &amp; Storefront Goes Live Dec 12</span>
+          <span>V2Ray Reality Engine &amp; Storefront Goes Live Nov 22</span>
         </div>
 
         {/* Main Headline */}
@@ -227,7 +227,7 @@ export function SiteLockCountdown() {
         <div className="inline-flex flex-col sm:flex-row items-center gap-3 px-6 py-3 rounded-2xl bg-[#111114] border border-white/10 text-xs font-mono text-zinc-300">
           <div className="flex items-center gap-2 text-emerald-400">
             <Radio className="w-4 h-4" />
-            <span>Target Launch: December 12, 2026 at 12:00 AM (GMT+5:30)</span>
+            <span>Target Launch: November 22, 2026 at 12:00 PM (GMT+5:30)</span>
           </div>
           <span className="hidden sm:inline text-zinc-600">|</span>
           <span className="text-zinc-400">Sri Lanka High-Speed Telemetry Live</span>

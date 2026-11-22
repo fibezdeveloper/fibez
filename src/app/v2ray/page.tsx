@@ -123,7 +123,7 @@ export default function V2RayPage() {
   const [dbVpnProducts, setDbVpnProducts] = useState<ProductItem[]>([]);
 
   useEffect(() => {
-    fetch('/api/admin/packages')
+    fetch('/api/packages')
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.packages)) {

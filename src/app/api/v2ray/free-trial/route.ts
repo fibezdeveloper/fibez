@@ -11,6 +11,8 @@ import { withRlsTransaction } from '@/lib/db/rls';
 import { xui } from '@/lib/xui';
 import { resolvePackageProfile, buildVlessUri, PACKAGE_ROUTING_PROFILES } from '@/lib/v2ray-inbounds';
 import { adminStore, AdminOrder } from '@/lib/admin-store';
+import { notifyLater } from '@/lib/telegram';
+import { tgMessages } from '@/lib/telegram-bot';
 
 export async function POST(req: NextRequest) {
   try {
@@ -268,6 +270,10 @@ export async function POST(req: NextRequest) {
       ],
     };
     await adminStore.addOrder(newAdminOrder);
+    {
+      const m = tgMessages.trial(packageTitle, configUri, new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString());
+      notifyLater(actor.email, m.html, m.buttons);
+    }
 
     // 5. Optional PostgreSQL Persistence if DATABASE_URL is configured
     if (process.env.DATABASE_URL) {

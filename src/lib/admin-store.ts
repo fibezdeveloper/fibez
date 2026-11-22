@@ -333,41 +333,8 @@ function getSeedInventory(): AdminInventoryItem[] {
 }
 
 function getSeedCoupons(): AdminPromoCode[] {
-  return [
-    {
-      id: 'cpn_1',
-      code: 'FIBEZ10',
-      discountPercent: 10,
-      discountFixedLKR: 0,
-      minSpendLKR: 1000,
-      maxUses: 500,
-      timesUsed: 42,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'cpn_2',
-      code: 'FRIEND500',
-      discountPercent: 0,
-      discountFixedLKR: 500,
-      minSpendLKR: 1500,
-      maxUses: 50,
-      timesUsed: 12,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'cpn_3',
-      code: 'VIP100',
-      discountPercent: 100,
-      discountFixedLKR: 0,
-      minSpendLKR: 0,
-      maxUses: 10,
-      timesUsed: 4,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    }
-  ];
+  // No built-in coupons: every code is created by the owner in Admin -> Coupons.
+  return [];
 }
 
 const STATE_ID = 'main';

@@ -4,6 +4,19 @@ import { connection } from 'next/server';
 import FeatureGate from '@/components/FeatureGate';
 import { getVerifiedSessionUser, isStaffRole } from '@/lib/dal';
 import { getHiddenProductIds } from '@/lib/site-config';
+import { PRODUCTS } from '@/lib/products';
+import type { Metadata } from 'next';
+
+// Each product page gets its own tab title and description (the catalog is static, so this is cheap).
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const product = PRODUCTS.find((p) => p.id === id);
+  if (!product) return {};
+  return {
+    title: `${product.title} | Fibez`,
+    description: product.description?.slice(0, 160),
+  };
+}
 
 async function HiddenCheck({ id, children }: { id: string; children: React.ReactNode }) {
   await connection();

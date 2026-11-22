@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/dal';
+import { sql } from '@/lib/db';
+import { notifyLater } from '@/lib/telegram';
+import { tgMessages } from '@/lib/telegram-bot';
+
+/** Customer email behind a top-up or refund request, for the Telegram notice. */
+async function emailOf(table: 'wallet_topups' | 'refund_requests', id: string): Promise<string | null> {
+  if (!sql || !id) return null;
+  const rows = (await sql.query(`SELECT user_email FROM public.${table} WHERE id = $1`, [id])) as { user_email: string }[];
+  return rows[0]?.user_email ?? null;
+}
 import { dbReady } from '@/lib/db/tx';
 import { adminStore } from '@/lib/admin-store';
 import { getObjectDownloadUrl, BUCKET_NAME } from '@/lib/storage';
@@ -91,12 +101,18 @@ export async function POST(req: NextRequest) {
     if (action === 'approve_topup') {
       const r = await approveTopup(id, staff, note || undefined);
       if (!r.ok) return NextResponse.json({ error: r.reason === 'ALREADY_REVIEWED' ? 'Already reviewed' : 'Top-up not found' }, { status: 409 });
+      const topupMsg = tgMessages.money('Wallet top-up approved', `Rs. ${r.amount.toLocaleString()} was added. New balance: Rs. ${r.balanceAfter.toLocaleString()}.`);
+      notifyLater(await emailOf('wallet_topups', id), topupMsg.html, topupMsg.buttons);
       return NextResponse.json({ success: true, credited: r.amount, balanceAfter: r.balanceAfter });
     }
 
     if (action === 'reject_topup') {
       if (note.length < 3) return NextResponse.json({ error: 'A reason is required to reject' }, { status: 400 });
       const ok = await rejectTopup(id, staff, note);
+      if (ok) {
+        const m = tgMessages.money('Wallet top-up not approved', note);
+        notifyLater(await emailOf('wallet_topups', id), m.html, m.buttons);
+      }
       return ok ? NextResponse.json({ success: true }) : NextResponse.json({ error: 'Already reviewed or not found' }, { status: 409 });
     }
 
@@ -125,12 +141,20 @@ export async function POST(req: NextRequest) {
           reviewNotes: `Refunded Rs. ${r.amount} to wallet: ${note}`,
         });
       }
+      {
+        const m = tgMessages.money('Refund approved', `Rs. ${r.amount.toLocaleString()} for order ${r.orderNumber} was added to your wallet.`);
+        notifyLater(order?.customerEmail ?? (await emailOf('refund_requests', id)), m.html, m.buttons);
+      }
       return NextResponse.json({ success: true, refunded: r.amount, linesRemoved: removed });
     }
 
     if (action === 'reject_refund') {
       if (note.length < 3) return NextResponse.json({ error: 'A reason is required to reject' }, { status: 400 });
       const ok = await rejectRefund(id, staff, note);
+      if (ok) {
+        const m = tgMessages.money('Refund request not approved', note);
+        notifyLater(await emailOf('refund_requests', id), m.html, m.buttons);
+      }
       return ok ? NextResponse.json({ success: true }) : NextResponse.json({ error: 'Already reviewed or not found' }, { status: 409 });
     }
 
@@ -147,6 +171,11 @@ export async function POST(req: NextRequest) {
       if (!user) return NextResponse.json({ error: 'No account with that email' }, { status: 404 });
       try {
         const r = await adjustBalance({ userId: user.id, amount, reason, admin: staff });
+        const m = tgMessages.money(
+          amount > 0 ? 'Wallet credited' : 'Wallet adjusted',
+          `${amount > 0 ? '+' : ''}Rs. ${amount.toLocaleString()}: ${reason}. Balance: Rs. ${r.balanceAfter.toLocaleString()}.`
+        );
+        notifyLater(email, m.html, m.buttons);
         return NextResponse.json({ success: true, balanceAfter: r.balanceAfter });
       } catch (err) {
         if (String((err as Error).message).includes('Insufficient')) {

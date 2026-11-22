@@ -9,6 +9,9 @@ import { fulfillOrder, recordFulfilledClients } from '@/lib/fulfillment';
 import { adminStore, AdminOrder, AdminOrderItem } from '@/lib/admin-store';
 import { analyzeBankReceipt } from '@/lib/receipt-verifier';
 import { resolveServerPrice } from '@/lib/pricing';
+import { notifyLater } from '@/lib/telegram';
+import { adminAlerts, notifyAdmins } from '@/lib/telegram-admin';
+import { tgMessages } from '@/lib/telegram-bot';
 import { getHiddenProductIds, getPageFlags } from '@/lib/site-config';
 
 // 'staff_grant' is internal only: customers can never choose it.
@@ -220,21 +223,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 2. Promo codes: built-in ones first, then coupons created in the admin Coupons tab (DB).
+    // 2. Promo codes: only coupons the owner created in the admin Coupons tab (DB). There are no built-in codes.
     if (promoCode) {
-      if (promoCode === 'FIBEZ10' || promoCode === 'WELCOME') {
-        discountLKR += Math.round(rawTotalLKR * 0.1);
-      } else if (promoCode === 'DEV20' || promoCode === 'RESEND') {
-        discountLKR += Math.round(rawTotalLKR * 0.2);
-      } else if (promoCode === 'FRIEND500') {
-        discountLKR += 500;
-      } else if (dbReady()) {
-        const d = await dbRedeemCoupon(promoCode, rawTotalLKR);
-        if (d === null) {
-          return NextResponse.json({ error: 'That promo code is invalid, expired or fully used.' }, { status: 400 });
-        }
-        discountLKR += d;
+      if (!dbReady()) {
+        return NextResponse.json({ error: 'That promo code is invalid, expired or fully used.' }, { status: 400 });
       }
+      const d = await dbRedeemCoupon(promoCode, rawTotalLKR);
+      if (d === null) {
+        return NextResponse.json({ error: 'That promo code is invalid, expired or fully used.' }, { status: 400 });
+      }
+      discountLKR += d;
     }
     const finalTotalLKR = Math.max(0, rawTotalLKR - discountLKR);
     const finalTotalUSD = Number((rawTotalUSD * (rawTotalLKR > 0 ? finalTotalLKR / rawTotalLKR : 1)).toFixed(2));
@@ -370,6 +368,13 @@ export async function POST(request: NextRequest) {
         metadata: { panelClients: result.panelClients },
       });
       await recordFulfilledClients(newAdminOrder, result.panelClients);
+      {
+        const m = tgMessages.delivered(
+          orderNumber,
+          newAdminOrder.items.map((i) => ({ title: i.productTitle, key: result.itemKeys[i.id] || '' })).filter((c) => c.key)
+        );
+        notifyLater(customerEmail, m.html, m.buttons);
+      }
       if (referralCode) {
         await awardReferral({ orderNumber, code: referralCode, buyerEmail: customerEmail }).catch((e) =>
           console.error('Referral reward failed (order still delivered):', e)
@@ -379,6 +384,16 @@ export async function POST(request: NextRequest) {
     } else {
       // Bank transfer / crypto: the order waits for staff to verify the payment.
       await adminStore.addOrder(newAdminOrder);
+      const alert = adminAlerts.newOrder({
+        orderNumber,
+        customerEmail,
+        totalAmountLKR: finalTotalLKR,
+        paymentMethod,
+        paymentStatus,
+        hasSlip: Boolean(receiptUrl),
+        items: newAdminOrder.items,
+      });
+      notifyAdmins(alert.html, alert.rows);
     }
     const response = NextResponse.json({
       success: true,

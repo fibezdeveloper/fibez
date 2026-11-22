@@ -1,4 +1,5 @@
 import { rateLimit } from '@/lib/rate-limit';
+import { adminAlerts, notifyAdmins } from '@/lib/telegram-admin';
 import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/dal';
@@ -126,6 +127,9 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.warn('Refund ticket was not created (request still saved):', err);
   }
+
+  const alert = adminAlerts.newRefund({ email: user.email, orderNumber: order.orderNumber, amount: order.totalAmountLKR, reason: REFUND_REASONS[reasonCode] });
+  notifyAdmins(alert.html, alert.rows);
 
   return NextResponse.json({ success: true, id: created.id, message: 'Refund request sent. Staff will review it and reply on your ticket.' });
 }

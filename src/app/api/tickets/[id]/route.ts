@@ -4,6 +4,9 @@ import { adminSql, buildRlsContext, isStaffRole, requireAuth } from '@/lib/dal';
 import { withRlsTransaction } from '@/lib/db/rls';
 import { parseAttachments } from '@/lib/ticket-attachments';
 import { rateLimit } from '@/lib/rate-limit';
+import { notifyLater } from '@/lib/telegram';
+import { adminAlerts, notifyAdmins } from '@/lib/telegram-admin';
+import { tgMessages } from '@/lib/telegram-bot';
 
 const STAFF_ALLOWED_STATUSES = new Set([
   'OPEN',
@@ -114,9 +117,13 @@ export async function POST(
       return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
     }
 
+    // Set when staff answer a customer's ticket, so the customer can be told on Telegram.
+    let customerNotice: { email: string; ticketNumber: string; subject: string } | null = null;
+    // Set when a customer writes back, so the owner hears about it on the admin bot.
+    let staffNotice: { email: string; ticketNumber: string; subject: string } | null = null;
     const result = await withRlsTransaction(buildRlsContext(actor), async (client) => {
       const ticketRes = await client.query(
-        `SELECT id, user_id, customer_email, status FROM public.tickets
+        `SELECT id, user_id, customer_email, status, ticket_number, subject FROM public.tickets
          WHERE id = $1 OR ticket_number = $1 LIMIT 1`,
         [id]
       );
@@ -171,6 +178,21 @@ export async function POST(
         [newStatus, ticket.id]
       );
 
+      if (!isStaff && isOwnerOfTicket) {
+        staffNotice = {
+          email: String(ticket.customer_email || actor.email),
+          ticketNumber: String(ticket.ticket_number || ''),
+          subject: String(ticket.subject || ''),
+        };
+      }
+      if (isStaff && !isOwnerOfTicket && ticket.customer_email) {
+        customerNotice = {
+          email: String(ticket.customer_email),
+          ticketNumber: String(ticket.ticket_number || ''),
+          subject: String(ticket.subject || ''),
+        };
+      }
+
       return { success: true, messageId, status: newStatus };
     });
 
@@ -179,6 +201,18 @@ export async function POST(
     }
     if (result === 'FORBIDDEN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    if (staffNotice) {
+      const n = staffNotice as { email: string; ticketNumber: string; subject: string };
+      const a = adminAlerts.newTicket({ ticketNumber: n.ticketNumber, email: n.email, subject: n.subject, preview: message || 'Sent an attachment.', reply: true });
+      notifyAdmins(a.html, a.rows);
+    }
+
+    if (customerNotice) {
+      const n = customerNotice as { email: string; ticketNumber: string; subject: string };
+      const m = tgMessages.ticketReply(n.ticketNumber, n.subject, message || 'Sent you an attachment.');
+      notifyLater(n.email, m.html, m.buttons);
     }
 
     return NextResponse.json(result);

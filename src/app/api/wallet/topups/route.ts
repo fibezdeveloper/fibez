@@ -1,4 +1,5 @@
 import { rateLimit } from '@/lib/rate-limit';
+import { adminAlerts, notifyAdmins } from '@/lib/telegram-admin';
 import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/dal';
@@ -83,6 +84,8 @@ export async function POST(req: NextRequest) {
           : 'You already have 3 top-ups waiting for review. Please wait for them to be checked.';
       return NextResponse.json({ error: msg }, { status: 409 });
     }
+    const alert = adminAlerts.newTopup({ id: res.id, email: user.email, amount, reference: bankReference });
+    notifyAdmins(alert.html, alert.rows);
     return NextResponse.json({ success: true, id: res.id, message: 'Top-up submitted. Your wallet is credited after we verify the transfer.' });
   } catch (err) {
     console.error('Top-up failed:', err);

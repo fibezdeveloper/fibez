@@ -4,6 +4,7 @@ import { buildRlsContext, isStaffRole, requireAuth } from '@/lib/dal';
 import { withRlsTransaction } from '@/lib/db/rls';
 import { parseAttachments } from '@/lib/ticket-attachments';
 import { rateLimit } from '@/lib/rate-limit';
+import { adminAlerts, notifyAdmins } from '@/lib/telegram-admin';
 
 const VALID_PRIORITIES = new Set(['LOW', 'MEDIUM', 'HIGH', 'URGENT']);
 
@@ -141,6 +142,9 @@ export async function POST(req: NextRequest) {
 
       return tRes.rows[0];
     });
+
+    const alert = adminAlerts.newTicket({ ticketNumber, email: actor.email, subject, preview: message });
+    notifyAdmins(alert.html, alert.rows);
 
     return NextResponse.json({
       success: true,

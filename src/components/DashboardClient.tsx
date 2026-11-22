@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { VerifiedSessionUser } from '@/lib/dal';
 import TicketCenter from '@/components/TicketCenter';
+import TelegramConnect from '@/components/TelegramConnect';
 import { ShareSheet } from '@/components/ui/ShareSheet';
 import {
   KeyRound,
@@ -315,6 +316,7 @@ export default function DashboardClient({
 
           {userSubTab === 'profile' ? (
             <div className="space-y-6 pt-2 animate-in fade-in duration-200">
+              <TelegramConnect />
               {/* Profile Alerts */}
               {profileSuccess && (
                 <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-200 text-xs font-mono flex items-center gap-2.5">

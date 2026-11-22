@@ -181,16 +181,10 @@ export default function CartPage() {
       if (res.ok && data.valid) {
         setAppliedPromo({ code: data.code, percent: data.discountPercent || 10 });
       } else {
-        setPromoError(data.message || 'Invalid promo code. Try "FIBEZ10" or "DEV20"');
+        setPromoError(data.message || data.error || 'That promo code is invalid or expired.');
       }
     } catch {
-      if (code === 'FIBEZ10' || code === 'WELCOME') {
-        setAppliedPromo({ code, percent: 10 });
-      } else if (code === 'DEV20' || code === 'FIBEZ20' || code === 'RESEND') {
-        setAppliedPromo({ code, percent: 20 });
-      } else {
-        setPromoError('Invalid promo code. Try "FIBEZ10" or "DEV20"');
-      }
+      setPromoError('Could not check the promo code right now. Please try again.');
     }
   };
 
@@ -958,7 +952,7 @@ export default function CartPage() {
                   type="text"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
-                  placeholder="Promo Code (e.g. FIBEZ10)"
+                  placeholder="Promo code"
                   className="flex-1 px-3 py-2 rounded-xl bg-[#141417] border border-white/10 text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-white/30 uppercase"
                 />
                 <button

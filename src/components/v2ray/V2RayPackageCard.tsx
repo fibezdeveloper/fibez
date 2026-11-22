@@ -209,7 +209,6 @@ export default function V2RayPackageCard({
       warranty: '24-hour instant connection guarantee. Bypasses Sri Lankan ISP restrictions.',
       protocol: 'VLESS' as const,
       isps: [pkg.isp as any],
-      sniMasquerade: pkg.sni,
       location: serverType === 'lk_ip' ? 'Sri Lanka' : 'Singapore SG3',
     };
 
@@ -262,7 +261,6 @@ export default function V2RayPackageCard({
             isp={pkg.isp}
             category={pkg.categoryLabel}
             port={pkg.inboundPort}
-            sni={pkg.sni}
             hasSriLankanIp={pkg.hasSriLankanIpOption}
             serverType={serverType === 'lk_ip' ? 'LK_IP' : 'STANDARD'}
             badge={pkg.badge}
@@ -306,13 +304,10 @@ export default function V2RayPackageCard({
           </button>
         </div>
 
-        {/* Carrier Speed Limit & SNI Masquerade */}
-        <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono text-zinc-400">
-          <span className="truncate max-w-[200px]" title={pkg.carrierSpeedNote}>
+        {/* Carrier speed note */}
+        <div className="mt-2.5 text-[11px] font-mono text-zinc-400">
+          <span className="block truncate" title={pkg.carrierSpeedNote}>
             {pkg.carrierSpeedNote}
-          </span>
-          <span className="text-zinc-500 font-mono text-[10px]">
-            Inbound #{pkg.inboundId}
           </span>
         </div>
 

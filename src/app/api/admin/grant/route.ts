@@ -9,6 +9,8 @@ import { recordPanelClients } from '@/lib/wallet';
 import { PRODUCTS } from '@/lib/products';
 import { sql as adminSql } from '@/lib/db';
 import { adminStore } from '@/lib/admin-store';
+import { notifyLater } from '@/lib/telegram';
+import { tgMessages } from '@/lib/telegram-bot';
 
 export async function POST(req: NextRequest) {
   const guard = await requireRole(['owner']); // free grants are owner-only
@@ -190,6 +192,11 @@ export async function POST(req: NextRequest) {
           expiresAt: grantPanelClient.expiresAt,
         },
       ]).catch((e) => console.warn('Panel client not recorded:', e));
+    }
+
+    if (dispensedPayload) {
+      const m = tgMessages.delivered(orderNumber, [{ title: product.title, key: dispensedPayload }]);
+      notifyLater(recipientEmail, m.html, m.buttons);
     }
 
     return NextResponse.json({

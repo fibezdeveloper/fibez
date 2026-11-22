@@ -2,54 +2,16 @@ import { requireRole } from '@/lib/dal';
 import { connection, NextRequest, NextResponse } from 'next/server';
 import { adminStore } from '@/lib/admin-store';
 import { LIVE_V2RAY_PACKAGES, V2RAY_QUOTA_TIERS, normalizeIsp, V2RayPackageDef } from '@/lib/v2ray-catalog';
+import { getResolvedPackages } from '@/lib/package-list';
 
-// GET is intentionally public: the storefront (/v2ray) reads the package catalog from here.
-// It exposes only catalog data (titles, ISP, SNI, public prices), never orders or credentials.
-// Every write (POST / PATCH / DELETE) below still requires an admin or owner session.
+// Full package list including routing details (SNI, panel inbound id): staff only.
+// The public storefront reads /api/packages instead, which leaves those fields out.
 export async function GET() {
+  const guard = await requireRole(['admin', 'owner']);
+  if ('response' in guard) return guard.response;
   await connection(); // always read at request time, never frozen into the build
   try {
-    const overrides = await adminStore.getPackageOverrides();
-    const customPackages = await adminStore.getCustomPackages();
-
-    // Custom packages appear first, followed by live stock packages
-    const allDefs = [...customPackages, ...LIVE_V2RAY_PACKAGES];
-
-    // Deduplicate in case a custom package overrides by ID
-    const seenIds = new Set<string>();
-    const uniqueDefs = allDefs.filter((p) => {
-      if (seenIds.has(p.id)) return false;
-      seenIds.add(p.id);
-      return true;
-    });
-
-    const packages = uniqueDefs.map((pkg) => {
-      const ovr = overrides[pkg.id];
-      const rawIsp = ovr?.isp || pkg.isp;
-      const normalizedIsp = normalizeIsp(rawIsp);
-      const port = Number(ovr?.inboundPort || pkg.inboundPort || (pkg as any).port || 443);
-      const inboundId = Number(ovr?.inboundId || pkg.inboundId || 3);
-
-      return {
-        ...pkg,
-        title: ovr?.title || pkg.title,
-        isp: normalizedIsp,
-        categoryLabel: ovr?.categoryLabel || pkg.categoryLabel || 'Carrier Bypass',
-        reloadCode: ovr?.reloadCode !== undefined ? ovr.reloadCode : pkg.reloadCode,
-        carrierSpeedNote: ovr?.carrierSpeedNote !== undefined ? ovr.carrierSpeedNote : pkg.carrierSpeedNote,
-        sni: ovr?.sni || pkg.sni || 'zoom.us',
-        inboundPort: port,
-        port: port, // alias for backwards compatibility
-        inboundId: inboundId,
-        isActive: ovr?.isActive !== undefined ? ovr.isActive : pkg.isActive,
-        badge: ovr?.badge !== undefined ? ovr.badge : pkg.badge,
-        standardPriceAdjustmentLKR: ovr?.standardPriceAdjustmentLKR !== undefined ? ovr.standardPriceAdjustmentLKR : (pkg.standardPriceAdjustmentLKR || 0),
-        serverType: ovr?.serverType || pkg.serverType || 'STANDARD',
-        targetMedium: ovr?.targetMedium || pkg.targetMedium || 'Home Broadband Router',
-        isCustom: Boolean(pkg.isCustom || (ovr as any)?.isCustom),
-      };
-    });
-
+    const packages = await getResolvedPackages();
     return NextResponse.json({
       success: true,
       packages,
@@ -59,7 +21,7 @@ export async function GET() {
     });
   } catch (error: any) {
     console.error('Error fetching admin packages:', error);
-    return NextResponse.json({ error: error.message || 'Failed to fetch packages' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch packages' }, { status: 500 });
   }
 }
 
