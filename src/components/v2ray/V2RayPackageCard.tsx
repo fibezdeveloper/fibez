@@ -619,7 +619,7 @@ export default function V2RayPackageCard({
                   type="button"
                   disabled={!chosenPlan}
                   onClick={handleInstantBuy}
-                  className="w-full py-3 rounded-xl bg-[#6d28d9] hover:bg-[#5b21b6] disabled:bg-[#1c1730] disabled:text-zinc-500 disabled:cursor-not-allowed text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#1e1b6e] to-[#5b21b6] hover:from-[#26228a] hover:to-[#6d28d9] border border-[#4f46e5] disabled:bg-none disabled:border-transparent disabled:bg-[#1c1730] disabled:text-zinc-500 disabled:cursor-not-allowed text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <span>Proceed to Payment</span>
                   <ArrowRight className="w-4 h-4" />

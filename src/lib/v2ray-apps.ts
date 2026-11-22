@@ -17,6 +17,7 @@ const APP_STORE = {
   npvTunnel: 'https://apps.apple.com/app/npv-tunnel/id1629465476',
   incy: 'https://apps.apple.com/app/incy/id6756943388',
   fairVpn: 'https://apps.apple.com/app/fair-vpn/id1533873488',
+  v2box: 'https://apps.apple.com/app/v2box-v2ray-client/id6446814690',
 } as const;
 
 export const CLIENT_APPS: Record<AppPlatformId, ClientApp[]> = {
@@ -35,6 +36,7 @@ export const CLIENT_APPS: Record<AppPlatformId, ClientApp[]> = {
   ios: [
     { name: 'Npv Tunnel', price: 'free', icon: '/apps/npv-tunnel.jpg', url: APP_STORE.npvTunnel },
     { name: 'INCY', price: 'free', icon: '/apps/incy.jpg', url: APP_STORE.incy },
+    { name: 'V2Box', price: 'free', icon: '/apps/v2box.jpg', url: APP_STORE.v2box },
     { name: 'Shadowrocket', price: 'paid', icon: '/apps/shadowrocket.jpg', url: APP_STORE.shadowrocket },
   ],
 };

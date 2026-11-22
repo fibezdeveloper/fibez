@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { LiquidButton } from '@/components/ui/liquid-button';
 import { Paperclip, X, Loader2, AlertCircle, Film, FileText, UploadCloud } from 'lucide-react';
 import {
   ATTACHMENT_ACCEPT,
@@ -249,16 +250,16 @@ export function AttachButton({ uploader, disabled }: { uploader: AttachmentUploa
           e.target.value = '';
         }}
       />
-      <button
-        type="button"
+      <LiquidButton
+        size="sm"
+        variant="dark"
         disabled={disabled || full}
         onClick={() => inputRef.current?.click()}
-        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#141417] hover:bg-[#1a1a1e] border border-white/10 text-white text-xs font-mono transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         title="Attach screenshots, short clips or a PDF invoice (max 4 MB each)"
       >
         <Paperclip className="w-3.5 h-3.5" />
         <span>Attach</span>
-      </button>
+      </LiquidButton>
     </>
   );
 }

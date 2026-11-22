@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { CheckCircle2, ExternalLink, Laptop, Monitor, Smartphone, Tv } from 'lucide-react';
 import type { DeviceSetupCopy } from '@/lib/v2ray-guide-data';
 import { APP_PLATFORM_ORDER, CLIENT_APPS, type AppPlatformId } from '@/lib/v2ray-apps';
-import PillTabs from '@/components/PillTabs';
+import LiquidTabs from '@/components/LiquidTabs';
 
 const PLATFORM_ICON: Record<AppPlatformId, React.ComponentType<{ className?: string }>> = {
   windows: Monitor,
@@ -52,7 +52,7 @@ export default function GuideDeviceSetup({ copy }: { copy: DeviceSetupCopy }) {
   return (
     <div className="space-y-6">
       {/* Device tabs */}
-      <PillTabs
+      <LiquidTabs
         ariaLabel={copy.title}
         value={platform}
         onChange={setPlatform}
@@ -63,7 +63,7 @@ export default function GuideDeviceSetup({ copy }: { copy: DeviceSetupCopy }) {
       />
 
       {/* Apps for the chosen device */}
-      <div className={`grid grid-cols-1 gap-3 ${apps.length > 2 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+      <div className={`grid grid-cols-1 gap-3 ${apps.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
         {apps.map((app) => (
           <a
             key={`${platform}-${app.name}`}

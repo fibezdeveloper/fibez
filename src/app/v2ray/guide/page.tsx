@@ -3,6 +3,8 @@
 import { useSiteFlag } from '@/lib/use-site-flags';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { LiquidButton } from '@/components/ui/liquid-button';
 import { PRODUCTS, ProductItem } from '@/lib/products';
 import { GUIDE_COPY } from '@/lib/v2ray-guide-data';
 import GuidePackageGallery from '@/components/v2ray/GuidePackageGallery';
@@ -17,6 +19,7 @@ import { Activity, AlertCircle, ArrowRight, ChevronDown, Globe, Layers, ShieldCh
 const SECTION_IDS = ['plan-finder', 'how-it-works', 'setup-clients', 'supported-packages', 'good-to-know', 'faq'] as const;
 
 export default function V2RayGuidePage() {
+  const router = useRouter();
   const ticketsOn = useSiteFlag('tickets');
   const [liveProducts, setLiveProducts] = useState<ProductItem[]>([]);
   const [activeSection, setActiveSection] = useState<string>(SECTION_IDS[0]);
@@ -297,21 +300,15 @@ export default function V2RayGuidePage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <Link
-              href="/v2ray/line-check"
-              className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-semibold flex items-center gap-1.5 transition-all shadow"
-            >
+            <LiquidButton variant="accent" onClick={() => router.push('/v2ray/line-check')}>
               <span>{copy.troubleshootLineCheck}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+              <ArrowRight className="w-4 h-4" />
+            </LiquidButton>
 
             {ticketsOn && (
-              <Link
-                href="/tickets"
-                className="px-4 py-2 rounded-xl bg-black hover:bg-white/10 border border-white/15 text-zinc-200 text-xs font-mono transition-all"
-              >
+              <LiquidButton variant="dark" onClick={() => router.push('/tickets')}>
                 {copy.troubleshootTicket}
-              </Link>
+              </LiquidButton>
             )}
           </div>
         </section>

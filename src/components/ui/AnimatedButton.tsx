@@ -69,8 +69,8 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
       defaultShine: 'rgba(147, 180, 255, 0.9)',
     },
     purple: {
-      base: 'bg-[#6d28d9] hover:bg-[#5b21b6] text-white font-semibold border border-[#8b5cf6] shadow-lg shadow-[#6d28d9]/25',
-      defaultShine: 'rgba(196, 181, 253, 0.9)',
+      base: 'bg-gradient-to-r from-[#1e1b6e] to-[#5b21b6] hover:from-[#26228a] hover:to-[#6d28d9] text-white font-semibold border border-[#4f46e5] shadow-lg shadow-[#312e81]/40',
+      defaultShine: 'rgba(165, 180, 252, 0.9)',
     },
     amber: {
       base: 'bg-amber-400 hover:bg-amber-300 text-black font-semibold border border-amber-400 shadow-lg shadow-amber-400/20',
@@ -102,7 +102,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
       className={cn(
         'group inline-flex items-center justify-center relative overflow-hidden font-medium cursor-pointer select-none',
         'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2',
-        variant === 'blue' ? 'focus-visible:ring-[#3b82f6]/60' : variant === 'purple' ? 'focus-visible:ring-[#8b5cf6]/60' : 'focus-visible:ring-[#3ad389]/50',
+        variant === 'blue' ? 'focus-visible:ring-[#3b82f6]/60' : variant === 'purple' ? 'focus-visible:ring-[#6366f1]/60' : 'focus-visible:ring-[#3ad389]/50',
         'disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed',
         sizeClasses[size],
         selectedVariant.base,

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { LiquidButton } from '@/components/ui/liquid-button';
 import { 
   LifeBuoy, 
   Plus, 
@@ -377,22 +378,22 @@ export default function TicketCenter({
             {/* Quick Status Control */}
             <div className="flex items-center gap-2 self-start sm:self-auto">
               {activeTicket.status !== 'RESOLVED' && activeTicket.status !== 'CLOSED' ? (
-                <button
-                  type="button"
+                <LiquidButton
+                  size="sm"
+                  variant="dark"
                   onClick={() => handleUpdateStatus(activeTicket.id, 'RESOLVED')}
-                  className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-medium transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Mark Resolved</span>
-                </button>
+                </LiquidButton>
               ) : (
-                <button
-                  type="button"
+                <LiquidButton
+                  size="sm"
+                  variant="dark"
                   onClick={() => handleUpdateStatus(activeTicket.id, 'OPEN')}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#141417] hover:bg-[#1a1a1e] border border-white/10 text-white text-xs font-mono font-medium transition-colors cursor-pointer"
                 >
                   Reopen Ticket
-                </button>
+                </LiquidButton>
               )}
             </div>
           </div>
@@ -480,18 +481,19 @@ export default function TicketCenter({
               </span>
               <div className="flex items-center gap-2 shrink-0">
               <AttachButton uploader={replyUploader} disabled={sendingReply} />
-              <button
+              <LiquidButton
                 type="submit"
+                size="sm"
+                variant="accent"
                 disabled={
                   sendingReply ||
                   replyUploader.uploading ||
                   (!replyText.trim() && replyUploader.attachments.length === 0)
                 }
-                className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-semibold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>{sendingReply ? 'Sending...' : replyUploader.uploading ? 'Uploading...' : 'Send Message'}</span>
-              </button>
+              </LiquidButton>
               </div>
             </div>
             <p className="text-[11px] font-mono text-zinc-500">
@@ -519,14 +521,14 @@ export default function TicketCenter({
             </div>
 
             {verifiedUser && (
-              <button
-                type="button"
+              <LiquidButton
+                variant="dark"
                 onClick={() => setIsNewModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-semibold uppercase tracking-wider transition-colors cursor-pointer self-start sm:self-auto"
+                className="self-start sm:self-auto"
               >
                 <Plus className="w-4 h-4" />
                 <span>Open New Ticket</span>
-              </button>
+              </LiquidButton>
             )}
           </div>
 
@@ -621,14 +623,10 @@ export default function TicketCenter({
                     ? 'No support tickets have been opened yet. If you have questions about your configuration or orders, submit a new ticket.'
                     : 'No tickets match the selected filters.'}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setIsNewModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-medium cursor-pointer"
-                >
+                <LiquidButton size="sm" variant="dark" onClick={() => setIsNewModalOpen(true)}>
                   <Plus className="w-3.5 h-3.5" />
                   <span>Open First Ticket</span>
-                </button>
+                </LiquidButton>
               </div>
             ) : (
               filteredTickets.map((ticket) => (

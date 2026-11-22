@@ -34,7 +34,7 @@ const VARIANTS = {
     "[--liquid-fill:#111111] [--liquid-text:#111111] [--liquid-active-text:#ffffff] [--liquid-border:#111111]",
   // purple, the site accent
   accent:
-    "[--liquid-fill:#8b5cf6] [--liquid-text:#d8ccff] [--liquid-active-text:#ffffff] [--liquid-border:#8b5cf6]",
+    "[--liquid-fill:#4338ca] [--liquid-text:#c7d2fe] [--liquid-active-text:#ffffff] [--liquid-border:#6366f1]",
   destructive:
     "[--liquid-fill:#ef4444] [--liquid-text:#ef4444] [--liquid-active-text:#ffffff] [--liquid-border:#ef4444]",
 } as const;

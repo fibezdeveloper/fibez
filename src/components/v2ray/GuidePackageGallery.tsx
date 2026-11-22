@@ -6,7 +6,7 @@ import {
   VISUAL_PACKAGES,
   VisualPackageCard,
 } from '@/lib/v2ray-guide-data';
-import PillTabs from '@/components/PillTabs';
+import LiquidTabs from '@/components/LiquidTabs';
 import {
   ArrowRight,
   ZoomIn,
@@ -69,9 +69,8 @@ export default function GuidePackageGallery({
         </div>
 
         {/* ISP Visual Filter Options */}
-        <PillTabs
+        <LiquidTabs
           ariaLabel="Filter by network"
-          size="sm"
           value={activeFilter}
           onChange={setActiveFilter}
           tabs={FILTER_TABS}
