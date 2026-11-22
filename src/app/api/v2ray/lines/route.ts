@@ -10,7 +10,7 @@ import { getPanelClientsByUser, REFUND_WINDOW_HOURS } from '@/lib/wallet';
 export async function GET(req: NextRequest) {
   try {
     const actor = await getVerifiedSessionUser();
-    const recentOrderNumber = getRecentOrderNumberFromRequest(req);
+    const recentOrderNumber = getRecentOrderNumberFromRequest(req, actor?.email);
     // Only the caller's OWN lines: their account email, or the order they just placed
     // (signed cookie). The old `?email=` / `?order=` params let anyone read any customer's
     // VPN configs, so they are no longer honoured (staff excepted).
@@ -103,6 +103,10 @@ export async function GET(req: NextRequest) {
             line.validityDays = plan.expiryMs > 0 ? Math.max(0, Math.ceil((plan.expiryMs - Date.now()) / 86400000)) : 0;
             line.usedGB = Math.round(((plan.up + plan.down) / GB) * 100) / 100;
             if (!plan.enable || (plan.expiryMs > 0 && plan.expiryMs < Date.now())) line.status = 'EXPIRED';
+          } else if (panelPlans && panelPlans.size > 0) {
+            // The panel answered but has no such client (removed by staff or on the panel itself): the
+            // config no longer works, so never show it as active.
+            line.status = 'EXPIRED';
           }
           line.renewable = Boolean(pc && pc.status === 'ACTIVE' && renewalQuote(item.productId, 1));
           const deliveredMs = new Date(ord.deliveredAt || ord.updatedAt).getTime();

@@ -71,6 +71,14 @@ export async function POST(req: NextRequest) {
     if (activeStoreTrial) {
       const item = activeStoreTrial.items?.[0];
       const dispensedKey = item?.dispensedKey || '';
+      // Show the port / SNI of the config the user already holds, not of whatever package they picked this time.
+      let storedPort = targetPort;
+      let storedSni = targetSni;
+      try {
+        const stored = new URL(dispensedKey);
+        storedPort = Number(stored.port) || targetPort;
+        storedSni = stored.searchParams.get('sni') || targetSni;
+      } catch {}
       let qrDataUrl = '';
       if (dispensedKey) {
         try {
@@ -91,10 +99,10 @@ export async function POST(req: NextRequest) {
           title: item?.variantTitle?.split(' (10 GB')?.[0] || packageTitle,
           isp: profile.ispTag,
           protocol: 'High-speed VLESS Reality',
-          serverHost: `${xui.getPublicHost()}:${targetPort}`,
-          port: targetPort,
+          serverHost: `${xui.getPublicHost()}:${storedPort}`,
+          port: storedPort,
           inboundId: targetInboundId,
-          sni: targetSni,
+          sni: storedSni,
           configUri: dispensedKey,
           qrDataUrl,
           bandwidthLimit: '10 GB',

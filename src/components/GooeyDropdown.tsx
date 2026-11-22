@@ -396,6 +396,8 @@ export function GooeyDropdown({
         }}
         className={cn(
           "relative z-20 flex items-center gap-2 whitespace-nowrap rounded-full pl-5 pr-4 text-[15px] font-medium outline-none",
+          // Narrow phones: tighter padding so the label never pushes past the nav pill.
+          "max-[420px]:gap-1 max-[420px]:pl-3 max-[420px]:pr-2.5 max-[420px]:text-sm",
           "transition-colors duration-150 ease-out hover:bg-[color-mix(in_oklab,var(--gooey-dropdown-ink)_7%,transparent)]",
           "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--gooey-dropdown-ink)]"
         )}
@@ -404,7 +406,7 @@ export function GooeyDropdown({
           color: "var(--gooey-dropdown-ink)",
         }}
       >
-        {label}
+        <span className="truncate max-w-[7rem] max-[420px]:max-w-[4.5rem]">{label}</span>
         <ChevronDown
           size={16}
           strokeWidth={2}

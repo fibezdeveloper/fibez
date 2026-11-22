@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { buildRlsContext, isStaffRole, requireAuth } from '@/lib/dal';
 import { withRlsTransaction } from '@/lib/db/rls';
 import { parseAttachments } from '@/lib/ticket-attachments';
+import { rateLimit } from '@/lib/rate-limit';
 
 const VALID_PRIORITIES = new Set(['LOW', 'MEDIUM', 'HIGH', 'URGENT']);
 
@@ -78,6 +79,9 @@ export async function POST(req: NextRequest) {
       return authResult.response;
     }
     const actor = authResult.user;
+    if ((await rateLimit('ticket-create', actor.id, 10, 3600)).limited) {
+      return NextResponse.json({ error: 'Too many tickets. Please wait before opening another.' }, { status: 429 });
+    }
 
     const body = await req.json().catch(() => ({}));
     const customerName =

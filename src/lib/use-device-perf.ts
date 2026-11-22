@@ -8,6 +8,8 @@ export interface DevicePerfState {
   allowHeavyEffects: boolean;
   meteorCount: number;
   blurEnabled: boolean;
+  /** False until the browser has been checked (first client render), so heavy effects can wait for it. */
+  detected: boolean;
 }
 
 /**
@@ -22,6 +24,7 @@ export function useDevicePerf(): DevicePerfState {
     allowHeavyEffects: true,
     meteorCount: 12,
     blurEnabled: true,
+    detected: false,
   });
 
   useEffect(() => {
@@ -57,6 +60,7 @@ export function useDevicePerf(): DevicePerfState {
       allowHeavyEffects: !isLowTier,
       meteorCount: isLowTier ? (prefersReducedMotion ? 0 : 4) : 15,
       blurEnabled: !isLowTier,
+      detected: true,
     });
 
     const listener = (e: MediaQueryListEvent) => {

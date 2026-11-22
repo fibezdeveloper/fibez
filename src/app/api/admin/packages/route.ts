@@ -1,5 +1,5 @@
 import { requireRole } from '@/lib/dal';
-import { NextRequest, NextResponse } from 'next/server';
+import { connection, NextRequest, NextResponse } from 'next/server';
 import { adminStore } from '@/lib/admin-store';
 import { LIVE_V2RAY_PACKAGES, V2RAY_QUOTA_TIERS, normalizeIsp, V2RayPackageDef } from '@/lib/v2ray-catalog';
 
@@ -7,6 +7,7 @@ import { LIVE_V2RAY_PACKAGES, V2RAY_QUOTA_TIERS, normalizeIsp, V2RayPackageDef }
 // It exposes only catalog data (titles, ISP, SNI, public prices), never orders or credentials.
 // Every write (POST / PATCH / DELETE) below still requires an admin or owner session.
 export async function GET() {
+  await connection(); // always read at request time, never frozen into the build
   try {
     const overrides = await adminStore.getPackageOverrides();
     const customPackages = await adminStore.getCustomPackages();

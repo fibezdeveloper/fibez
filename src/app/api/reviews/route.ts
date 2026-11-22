@@ -7,6 +7,7 @@ import {
   requireRole,
 } from '@/lib/dal';
 import { withRlsTransaction } from '@/lib/db/rls';
+import { rateLimit } from '@/lib/rate-limit';
 
 const VALID_REVIEW_STATUSES = new Set(['APPROVED', 'FLAGGED', 'PENDING']);
 
@@ -107,6 +108,9 @@ export async function POST(req: NextRequest) {
     const actor = await getVerifiedSessionUser();
     if (!actor) {
       return NextResponse.json({ error: 'Please sign in to post a review' }, { status: 401 });
+    }
+    if ((await rateLimit('review', actor.id, 6, 3600)).limited) {
+      return NextResponse.json({ error: 'Too many reviews. Please try again later.' }, { status: 429 });
     }
 
     const body = await req.json().catch(() => ({}));

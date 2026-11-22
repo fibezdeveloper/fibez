@@ -13,7 +13,7 @@ import { REFUND_WINDOW_HOURS } from '@/lib/wallet';
 export async function GET(request: NextRequest) {
   try {
     const actor = await getVerifiedSessionUser();
-    const recentOrderNumber = getRecentOrderNumberFromRequest(request);
+    const recentOrderNumber = getRecentOrderNumberFromRequest(request, actor?.email);
 
     const { searchParams } = new URL(request.url);
     const orderNumberParam = searchParams.get('order_number')?.trim().toUpperCase() || '';

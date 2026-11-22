@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminSql, buildRlsContext, isStaffRole, requireAuth } from '@/lib/dal';
 import { withRlsTransaction } from '@/lib/db/rls';
 import { parseAttachments } from '@/lib/ticket-attachments';
+import { rateLimit } from '@/lib/rate-limit';
 
 const STAFF_ALLOWED_STATUSES = new Set([
   'OPEN',
@@ -97,6 +98,9 @@ export async function POST(
     const actor = authResult.user;
     const isStaff = isStaffRole(actor.role);
     const { id } = await params;
+    if (!isStaff && (await rateLimit('ticket-reply', actor.id, 60, 3600)).limited) {
+      return NextResponse.json({ error: 'Too many messages. Please slow down.' }, { status: 429 });
+    }
 
     const body = await req.json().catch(() => ({}));
     const message = typeof body.message === 'string' ? body.message.trim().slice(0, 5000) : '';

@@ -205,7 +205,7 @@ export default function V2RayPackageCard({
           multiplier: 1,
         },
       ],
-      guideMarkdown: `Import config link into NetMod or v2rayNG. Masquerades SNI: ${pkg.sni}. Includes ${activePlan.configsCount} config link(s).`,
+      guideMarkdown: `Import config link into NetMod or v2rayNG. Includes ${activePlan.configsCount} config link(s).`,
       warranty: '24-hour instant connection guarantee. Bypasses Sri Lankan ISP restrictions.',
       protocol: 'VLESS' as const,
       isps: [pkg.isp as any],
@@ -333,7 +333,7 @@ export default function V2RayPackageCard({
               e.stopPropagation();
               toggleExpand();
             }}
-            className="text-xs font-mono font-bold"
+            className="text-xs font-mono font-bold min-h-11"
           >
             <span>Choose plan</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -518,7 +518,15 @@ export default function V2RayPackageCard({
                     <div className="border-b border-[#221c36] animate-in fade-in slide-in-from-top-2 duration-200">
                       <button
                         type="button"
-                        onClick={() => setCouponOpen((v) => !v)}
+                        onClick={(e) => {
+                          const opening = !couponOpen;
+                          setCouponOpen(opening);
+                          // On a phone the sticky total bar covers the new fields: bring them into view.
+                          if (opening) {
+                            const section = e.currentTarget.parentElement;
+                            window.setTimeout(() => section?.scrollIntoView({ block: 'end', behavior: 'smooth' }), 60);
+                          }
+                        }}
                         aria-expanded={couponOpen}
                         className="w-full flex items-center justify-between gap-3 px-5 py-3.5 text-sm text-zinc-200 hover:text-white cursor-pointer"
                       >

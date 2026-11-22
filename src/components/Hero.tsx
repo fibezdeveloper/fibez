@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import HeroCube from '@/components/HeroCube';
 import GradientASCII from '@/components/GradientASCII';
+import useDevicePerf from '@/lib/use-device-perf';
 import { ShieldCheck } from 'lucide-react';
 import { FlipText } from '@/components/ui/FlipText';
 import { TextAnimation } from '@/components/ui/TextAnimation';
@@ -17,11 +18,14 @@ export default function Hero({
   /** Shop switched off: V2Ray-only copy and buttons, nothing that points at the catalog. */
   v2rayOnly?: boolean;
 }) {
+  // The animated ASCII canvas is skipped on budget phones, old iPhones and reduced-motion.
+  const { detected, isLowTier } = useDevicePerf();
   return (
     <section className="relative w-full pt-16 pb-20 md:pt-24 md:pb-32 overflow-hidden">
       
       {/* Interactive GradientASCII Background from React Bits */}
       <div className="absolute inset-0 z-0 pointer-events-auto overflow-hidden bg-[radial-gradient(ellipse_90%_60%_at_50%_78%,rgba(36,48,160,0.55),rgba(52,22,104,0.32)_42%,rgba(5,5,22,0.7)_62%,transparent_100%)]" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, #000 22%, #000 55%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, #000 22%, #000 55%, transparent 100%)' }}>
+        {detected && !isLowTier && (
         <GradientASCII
           colors={['#2a3ab0', '#e6e4ff', '#7a82ea', '#6a46c8']}
           shape="horizon"
@@ -45,6 +49,7 @@ export default function Hero({
           intro
           lightMode={false}
         />
+        )}
         {/* Deep vignette at the top so top bar is pure clean dark with no weird gradient bleed */}
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-black/25 to-transparent" />
       </div>

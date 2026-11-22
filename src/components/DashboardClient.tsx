@@ -785,7 +785,13 @@ export default function DashboardClient({
                           {asset.type}
                         </span>
                         <span className="text-xs font-mono text-zinc-400">{asset.orderNumber}</span>
-                        <span className="text-xs font-mono text-emerald-400">{asset.status}</span>
+                        <span
+                          className={`text-xs font-mono ${
+                            asset.status === 'ACTIVE' ? 'text-emerald-400' : asset.status === 'PENDING' ? 'text-amber-400' : 'text-zinc-500'
+                          }`}
+                        >
+                          {asset.status}
+                        </span>
                       </div>
                       <h3 className="text-base font-medium text-white">{asset.productName}</h3>
                       {asset.variant_title && (
@@ -794,21 +800,17 @@ export default function DashboardClient({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      {/* 1-Click Renewal Button */}
-                      <Link
-                        href={`/cart?renew=${asset.orderNumber}`}
-                        onClick={() => {
-                          const match = asset.payload?.match(/vless:\/\/([a-f0-9-]+)@/i);
-                          if (match?.[1]) {
-                            localStorage.setItem(`fibez_uuid_${asset.orderNumber}`, match[1]);
-                          }
-                        }}
-                        className="px-3.5 py-2 rounded-xl bg-[#3ad389]/10 hover:bg-[#3ad389]/20 border border-[#3ad389]/30 text-xs font-mono text-[#3ad389] flex items-center gap-1.5 transition-colors font-semibold"
-                        title="Renew 30 days keeping existing VLESS UUID"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        <span>1-Click Renew</span>
-                      </Link>
+                      {/* Renewals are paid from the wallet on the V2Ray dashboard (it checks that the line can be renewed). */}
+                      {asset.status === 'ACTIVE' && asset.payload?.startsWith('vless://') && (
+                        <Link
+                          href="/v2ray/dashboard"
+                          className="px-3.5 py-2 rounded-xl bg-[#3ad389]/10 hover:bg-[#3ad389]/20 border border-[#3ad389]/30 text-xs font-mono text-[#3ad389] flex items-center gap-1.5 transition-colors font-semibold"
+                          title="Open this line in the V2Ray dashboard to renew or check usage"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Manage / Renew</span>
+                        </Link>
+                      )}
 
                       {asset.password && (
                         <button
@@ -821,16 +823,19 @@ export default function DashboardClient({
                         </button>
                       )}
 
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(asset.id, asset.payload || '')}
-                        className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-white flex items-center gap-1.5 cursor-pointer"
-                      >
-                        {copiedKey === asset.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedKey === asset.id ? 'Copied' : 'Copy Key / Config'}</span>
-                      </button>
+                      {/* Nothing to copy for pending orders, and a revoked / refunded line no longer works. */}
+                      {asset.payload && asset.status !== 'REVOKED' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(asset.id, asset.payload || '')}
+                          className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-white flex items-center gap-1.5 cursor-pointer"
+                        >
+                          {copiedKey === asset.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedKey === asset.id ? 'Copied' : 'Copy Key / Config'}</span>
+                        </button>
+                      )}
 
-                      {asset.payload?.startsWith('vless://') && (
+                      {asset.status !== 'REVOKED' && asset.payload?.startsWith('vless://') && (
                         <button
                           type="button"
                           onClick={() => handleDownloadConfig(`${asset.orderNumber}-vless.txt`, asset.payload)}

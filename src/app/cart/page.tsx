@@ -906,7 +906,7 @@ export default function CartPage() {
               <div>
                 <label className="block text-xs font-mono text-[#a1a4a5] uppercase tracking-wider mb-1.5 flex items-center justify-between">
                   <span>WhatsApp Mobile Number (Sri Lanka)</span>
-                  <span className="text-[10px] text-[#3ad389] lowercase">instant dispatch</span>
+                  <span className="text-[10px] text-zinc-500 lowercase">optional</span>
                 </label>
                 <input
                   type="tel"
@@ -916,7 +916,7 @@ export default function CartPage() {
                   className="w-full px-3.5 py-2.5 rounded-[12px] bg-[#141417] border border-white/10 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/30 font-mono"
                 />
                 <span className="text-[10px] font-mono text-zinc-500 mt-1 block">
-                  Keys, VLESS links, and 1-tap NetMod / V2Box import buttons will be dispatched directly to this WhatsApp!
+                  Optional. Our team may message you here about your order. Your keys and VLESS links are always delivered to your Key Vault.
                 </span>
               </div>
             </div>

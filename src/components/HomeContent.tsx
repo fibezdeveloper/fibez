@@ -10,6 +10,7 @@ import HowItWorks from '@/components/HowItWorks';
 import FeaturesGrid from '@/components/FeaturesGrid';
 import Testimonials from '@/components/Testimonials';
 import DarkVeil from '@/components/DarkVeil';
+import useDevicePerf from '@/lib/use-device-perf';
 import { useStore } from '@/lib/store-context';
 import { ArrowRight, ShoppingBag, KeyRound, ShieldCheck, LifeBuoy } from 'lucide-react';
 
@@ -28,13 +29,19 @@ export default function HomeContent({
 }) {
   const router = useRouter();
   const { currency } = useStore();
+  const { detected, isLowTier } = useDevicePerf();
   const v2rayOnly = !shopOn;
 
   return (
     <main className="relative isolate flex flex-col">
       {/* Page-wide dark veil behind every section, so the page never goes flat black while scrolling */}
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 bg-black">
-        <DarkVeil color="#3b3fd9" speed={0.8} flow={1.8} warp={0.4} brightness={0.95} glow={0.5} grain={0.04} quality={0.5} />
+        {/* The WebGL veil is skipped on budget phones, old iPhones and reduced-motion; they get a still gradient. */}
+        {detected && !isLowTier ? (
+          <DarkVeil color="#3b3fd9" speed={0.8} flow={1.8} warp={0.4} brightness={0.95} glow={0.5} grain={0.04} quality={0.5} />
+        ) : (
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_55%_at_50%_30%,rgba(59,63,217,0.28),rgba(52,22,104,0.18)_50%,transparent_100%)]" />
+        )}
       </div>
 
       {/* Store Hero */}

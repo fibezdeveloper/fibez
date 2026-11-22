@@ -208,10 +208,17 @@ export function verifyRecentOrderToken(
   }
 }
 
-export function getRecentOrderNumberFromRequest(req: NextRequest): string | null {
+/**
+ * The order a guest just placed in this browser. If someone is signed in, the cookie only counts when it
+ * was issued for THAT account's email: otherwise a second person on a shared browser would be shown the
+ * previous customer's order and keys.
+ */
+export function getRecentOrderNumberFromRequest(req: NextRequest, actorEmail?: string | null): string | null {
   const cookieVal = req.cookies.get(RECENT_ORDER_COOKIE_NAME)?.value;
   const parsed = verifyRecentOrderToken(cookieVal);
-  return parsed ? parsed.orderNumber : null;
+  if (!parsed) return null;
+  if (actorEmail && parsed.email !== actorEmail.toLowerCase()) return null;
+  return parsed.orderNumber;
 }
 
 export { adminSql };
