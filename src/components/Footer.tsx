@@ -104,7 +104,7 @@ export default function Footer() {
             <p className="text-sm text-zinc-400 leading-relaxed max-w-sm">
               {on('shop')
                 ? 'Instant gift cards, streaming & AI subscriptions, game top-ups, and high-speed VLESS VPN — optimised for SLT, Dialog, Hutch & Airtel.'
-                : 'High-speed VLESS VPN for Sri Lanka — optimised for SLT, Dialog, Hutch & Airtel.'}
+                : 'High-speed VLESS for Sri Lanka — optimised for SLT, Dialog, Hutch & Airtel.'}
             </p>
 
             {/* Configurable Social Media Links (Enabled via Owner Dashboard) */}
@@ -143,12 +143,12 @@ export default function Footer() {
                   className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-zinc-400 hover:text-white hover:border-white/20 transition-all"
                 >
                   <span className="w-2 h-2 rounded-full bg-[#3ad389] animate-pulse" />
-                  <span>High-speed VLESS VPN · Sri Lanka</span>
+                  <span>High-speed VLESS · Sri Lanka</span>
                 </Link>
               ) : (
                 <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-zinc-400">
                   <span className="w-2 h-2 rounded-full bg-[#3ad389] animate-pulse" />
-                  <span>High-speed VLESS VPN · Sri Lanka</span>
+                  <span>High-speed VLESS · Sri Lanka</span>
                 </span>
               )}
             </div>
@@ -166,7 +166,7 @@ export default function Footer() {
                 <li>
                   <Link href="/v2ray" className="text-white font-medium hover:text-zinc-200 transition-colors flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#3ad389]" />
-                    <span>High-Speed VLESS Hub</span>
+                    <span>High-Speed V2Ray</span>
                   </Link>
                 </li>
                 <li>
