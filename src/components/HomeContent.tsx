@@ -34,7 +34,7 @@ export default function HomeContent({
     <main className="relative isolate flex flex-col">
       {/* Page-wide dark veil behind every section, so the page never goes flat black while scrolling */}
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 bg-black">
-        <DarkVeil hueShift={0} noiseIntensity={0.6} warpAmount={0.5} speed={0.8} />
+        <DarkVeil color="#3b3fd9" speed={0.8} flow={1.8} warp={0.4} brightness={0.95} glow={0.5} grain={0.04} quality={0.5} />
       </div>
 
       {/* Store Hero */}
@@ -55,7 +55,7 @@ export default function HomeContent({
       {shopOn && <FeaturesGrid />}
 
       {/* Quick Store Navigation */}
-      <section className="py-20 border-t border-white/[0.06] bg-black/35">
+      <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">

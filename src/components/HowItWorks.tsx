@@ -52,7 +52,7 @@ const V2RAY_STEPS = [
 export default function HowItWorks({ v2rayOnly = false }: { v2rayOnly?: boolean }) {
   const steps = v2rayOnly ? V2RAY_STEPS : STEPS;
   return (
-    <section id="how-it-works" className="w-full py-24 bg-black/35 border-t border-white/[0.06]">
+    <section id="how-it-works" className="w-full py-24">
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-6">
           <div className="max-w-2xl">

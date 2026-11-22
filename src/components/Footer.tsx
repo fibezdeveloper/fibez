@@ -84,12 +84,12 @@ function SocialIcon({ platform }: { platform: SocialLinkConfig['platform'] }) {
 export default function Footer() {
   const { socialLinks } = useStore();
   const flags = useSiteFlags();
-  // Until the flags load everything shows, so links do not pop in; a switched-off section is hidden for good.
+  // The footer fades in once the site switches are known, so links that are switched off never flash on screen.
   const on = (k: 'shop' | 'tickets' | 'faq' | 'infrastructure' | 'whatsapp') => (flags ? flags[k] !== false : true);
   const enabledSocials = socialLinks.filter((s) => s.enabled && (s.platform !== 'whatsapp' || on('whatsapp')));
 
   return (
-    <footer className="w-full bg-[#070709] border-t border-[#1b1c20] pt-16 pb-20 sm:pb-16 text-zinc-400 relative">
+    <footer className={`w-full bg-[#070709] border-t border-[#1b1c20] pt-16 pb-20 sm:pb-16 text-zinc-400 relative transition-opacity duration-300 ${flags ? 'opacity-100' : 'opacity-0'}`}>
       <div className="max-w-[1240px] mx-auto px-6">
         
         {/* Main Multi-Column Grid */}

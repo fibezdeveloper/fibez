@@ -18,10 +18,10 @@ export default function Hero({
   v2rayOnly?: boolean;
 }) {
   return (
-    <section className="relative w-full pt-16 pb-20 md:pt-24 md:pb-32 overflow-hidden bg-black">
+    <section className="relative w-full pt-16 pb-20 md:pt-24 md:pb-32 overflow-hidden">
       
       {/* Interactive GradientASCII Background from React Bits */}
-      <div className="absolute inset-0 z-0 pointer-events-auto overflow-hidden bg-[radial-gradient(ellipse_90%_60%_at_50%_78%,rgba(36,48,160,0.55),rgba(52,22,104,0.32)_42%,rgba(5,5,22,0.7)_62%,#000_100%)]">
+      <div className="absolute inset-0 z-0 pointer-events-auto overflow-hidden bg-[radial-gradient(ellipse_90%_60%_at_50%_78%,rgba(36,48,160,0.55),rgba(52,22,104,0.32)_42%,rgba(5,5,22,0.7)_62%,transparent_100%)]" style={{ maskImage: 'linear-gradient(to bottom, #000 55%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, #000 55%, transparent 100%)' }}>
         <GradientASCII
           colors={['#2a3ab0', '#e6e4ff', '#7a82ea', '#6a46c8']}
           shape="horizon"
@@ -46,7 +46,7 @@ export default function Hero({
           lightMode={false}
         />
         {/* Deep vignette at the top so top bar is pure clean dark with no weird gradient bleed */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black via-black/30 to-black" />
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black via-black/30 to-transparent" />
       </div>
 
       {/* Hero Foreground Content */}
