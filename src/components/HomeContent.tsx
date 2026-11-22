@@ -9,6 +9,7 @@ import CatalogSection from '@/components/CatalogSection';
 import HowItWorks from '@/components/HowItWorks';
 import FeaturesGrid from '@/components/FeaturesGrid';
 import Testimonials from '@/components/Testimonials';
+import DarkVeil from '@/components/DarkVeil';
 import { useStore } from '@/lib/store-context';
 import { ArrowRight, ShoppingBag, KeyRound, ShieldCheck, LifeBuoy } from 'lucide-react';
 
@@ -30,7 +31,12 @@ export default function HomeContent({
   const v2rayOnly = !shopOn;
 
   return (
-    <main className="flex flex-col">
+    <main className="relative isolate flex flex-col">
+      {/* Page-wide dark veil behind every section, so the page never goes flat black while scrolling */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 bg-black">
+        <DarkVeil hueShift={0} noiseIntensity={0.6} warpAmount={0.5} speed={0.8} />
+      </div>
+
       {/* Store Hero */}
       <Hero
         v2rayOnly={v2rayOnly}
@@ -49,7 +55,7 @@ export default function HomeContent({
       {shopOn && <FeaturesGrid />}
 
       {/* Quick Store Navigation */}
-      <section className="py-20 border-t border-[#181a1c] bg-[#050505]">
+      <section className="py-20 border-t border-white/[0.06] bg-black/35">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <div className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">

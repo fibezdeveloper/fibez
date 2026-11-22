@@ -21,9 +21,9 @@ export default function Hero({
     <section className="relative w-full pt-16 pb-20 md:pt-24 md:pb-32 overflow-hidden bg-black">
       
       {/* Interactive GradientASCII Background from React Bits */}
-      <div className="absolute inset-0 z-0 pointer-events-auto overflow-hidden bg-[radial-gradient(ellipse_90%_60%_at_50%_78%,rgba(30,63,216,0.45),rgba(4,8,30,0.6)_55%,#000_100%)]">
+      <div className="absolute inset-0 z-0 pointer-events-auto overflow-hidden bg-[radial-gradient(ellipse_90%_60%_at_50%_78%,rgba(36,48,160,0.55),rgba(52,22,104,0.32)_42%,rgba(5,5,22,0.7)_62%,#000_100%)]">
         <GradientASCII
-          colors={['#1e3fd8', '#f6f8ff', '#a5d8ff', '#38bdf8']}
+          colors={['#2a3ab0', '#e6e4ff', '#7a82ea', '#6a46c8']}
           shape="horizon"
           characters=" =+xX0S8#@"
           cellSize={18}
