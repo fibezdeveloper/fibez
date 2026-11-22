@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { CheckCircle2, ExternalLink, Laptop, Monitor, Smartphone, Tv } from 'lucide-react';
 import type { DeviceSetupCopy } from '@/lib/v2ray-guide-data';
 import { APP_PLATFORM_ORDER, CLIENT_APPS, type AppPlatformId } from '@/lib/v2ray-apps';
+import PillTabs from '@/components/PillTabs';
 
 const PLATFORM_ICON: Record<AppPlatformId, React.ComponentType<{ className?: string }>> = {
   windows: Monitor,
@@ -51,29 +52,15 @@ export default function GuideDeviceSetup({ copy }: { copy: DeviceSetupCopy }) {
   return (
     <div className="space-y-6">
       {/* Device tabs */}
-      <div role="tablist" aria-label={copy.title} className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {APP_PLATFORM_ORDER.map((id) => {
+      <PillTabs
+        ariaLabel={copy.title}
+        value={platform}
+        onChange={setPlatform}
+        tabs={APP_PLATFORM_ORDER.map((id) => {
           const Icon = PLATFORM_ICON[id];
-          const active = platform === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => setPlatform(id)}
-              className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl border text-sm font-semibold transition-colors cursor-pointer ${
-                active
-                  ? 'bg-white text-black border-white'
-                  : 'bg-[#0e0e12]/80 border-[#1f1f26] text-zinc-300 hover:border-white/30 hover:text-white'
-              }`}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span className="truncate">{copy.platforms[id]}</span>
-            </button>
-          );
+          return { id, label: copy.platforms[id], icon: <Icon className="w-4 h-4" /> };
         })}
-      </div>
+      />
 
       {/* Apps for the chosen device */}
       <div className={`grid grid-cols-1 gap-3 ${apps.length > 2 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>

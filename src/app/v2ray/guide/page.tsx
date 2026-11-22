@@ -29,11 +29,13 @@ export default function V2RayGuidePage() {
           const merged = PRODUCTS.filter((p) => p.category === 'vpn').map((local) => {
             const remote = data.products.find((d: { id: string }) => d.id === local.id);
             if (!remote) return local;
+            // The API sends camelCase; keep the local value if a field is missing or not a number.
+            const num = (value: unknown, fallback: number) => (Number.isFinite(Number(value)) && value != null ? Number(value) : fallback);
             return {
               ...local,
-              priceLKR: Number(remote.price_lkr),
-              priceUSD: Number(remote.price_usd),
-              stockCount: Number(remote.stock_count),
+              priceLKR: num(remote.priceLKR, local.priceLKR),
+              priceUSD: num(remote.priceUSD, local.priceUSD),
+              stockCount: num(remote.stockCount, local.stockCount),
             };
           });
           setLiveProducts(merged);
@@ -114,7 +116,7 @@ export default function V2RayGuidePage() {
       {/* Jump menu: stays under the top bar while you scroll */}
       <div className="sticky top-[84px] z-30 pointer-events-none">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-2.5">
-          <div className="pointer-events-auto">
+          <div className="pointer-events-auto flex justify-center">
             <PillNav
               layout="joined"
               size="sm"

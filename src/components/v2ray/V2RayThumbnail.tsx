@@ -42,7 +42,6 @@ export default function V2RayThumbnail({
   badge,
   inboundPort,
   port,
-  sni,
   categoryLabel,
   category,
   packageId,
@@ -53,7 +52,6 @@ export default function V2RayThumbnail({
   const ispLogo = getIspLogoPath(safeIsp);
   const displayPort = inboundPort ?? port ?? 443;
   const displayCategory = categoryLabel || category || (safeIsp === 'SLT' ? 'Fiber & Broadband' : 'Mobile 4G/5G');
-  const displaySni = sni || 'zoom.us';
   const isLkIp = serverType === 'LK_IP' || hasSriLankanIp || displayCategory.toLowerCase().includes('lk ip');
 
   // High-end ISP corporate color themes
@@ -190,14 +188,10 @@ export default function V2RayThumbnail({
       {/* 5. Bottom Technical Strip: High-Performance Verification Specs */}
       <div className="relative z-10 flex items-center justify-between text-[10px] font-mono pt-2 border-t border-white/10 backdrop-blur-xs">
         <div>
-          {badge ? (
+          {badge && (
             <span className="font-bold text-white px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center gap-1">
               <Sparkles className="w-3 h-3" />
               <span>{badge}</span>
-            </span>
-          ) : (
-            <span className="text-zinc-400 font-semibold px-2 py-0.5 rounded bg-black/50 border border-white/10">
-              SNI: {displaySni}
             </span>
           )}
         </div>

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { LiquidButton } from '@/components/ui/liquid-button';
 import { PRODUCTS, ProductItem } from '@/lib/products';
 import { useStore } from '@/lib/store-context';
 import { WIZARD_ISP_STEPS, WizardUseCase } from '@/lib/v2ray-guide-data';
@@ -47,6 +48,7 @@ export default function GuidePlanWizard({
   liveProducts = [],
 }: GuidePlanWizardProps) {
   const { formatPrice } = useStore();
+  const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedIsp, setSelectedIsp] = useState<string>('dialog');
   const [selectedUseCase, setSelectedUseCase] = useState<WizardUseCase | null>(null);
@@ -252,21 +254,13 @@ export default function GuidePlanWizard({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
                 <div className="p-3 rounded-lg bg-[#0d0d11] border border-white/10">
                   <span className="text-zinc-500 block text-[10px] uppercase">
                     Activate on SIM / Line
                   </span>
                   <span className="text-white font-semibold mt-0.5 block">
                     {selectedUseCase.recommendedPack}
-                  </span>
-                </div>
-                <div className="p-3 rounded-lg bg-[#0d0d11] border border-white/10">
-                  <span className="text-zinc-500 block text-[10px] uppercase">
-                    SNI Host / Exit
-                  </span>
-                  <span className="text-white font-semibold mt-0.5 block">
-                    {selectedUseCase.sniHost} · {matchedProduct.location || 'Singapore'}
                   </span>
                 </div>
                 <div className="p-3 rounded-lg bg-[#0d0d11] border border-white/10">
@@ -280,21 +274,18 @@ export default function GuidePlanWizard({
               </div>
 
               <div className="flex flex-wrap items-center gap-3 pt-1">
-                <Link
-                  href={`/products/${matchedProduct.id}`}
-                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-semibold flex items-center gap-2 transition-all"
+                <LiquidButton
+                  variant="accent"
+                  onClick={() => router.push(`/products/${matchedProduct.id}`)}
                 >
                   <span>{buyLabel}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+                  <ArrowRight className="w-4 h-4" />
+                </LiquidButton>
 
-                <Link
-                  href="/v2ray?openTrial=true"
-                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white text-xs font-mono flex items-center gap-1.5 transition-all"
-                >
-                  <Zap className="w-3.5 h-3.5 text-[#3ad389]" />
+                <LiquidButton variant="dark" onClick={() => router.push('/v2ray?openTrial=true')}>
+                  <Zap className="w-4 h-4" />
                   <span>{trialLabel}</span>
-                </Link>
+                </LiquidButton>
 
                 <button
                   type="button"

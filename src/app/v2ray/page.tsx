@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PRODUCTS, ProductItem } from '@/lib/products';
@@ -33,7 +33,7 @@ const SPEEDTEST_ITEMS: FlexCarouselItem[] = [
     src: '/speedtests/speedtest-3.jpeg',
     alt: 'Mobitel 4G Speedtest - 68 Mbps Download',
     title: 'Mobitel 4G — 68.4 Mbps',
-    subtitle: 'Apple SNI Ingress • 18ms Ping',
+    subtitle: 'Low Latency • 18ms Ping',
   },
   {
     src: '/speedtests/speedtest-4.jpeg',
@@ -93,13 +93,18 @@ import {
   Radio
 } from 'lucide-react';
 
+// Opens the trial sheet from ?openTrial=true, then drops the param so closing it stays closed.
 function TrialUrlTrigger({ onOpen }: { onOpen: () => void }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const onOpenRef = useRef(onOpen);
+  onOpenRef.current = onOpen;
+  const wantsTrial = searchParams.get('openTrial') === 'true' || searchParams.get('trial') === 'true';
   useEffect(() => {
-    if (searchParams.get('openTrial') === 'true' || searchParams.get('trial') === 'true') {
-      onOpen();
-    }
-  }, [searchParams, onOpen]);
+    if (!wantsTrial) return;
+    onOpenRef.current();
+    router.replace('/v2ray', { scroll: false });
+  }, [wantsTrial, router]);
   return null;
 }
 

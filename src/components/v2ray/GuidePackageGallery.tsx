@@ -6,6 +6,7 @@ import {
   VISUAL_PACKAGES,
   VisualPackageCard,
 } from '@/lib/v2ray-guide-data';
+import PillTabs from '@/components/PillTabs';
 import {
   ArrowRight,
   ZoomIn,
@@ -22,9 +23,9 @@ interface GuidePackageGalleryProps {
 type GalleryFilter = 'ALL' | 'SLT' | 'Dialog' | 'Airtel';
 
 const FILTER_TABS: { id: GalleryFilter; label: string }[] = [
-  { id: 'ALL', label: 'All Visual Guides (8)' },
-  { id: 'SLT', label: 'SLT WiFi / Fiber (4)' },
-  { id: 'Dialog', label: 'Dialog SIM (3)' },
+  { id: 'ALL', label: 'All (8)' },
+  { id: 'SLT', label: 'SLT (4)' },
+  { id: 'Dialog', label: 'Dialog (3)' },
   { id: 'Airtel', label: 'Airtel (1)' },
 ];
 
@@ -68,25 +69,13 @@ export default function GuidePackageGallery({
         </div>
 
         {/* ISP Visual Filter Options */}
-        <div className="flex flex-wrap items-center gap-2">
-          {FILTER_TABS.map((tab) => {
-            const isActive = activeFilter === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveFilter(tab.id)}
-                className={`px-3.5 py-2 rounded-full text-xs font-mono transition-all cursor-pointer border ${
-                  isActive
-                    ? 'bg-white text-black border-white font-bold'
-                    : 'bg-black border-white/15 text-zinc-300 hover:border-white/40 hover:text-white'
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+        <PillTabs
+          ariaLabel="Filter by network"
+          size="sm"
+          value={activeFilter}
+          onChange={setActiveFilter}
+          tabs={FILTER_TABS}
+        />
       </div>
 
       {/* Visual ISP Package Reference Screenshots Grid */}
@@ -144,10 +133,7 @@ export default function GuidePackageGallery({
             </div>
 
             {/* Footer Link */}
-            <div className="px-4 py-3 border-t border-[#181820] bg-[#0b0b0f] flex items-center justify-between text-xs font-mono">
-              <span className="text-zinc-500">
-                SNI: <code className="text-zinc-300">{pkg.sniHost}</code>
-              </span>
+            <div className="px-4 py-3 border-t border-[#181820] bg-[#0b0b0f] flex items-center justify-end text-xs font-mono">
               <Link
                 href={`/products/${pkg.productId}`}
                 className="text-white hover:text-[#3ad389] flex items-center gap-1 transition-colors font-semibold"

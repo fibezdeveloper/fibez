@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { FaqCategory, GuideFaqItem } from '@/lib/v2ray-guide-data';
+import { LiquidButton } from '@/components/ui/liquid-button';
 import {
   CheckCircle2,
   ChevronDown,
@@ -94,18 +95,15 @@ export default function GuideFaqSection({
         {FAQ_TABS.map((tab) => {
           const isActive = activeCategory === tab.id;
           return (
-            <button
+            <LiquidButton
               key={tab.id}
-              type="button"
+              size="sm"
+              variant="dark"
+              active={isActive}
               onClick={() => setActiveCategory(tab.id)}
-              className={`px-3.5 py-2 rounded-full text-xs font-mono transition-all cursor-pointer border ${
-                isActive
-                  ? 'bg-white text-black border-white font-bold'
-                  : 'bg-black border-white/15 text-zinc-300 hover:border-white/40 hover:text-white'
-              }`}
             >
               {tab.label}
-            </button>
+            </LiquidButton>
           );
         })}
       </div>

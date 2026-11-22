@@ -153,13 +153,13 @@ export const TRIAL_PACKAGES: TrialPackageOption[] = [
   },
 ];
 
-// Each network wears its own brand colour while it is selected. `on` is the text colour that reads on top of it.
-const NETWORK_THEME: Record<string, { accent: string; on: string }> = {
-  Dialog: { accent: '#ff7900', on: '#1a0d00' },
-  SLT: { accent: '#00b4eb', on: '#00131c' },
-  Airtel: { accent: '#ed1c24', on: '#ffffff' },
-  Hutch: { accent: '#f5b01a', on: '#1a1000' },
-  Mobitel: { accent: '#2f84ff', on: '#ffffff' },
+// Official network logos, the same files the package cards use.
+const NETWORK_LOGO: Record<string, string> = {
+  Dialog: '/images/isps/dialog.svg',
+  SLT: '/images/isps/slt.svg',
+  Airtel: '/images/isps/airtel.svg',
+  Hutch: '/images/isps/hutch.svg',
+  Mobitel: '/images/isps/mobitel.svg',
 };
 
 export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps) {
@@ -228,17 +228,10 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
   };
 
   const isAuthenticated = Boolean(session?.user);
-  // Brand colours only while picking a line; the sign-up and success screens keep the Fibez green.
-  const theme = isAuthenticated && !trialData ? NETWORK_THEME[selectedIsp] || NETWORK_THEME.Dialog : { accent: '#3ad389', on: '#001a0d' };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div
-        style={{ ...( { '--ta': theme.accent, '--ta-on': theme.on } as React.CSSProperties ) }}
-        className="relative w-full max-w-xl bg-[#0e0e12] border border-[color-mix(in_srgb,var(--ta)_30%,#23232d)] rounded-2xl p-6 sm:p-8 shadow-2xl shadow-[color-mix(in_srgb,var(--ta)_12%,transparent)] overflow-hidden max-h-[92vh] overflow-y-auto transition-colors duration-300"
-      >
-        {/* brand glow along the top edge */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_70%_100%_at_50%_0%,color-mix(in_srgb,var(--ta)_22%,transparent),transparent)]" />
+      <div className="relative w-full max-w-xl bg-[#0e0e12] border border-[#23232d] rounded-2xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
         
         {/* Close Button */}
         <button
@@ -346,13 +339,13 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
               </div>
             )}
 
-            {/* Step 1: network */}
+            {/* Step 1: network, shown by its logo */}
             <div>
-              <div className="text-sm font-semibold text-white mb-2.5 flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[var(--ta)] text-[color:var(--ta-on)] text-[11px] font-bold flex items-center justify-center">1</span>
+              <div className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-[#3ad389] text-black text-[11px] font-bold flex items-center justify-center">1</span>
                 Which network do you use?
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
                 {networks.map((isp) => {
                   const active = selectedIsp === isp;
                   return (
@@ -360,13 +353,24 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
                       key={isp}
                       type="button"
                       onClick={() => pickNetwork(isp)}
-                      className={`px-4 py-2 rounded-full border text-sm font-semibold transition-colors ${
+                      aria-pressed={active}
+                      aria-label={isp}
+                      className={`relative flex flex-col items-center gap-1.5 p-2 rounded-2xl border transition-all cursor-pointer ${
                         active
-                          ? 'bg-[var(--ta)] border-[var(--ta)] text-[color:var(--ta-on)]'
-                          : 'bg-[#121216] border-[#2a2a33] text-zinc-300 hover:border-zinc-500 hover:text-white'
+                          ? 'border-[#3ad389] bg-[#3ad389]/10 ring-1 ring-[#3ad389]/40'
+                          : 'border-[#23232d] bg-[#121216] hover:border-zinc-500'
                       }`}
                     >
-                      {isp}
+                      <span className="w-full aspect-[4/3] rounded-xl bg-white flex items-center justify-center p-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={NETWORK_LOGO[isp]} alt="" className="max-w-full max-h-full object-contain" draggable={false} />
+                      </span>
+                      <span className={`text-[11px] font-semibold ${active ? 'text-white' : 'text-zinc-400'}`}>{isp}</span>
+                      {active && (
+                        <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#3ad389] text-black flex items-center justify-center">
+                          <Check className="w-3 h-3" strokeWidth={3} />
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -376,7 +380,7 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
             {/* Step 2: package */}
             <div>
               <div className="text-sm font-semibold text-white mb-2.5 flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[var(--ta)] text-[color:var(--ta-on)] text-[11px] font-bold flex items-center justify-center">2</span>
+                <span className="w-5 h-5 rounded-full bg-[#3ad389] text-black text-[11px] font-bold flex items-center justify-center">2</span>
                 Which package do you have?
               </div>
               <div className="grid gap-2">
@@ -389,16 +393,16 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
                       onClick={() => setSelectedPackageId(pkg.id)}
                       className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-colors ${
                         isSelected
-                          ? 'bg-[color-mix(in_srgb,var(--ta)_12%,transparent)] border-[var(--ta)]'
+                          ? 'bg-[#3ad389]/10 border-[#3ad389]'
                           : 'bg-[#121216] border-[#22222a] hover:border-zinc-600'
                       }`}
                     >
                       <span
                         className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                          isSelected ? 'border-[var(--ta)] bg-[var(--ta)]' : 'border-zinc-600'
+                          isSelected ? 'border-[#3ad389] bg-[#3ad389]' : 'border-zinc-600'
                         }`}
                       >
-                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--ta-on)]" />}
+                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-black" />}
                       </span>
                       <span className="min-w-0">
                         <span className="block text-sm font-semibold text-white truncate">{pkg.title}</span>
@@ -413,17 +417,17 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
             {/* What you get */}
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="p-3 rounded-xl bg-[#131318] border border-[#23232d]">
-                <Database className="w-4 h-4 text-[var(--ta)] mx-auto mb-1" />
+                <Database className="w-4 h-4 text-[#3ad389] mx-auto mb-1" />
                 <div className="text-sm font-bold text-white">10 GB</div>
                 <div className="text-[11px] text-zinc-500">data</div>
               </div>
               <div className="p-3 rounded-xl bg-[#131318] border border-[#23232d]">
-                <Clock className="w-4 h-4 text-[var(--ta)] mx-auto mb-1" />
+                <Clock className="w-4 h-4 text-[#3ad389] mx-auto mb-1" />
                 <div className="text-sm font-bold text-white">24 hours</div>
                 <div className="text-[11px] text-zinc-500">free access</div>
               </div>
               <div className="p-3 rounded-xl bg-[#131318] border border-[#23232d]">
-                <Smartphone className="w-4 h-4 text-[var(--ta)] mx-auto mb-1" />
+                <Smartphone className="w-4 h-4 text-[#3ad389] mx-auto mb-1" />
                 <div className="text-sm font-bold text-white">2 devices</div>
                 <div className="text-[11px] text-zinc-500">at once</div>
               </div>
@@ -435,16 +439,16 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
                 type="button"
                 onClick={handleGenerate}
                 disabled={isLoading}
-                className="w-full py-3.5 px-6 rounded-xl bg-[var(--ta)] hover:brightness-110 text-[color:var(--ta-on)] font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[color-mix(in_srgb,var(--ta)_30%,transparent)] active:scale-[0.99] disabled:opacity-50"
+                className="w-full py-3.5 px-6 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] disabled:opacity-50"
               >
                 {isLoading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-[color:var(--ta-on)] border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
                     <span>Setting up your line...</span>
                   </>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4 fill-current" />
+                    <Zap className="w-4 h-4 fill-current text-black" />
                     <span>Get my free trial</span>
                   </>
                 )}
