@@ -81,7 +81,7 @@ export default function GuidePlanWizard({
   };
 
   return (
-    <section id="plan-finder" className="space-y-6 pt-6 border-t border-[#181820]">
+    <section id="plan-finder" className="scroll-mt-40 space-y-6">
       <div>
         <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.2em] text-zinc-400 font-semibold mb-1.5">
           <Compass className="w-4 h-4 text-white" />

@@ -4,63 +4,16 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, ExternalLink, Laptop, Monitor, Smartphone, Terminal } from 'lucide-react';
+import { APP_PLATFORM_ORDER, CLIENT_APPS, type AppPlatformId } from '@/lib/v2ray-apps';
 
-interface AppEntry {
-  name: string;
-  note?: string;
-  icon: string;
-  url: string;
-}
+const PLATFORM_META: Record<AppPlatformId, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
+  windows: { label: 'Windows PC', icon: Monitor },
+  mac: { label: 'Mac OS', icon: Laptop },
+  android: { label: 'Android', icon: Smartphone },
+  ios: { label: 'iPhone / iOS', icon: Smartphone },
+};
 
-interface Platform {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  apps: AppEntry[];
-}
-
-// Where each app is downloaded from. Icons are served from /public/apps.
-const APP_STORE = {
-  shadowrocket: 'https://apps.apple.com/app/shadowrocket/id932747118',
-  npvTunnel: 'https://apps.apple.com/app/npv-tunnel/id1629465476',
-  incy: 'https://apps.apple.com/app/incy/id6756943388',
-  fairVpn: 'https://apps.apple.com/app/fair-vpn/id1533873488',
-} as const;
-
-const PLATFORMS: Platform[] = [
-  {
-    label: 'Windows PC',
-    icon: Monitor,
-    apps: [
-      { name: 'NetMod', note: 'VPN client (V2Ray / SSH)', icon: '/apps/netmod.png', url: 'https://sourceforge.net/projects/netmod/' },
-      { name: 'Netch', note: 'Proxy client', icon: '/apps/netch.png', url: 'https://github.com/netchx/netch/releases' },
-    ],
-  },
-  {
-    label: 'Mac OS',
-    icon: Laptop,
-    apps: [
-      { name: 'Fair VPN', note: 'Free', icon: '/apps/fair-vpn.jpg', url: APP_STORE.fairVpn },
-      { name: 'Shadowrocket', note: 'Paid', icon: '/apps/shadowrocket.jpg', url: APP_STORE.shadowrocket },
-    ],
-  },
-  {
-    label: 'Android',
-    icon: Smartphone,
-    apps: [
-      { name: 'NetMod', note: 'VPN client (V2Ray / SSH)', icon: '/apps/netmod.png', url: 'https://play.google.com/store/apps/details?id=com.netmod.syna' },
-      { name: 'v2rayNG', note: 'Proxy client (GitHub)', icon: '/apps/v2rayng.png', url: 'https://github.com/2dust/v2rayNG/releases' },
-    ],
-  },
-  {
-    label: 'iPhone / iOS',
-    icon: Smartphone,
-    apps: [
-      { name: 'Npv Tunnel', note: 'Free', icon: '/apps/npv-tunnel.jpg', url: APP_STORE.npvTunnel },
-      { name: 'INCY', note: 'Free', icon: '/apps/incy.jpg', url: APP_STORE.incy },
-      { name: 'Shadowrocket', note: 'Paid', icon: '/apps/shadowrocket.jpg', url: APP_STORE.shadowrocket },
-    ],
-  },
-];
+const PRICE_LABEL = { free: 'Free', paid: 'Paid' } as const;
 
 export default function ClientApps() {
   return (
@@ -75,10 +28,11 @@ export default function ClientApps() {
         </div>
 
         <div className="space-y-9">
-          {PLATFORMS.map((platform) => {
+          {APP_PLATFORM_ORDER.map((id) => {
+            const platform = { ...PLATFORM_META[id], apps: CLIENT_APPS[id] };
             const Icon = platform.icon;
             return (
-              <section key={platform.label}>
+              <section key={id}>
                 <div className="flex items-center gap-3 mb-4">
                   <Icon className="w-5 h-5 text-zinc-300 shrink-0" />
                   <h3 className="text-lg font-bold text-white">{platform.label}</h3>
@@ -103,7 +57,9 @@ export default function ClientApps() {
                       />
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-bold text-white truncate">{app.name}</div>
-                        {app.note && <div className="text-xs text-zinc-400 truncate">{app.note}</div>}
+                        {(app.price || app.subtitle) && (
+                          <div className="text-xs text-zinc-400 truncate">{app.price ? PRICE_LABEL[app.price] : app.subtitle}</div>
+                        )}
                       </div>
                       <ExternalLink className="w-4 h-4 text-zinc-500 group-hover:text-white shrink-0 transition-colors" />
                     </a>

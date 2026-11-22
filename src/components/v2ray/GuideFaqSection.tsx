@@ -60,7 +60,7 @@ export default function GuideFaqSection({
   };
 
   return (
-    <section id="faq" className="space-y-6 pt-6 border-t border-[#181820]">
+    <section id="faq" className="scroll-mt-40 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>

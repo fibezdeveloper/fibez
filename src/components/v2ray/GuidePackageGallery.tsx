@@ -4,15 +4,12 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   VISUAL_PACKAGES,
-  SUPPORTED_ISPS,
   VisualPackageCard,
 } from '@/lib/v2ray-guide-data';
 import {
   ArrowRight,
-  Radio,
   ZoomIn,
   X,
-  CheckCircle2,
   Package,
 } from 'lucide-react';
 
@@ -20,8 +17,6 @@ interface GuidePackageGalleryProps {
   eyebrow: string;
   title: string;
   subtitle: string;
-  allPackagesTitle: string;
-  browseAllLabel: string;
 }
 
 type GalleryFilter = 'ALL' | 'SLT' | 'Dialog' | 'Airtel';
@@ -37,8 +32,6 @@ export default function GuidePackageGallery({
   eyebrow,
   title,
   subtitle,
-  allPackagesTitle,
-  browseAllLabel,
 }: GuidePackageGalleryProps) {
   const [activeFilter, setActiveFilter] = useState<GalleryFilter>('ALL');
   const [lightboxPkg, setLightboxPkg] = useState<VisualPackageCard | null>(null);
@@ -58,7 +51,7 @@ export default function GuidePackageGallery({
       : VISUAL_PACKAGES.filter((p) => p.isp === activeFilter);
 
   return (
-    <section id="supported-packages" className="space-y-8 pt-6 border-t border-[#181820]">
+    <section id="supported-packages" className="scroll-mt-40 space-y-8">
       {/* Section Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -166,135 +159,6 @@ export default function GuidePackageGallery({
           </div>
         ))}
       </div>
-
-      {/* All Supported Packages & Quick Activation Directory */}
-      <div
-        id="isp-codes"
-        className="rounded-2xl bg-[#0e0e12] border border-[#1e1e26] p-6 sm:p-7 space-y-6"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#181820]">
-          <div className="flex items-center gap-2.5">
-            <Radio className="w-4 h-4 text-[#3ad389]" />
-            <h3 className="text-base sm:text-lg font-bold text-white">
-              {allPackagesTitle}
-            </h3>
-          </div>
-          <Link
-            href="/v2ray"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-semibold transition-all self-start sm:self-auto"
-          >
-            <span>{browseAllLabel}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {SUPPORTED_ISPS.map((isp) => (
-            <div
-              key={isp.id}
-              className="p-4 rounded-xl bg-[#09090d] border border-white/10 flex flex-col justify-between space-y-4"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-bold text-white">{isp.name}</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/10 text-zinc-300">
-                    {isp.networkTag}
-                  </span>
-                </div>
-
-                <ul className="space-y-1.5">
-                  {isp.packages.map((line) => (
-                    <li
-                      key={line}
-                      className="text-xs font-mono text-zinc-300 flex items-start gap-2 leading-snug"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#3ad389] shrink-0 mt-0.5" />
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {isp.note && (
-                  <p className="text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1.5 leading-snug">
-                    {isp.note}
-                  </p>
-                )}
-              </div>
-
-              <div className="pt-3 border-t border-white/5 space-y-1.5 text-[11px] font-mono">
-                <div className="text-zinc-400">
-                  Activate: <span className="text-white">{isp.activationCode}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">
-                    SNI: <code className="text-zinc-300">{isp.sniHost}</code>
-                  </span>
-                  <Link
-                    href={`/products/${isp.productId}`}
-                    className="text-zinc-200 hover:text-white underline underline-offset-4"
-                  >
-                    Open Plan ›
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Lightbox Modal for Package Screenshot Zoom */}
-      {lightboxPkg && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={lightboxPkg.title}
-          onClick={() => setLightboxPkg(null)}
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="max-w-3xl w-full rounded-2xl bg-[#0e0e12] border border-white/20 overflow-hidden shadow-2xl"
-          >
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
-              <div>
-                <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-400">
-                  {lightboxPkg.ispLabel}
-                </div>
-                <div className="text-sm sm:text-base font-bold text-white">
-                  {lightboxPkg.title}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setLightboxPkg(null)}
-                aria-label="Close image preview"
-                className="p-2 rounded-lg bg-white/5 hover:bg-white/15 text-zinc-300 hover:text-white transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="bg-black p-4 sm:p-6 flex items-center justify-center max-h-[70vh]">
-              <img
-                src={lightboxPkg.image}
-                alt={lightboxPkg.title}
-                className="max-h-[60vh] max-w-full object-contain rounded-lg"
-              />
-            </div>
-
-            <div className="px-5 py-3.5 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-              <span className="text-zinc-400">{lightboxPkg.activationHint}</span>
-              <Link
-                href={`/products/${lightboxPkg.productId}`}
-                className="px-3.5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold flex items-center gap-1.5 transition-colors"
-              >
-                <span>Open Matching VLESS Plan</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
