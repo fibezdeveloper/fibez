@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, ExternalLink, Laptop, Monitor, Smartphone, Terminal } from 'lucide-react';
+import { ArrowRight, Download, Laptop, Monitor, Smartphone, Terminal } from 'lucide-react';
 import { APP_PLATFORM_ORDER, CLIENT_APPS, type AppPlatformId } from '@/lib/v2ray-apps';
 
 const PLATFORM_META: Record<AppPlatformId, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -20,40 +20,45 @@ export default function ClientApps() {
     <div className="w-full py-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">Compatible Apps</h2>
+        <div className="text-center max-w-2xl mx-auto mb-10">
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">V2Ray apps for devices</h2>
           <p className="text-sm text-zinc-400 mt-2">
-            Download a recommended client for your device, then import your Fibez config.
+            Pick your device, install one app, then import your Fibez config.
           </p>
         </div>
 
-        <div className="space-y-9">
+        {/* One card per device, apps listed inside */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {APP_PLATFORM_ORDER.map((id) => {
             const platform = { ...PLATFORM_META[id], apps: CLIENT_APPS[id] };
             const Icon = platform.icon;
             return (
-              <section key={id}>
-                <div className="flex items-center gap-3 mb-4">
-                  <Icon className="w-5 h-5 text-zinc-300 shrink-0" />
+              <section
+                key={id}
+                className="rounded-3xl bg-gradient-to-b from-[#14101f]/90 to-[#0b0a12]/90 border border-[#2a2340] p-5 sm:p-6 space-y-4"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-10 h-10 rounded-xl bg-[#7c3aed]/20 border border-[#8b5cf6]/40 flex items-center justify-center shrink-0">
+                    <Icon className="w-5 h-5 text-[#c4b5fd]" />
+                  </span>
                   <h3 className="text-lg font-bold text-white">{platform.label}</h3>
-                  <div className="h-px flex-1 bg-white/10" />
+                  <span className="ml-auto text-[11px] font-mono text-zinc-500">
+                    {platform.apps.length} apps
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2.5">
                   {platform.apps.map((app) => (
-                    <a
-                      key={`${platform.label}-${app.name}`}
-                      href={app.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex items-center gap-4 p-4 rounded-2xl bg-[#0e0e12]/80 border border-[#1f1f26] hover:border-white/30 hover:bg-[#13131a] transition-colors"
+                    <div
+                      key={`${id}-${app.name}`}
+                      className="flex items-center gap-3.5 p-3 rounded-2xl bg-black/40 border border-white/5"
                     >
                       <Image
                         src={app.icon}
                         alt=""
-                        width={48}
-                        height={48}
-                        className="w-12 h-12 rounded-xl shrink-0 bg-white/5"
+                        width={44}
+                        height={44}
+                        className="w-11 h-11 rounded-xl shrink-0 bg-white/5"
                       />
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-bold text-white truncate">{app.name}</div>
@@ -61,8 +66,16 @@ export default function ClientApps() {
                           <div className="text-xs text-zinc-400 truncate">{app.price ? PRICE_LABEL[app.price] : app.subtitle}</div>
                         )}
                       </div>
-                      <ExternalLink className="w-4 h-4 text-zinc-500 group-hover:text-white shrink-0 transition-colors" />
-                    </a>
+                      <a
+                        href={app.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#6d28d9] hover:bg-[#5b21b6] text-white text-xs font-semibold transition-colors shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Get</span>
+                      </a>
+                    </div>
                   ))}
                 </div>
               </section>
