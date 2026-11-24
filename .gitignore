@@ -48,3 +48,7 @@ do not push/
 
 # local dev attachment fallback
 .local-uploads/
+
+# playwright
+/test-results/
+/playwright-report/

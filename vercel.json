@@ -1,7 +1,19 @@
 {
-  "regions": ["sin1"],
+  "regions": [
+    "sin1"
+  ],
   "crons": [
-    { "path": "/api/cron/usage-snapshot", "schedule": "25 18 * * *" },
-    { "path": "/api/cron/telegram-reminders", "schedule": "30 3 * * *" }
+    {
+      "path": "/api/cron/usage-snapshot",
+      "schedule": "25 18 * * *"
+    },
+    {
+      "path": "/api/cron/telegram-reminders",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/panel-backup",
+      "schedule": "40 20 * * *"
+    }
   ]
 }

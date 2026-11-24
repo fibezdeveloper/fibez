@@ -1,3 +1,4 @@
+import { auditLog } from '@/lib/audit';
 import { requireRole } from '@/lib/dal';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
@@ -189,6 +190,7 @@ export async function POST(req: NextRequest) {
         lastLatencyMs: test.latencyMs,
       });
 
+      await auditLog(guard.user, 'PANEL_CONNECTION_UPDATED', 'PANEL', saved.baseUrl, { username: saved.username, publicHost: saved.publicHost }, req);
       return NextResponse.json({
         success: true,
         message: `Successfully connected & auto-synced with 3x-ui panel (${test.inboundsCount} inbounds active)!`,
@@ -255,6 +257,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Client email is required' }, { status: 400 });
       }
       await xui.resetClientTraffic(email);
+      await auditLog(guard.user, 'CLIENT_TRAFFIC_RESET', 'PANEL_CLIENT', email, {}, req);
       return NextResponse.json({
         success: true,
         message: `Bandwidth usage reset to 0 GB for client ${email}`,
@@ -270,6 +273,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Client email is required' }, { status: 400 });
       }
       await xui.deleteClient(email);
+      await auditLog(guard.user, 'CLIENT_DELETED', 'PANEL_CLIENT', email, {}, req);
       return NextResponse.json({
         success: true,
         message: `Client ${email} removed from 3x-ui inbound`,
@@ -336,6 +340,7 @@ export async function POST(req: NextRequest) {
         remark,
       });
 
+      await auditLog(guard.user, 'CLIENT_CREATED', 'PANEL_CLIENT', email, { inboundId, remark }, req);
       return NextResponse.json({
         success: true,
         message: `Client ${email} created successfully on Inbound ${inboundId}!`,

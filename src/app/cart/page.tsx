@@ -1,5 +1,6 @@
 'use client';
 
+import { bundleDiscount } from '@/lib/bundle-discount';
 import { BANK_DETAILS } from '@/lib/bank-details';
 import { useSiteFlag } from '@/lib/use-site-flags';
 import React, { useState } from 'react';
@@ -147,7 +148,15 @@ export default function CartPage() {
   // Discount calculation
   const promoDiscountLKR = appliedPromo ? Math.round(cartTotalLKR * (appliedPromo.percent / 100)) : 0;
   const referralDiscountLKR = appliedReferral ? appliedReferral.discountLKR : 0;
-  const totalDiscountLKR = promoDiscountLKR + referralDiscountLKR;
+  // Buying several V2Ray lines in one order is cheaper per line (the server applies the same rule).
+  const bundle = bundleDiscount(
+    cart.map((i) => ({
+      isV2Ray: i.product?.category === 'vpn' || (i.productId || '').includes('v2ray'),
+      quantity: i.quantity,
+      subtotalLKR: i.priceLKR * i.quantity,
+    }))
+  );
+  const totalDiscountLKR = promoDiscountLKR + referralDiscountLKR + bundle.discountLKR;
 
   const finalTotalLKR = Math.max(0, cartTotalLKR - totalDiscountLKR);
   const finalTotalUSD = parseFloat(
@@ -1017,6 +1026,17 @@ export default function CartPage() {
                 <span className="text-[#a1a4a5]">Items Subtotal ({cartCount})</span>
                 <span className="text-white">{subtotalFormatted}</span>
               </div>
+              {bundle.discountLKR > 0 && (
+                <div className="flex justify-between text-sky-300">
+                  <span>Multi-line bundle ({bundle.lines} lines, {bundle.percent}% off)</span>
+                  <span>-Rs. {bundle.discountLKR.toLocaleString()}</span>
+                </div>
+              )}
+              {bundle.nextTier && bundle.lines > 0 && (
+                <div className="text-[11px] text-zinc-500">
+                  Add {bundle.nextTier.moreLines} more V2Ray line{bundle.nextTier.moreLines === 1 ? '' : 's'} to save {bundle.nextTier.percent}%.
+                </div>
+              )}
               {appliedPromo && (
                 <div className="flex justify-between text-[#3ad389]">
                   <span>Voucher Discount</span>

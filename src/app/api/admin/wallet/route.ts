@@ -1,3 +1,4 @@
+import { auditLog } from '@/lib/audit';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/dal';
 import { sql } from '@/lib/db';
@@ -103,6 +104,7 @@ export async function POST(req: NextRequest) {
       if (!r.ok) return NextResponse.json({ error: r.reason === 'ALREADY_REVIEWED' ? 'Already reviewed' : 'Top-up not found' }, { status: 409 });
       const topupMsg = tgMessages.money('Wallet top-up approved', `Rs. ${r.amount.toLocaleString()} was added. New balance: Rs. ${r.balanceAfter.toLocaleString()}.`);
       notifyLater(await emailOf('wallet_topups', id), topupMsg.html, topupMsg.buttons);
+      await auditLog(guard.user, 'TOPUP_APPROVED', 'WALLET_TOPUP', id, { amount: r.amount, balanceAfter: r.balanceAfter, note }, req);
       return NextResponse.json({ success: true, credited: r.amount, balanceAfter: r.balanceAfter });
     }
 
@@ -110,6 +112,7 @@ export async function POST(req: NextRequest) {
       if (note.length < 3) return NextResponse.json({ error: 'A reason is required to reject' }, { status: 400 });
       const ok = await rejectTopup(id, staff, note);
       if (ok) {
+        await auditLog(guard.user, 'TOPUP_REJECTED', 'WALLET_TOPUP', id, { note }, req);
         const m = tgMessages.money('Wallet top-up not approved', note);
         notifyLater(await emailOf('wallet_topups', id), m.html, m.buttons);
       }
@@ -145,6 +148,7 @@ export async function POST(req: NextRequest) {
         const m = tgMessages.money('Refund approved', `Rs. ${r.amount.toLocaleString()} for order ${r.orderNumber} was added to your wallet.`);
         notifyLater(order?.customerEmail ?? (await emailOf('refund_requests', id)), m.html, m.buttons);
       }
+      await auditLog(guard.user, 'REFUND_APPROVED', 'ORDER', r.orderNumber, { amount: r.amount, note, linesRemoved: removed }, req);
       return NextResponse.json({ success: true, refunded: r.amount, linesRemoved: removed });
     }
 
@@ -152,6 +156,7 @@ export async function POST(req: NextRequest) {
       if (note.length < 3) return NextResponse.json({ error: 'A reason is required to reject' }, { status: 400 });
       const ok = await rejectRefund(id, staff, note);
       if (ok) {
+        await auditLog(guard.user, 'REFUND_REJECTED', 'REFUND', id, { note }, req);
         const m = tgMessages.money('Refund request not approved', note);
         notifyLater(await emailOf('refund_requests', id), m.html, m.buttons);
       }
@@ -171,6 +176,7 @@ export async function POST(req: NextRequest) {
       if (!user) return NextResponse.json({ error: 'No account with that email' }, { status: 404 });
       try {
         const r = await adjustBalance({ userId: user.id, amount, reason, admin: staff });
+        await auditLog(guard.user, 'WALLET_ADJUSTED', 'USER', user.id, { email, amount, reason, balanceAfter: r.balanceAfter }, req);
         const m = tgMessages.money(
           amount > 0 ? 'Wallet credited' : 'Wallet adjusted',
           `${amount > 0 ? '+' : ''}Rs. ${amount.toLocaleString()}: ${reason}. Balance: Rs. ${r.balanceAfter.toLocaleString()}.`

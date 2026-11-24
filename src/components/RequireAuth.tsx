@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { notFound, redirect } from 'next/navigation';
 import { getVerifiedSessionUser, isStaffRole } from '@/lib/dal';
+import TwoFactorGate from '@/components/TwoFactorGate';
 
 /**
  * Server-side sign-in gate. Wrap a route's layout children with this so the page is only
@@ -22,6 +23,10 @@ async function Gate({
   const user = await getVerifiedSessionUser();
   if (!user) {
     redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  }
+  if (staffOnly && user.pending2fa) {
+    // Staff who signed in but have not entered their authenticator code yet.
+    return <TwoFactorGate />;
   }
   if (staffOnly && !isStaffRole(user.role)) {
     // Signed in but not staff: pretend the page does not exist.

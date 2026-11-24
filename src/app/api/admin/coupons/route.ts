@@ -1,3 +1,4 @@
+import { auditLog } from '@/lib/audit';
 import { requireRole } from '@/lib/dal';
 import { NextRequest, NextResponse } from 'next/server';
 import { adminStore } from '@/lib/admin-store';
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
       expiresAt,
     });
 
+    await auditLog(guard.user, 'COUPON_CREATED', 'COUPON', code, { discountPercent, discountFixedLKR, minSpendLKR, maxUses }, req);
     return NextResponse.json({
       success: true,
       message: `Promo code "${code}" created successfully!`,
@@ -75,6 +77,7 @@ export async function DELETE(req: NextRequest) {
 
     if (toggle) {
       const activeState = await adminStore.toggleCoupon(id);
+      await auditLog(guard.user, 'COUPON_TOGGLED', 'COUPON', id, { active: activeState }, req);
       return NextResponse.json({
         success: true,
         message: `Promo code status toggled to ${activeState ? 'ACTIVE' : 'PAUSED'}`,
@@ -82,6 +85,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     const deleted = await adminStore.deleteCoupon(id);
+    await auditLog(guard.user, 'COUPON_DELETED', 'COUPON', id, { deleted }, req);
     return NextResponse.json({
       success: true,
       message: deleted ? 'Promo code deleted' : 'Promo code not found',

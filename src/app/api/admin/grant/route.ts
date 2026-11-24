@@ -1,3 +1,4 @@
+import { auditLog } from '@/lib/audit';
 import { requireRole } from '@/lib/dal';
 import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
@@ -199,6 +200,7 @@ export async function POST(req: NextRequest) {
       notifyLater(recipientEmail, m.html, m.buttons);
     }
 
+    await auditLog(guard.user, 'GRANT_CREATED', 'ORDER', orderNumber, { recipientEmail, product: product.title, variantTitle, grantType }, req);
     return NextResponse.json({
       success: true,
       orderNumber,

@@ -1,3 +1,4 @@
+import { auditLog } from '@/lib/audit';
 import { sql } from '@/lib/db';
 import { adminStore } from '@/lib/admin-store';
 import { xui } from '@/lib/xui';
@@ -249,11 +250,13 @@ async function handleCallback(cb: any): Promise<void> {
       }
       if (action === 'A') {
         const r = await approveOrder(order, who, 'Approved from the admin Telegram bot.');
+        if (r.ok) await auditLog({ id: 'telegram-admin', email: who }, 'ORDER_APPROVED', 'ORDER', order.orderNumber, { via: 'telegram' });
         await adminAnswer(cb.id, r.ok ? 'Approved' : r.error, !r.ok);
         return void (await adminEdit(chatId, messageId, r.ok ? `✅ <b>${esc(order.orderNumber)} approved and delivered.</b>` : `⚠️ ${esc(r.error)}`));
       }
       if (action === 'R') {
         const r = await rejectOrder(order, who, 'Rejected from the admin Telegram bot.');
+        await auditLog({ id: 'telegram-admin', email: who }, 'ORDER_REJECTED', 'ORDER', order.orderNumber, { via: 'telegram' });
         await adminAnswer(cb.id, 'Rejected');
         return void (await adminEdit(chatId, messageId, `❌ <b>${esc(order.orderNumber)} rejected.</b>${r.revokedClients ? ` ${r.revokedClients} line(s) removed.` : ''}`));
       }
@@ -279,6 +282,7 @@ async function handleCallback(cb: any): Promise<void> {
           await adminAnswer(cb.id, r.reason === 'ALREADY_REVIEWED' ? 'Already reviewed' : 'Not found', true);
           return void (await adminEdit(chatId, messageId, `⚠️ ${r.reason === 'ALREADY_REVIEWED' ? 'This top-up was already reviewed.' : 'Top-up not found.'}`));
         }
+        await auditLog({ id: 'telegram-admin', email: who }, 'TOPUP_APPROVED', 'WALLET_TOPUP', ref, { amount: r.amount, via: 'telegram' });
         const m = tgMessages.money('Wallet top-up approved', `Rs. ${r.amount.toLocaleString()} was added. New balance: Rs. ${r.balanceAfter.toLocaleString()}.`);
         notifyLater(await emailRow(), m.html, m.buttons);
         await adminAnswer(cb.id, 'Approved');
@@ -288,6 +292,7 @@ async function handleCallback(cb: any): Promise<void> {
         const email = await emailRow();
         const ok = await rejectTopup(ref, staff, 'Rejected from the admin Telegram bot.');
         if (ok) {
+          await auditLog({ id: 'telegram-admin', email: who }, 'TOPUP_REJECTED', 'WALLET_TOPUP', ref, { via: 'telegram' });
           const m = tgMessages.money('Wallet top-up not approved', 'We could not match the transfer. Open a ticket if this is a mistake.');
           notifyLater(email, m.html, m.buttons);
         }
@@ -302,6 +307,7 @@ async function handleCallback(cb: any): Promise<void> {
       const on = ref === '1';
       if (!PAGE_DEFS.some((d) => d.key === key)) return void (await adminAnswer(cb.id, 'Unknown section', true));
       await setPageFlags({ [key]: on } as any, who);
+      await auditLog({ id: 'telegram-admin', email: who }, 'SITE_PAGES_UPDATED', 'SETTINGS', 'site_pages', { [key]: on, via: 'telegram' });
       await adminAnswer(cb.id, `${key} is now ${on ? 'ON' : 'OFF'}`);
       const v = await flagsView();
       return void (await adminEdit(chatId, messageId, v.html, v.rows));

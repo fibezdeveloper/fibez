@@ -57,6 +57,8 @@ import { normalizeIsp, V2RayIsp, V2RAY_PLAN_TIERS, LIVE_V2RAY_PACKAGES } from '@
 import { PRODUCTS, ProductItem } from '@/lib/products';
 import WalletAdmin from '@/components/admin/WalletAdmin';
 import SitePagesAdmin from '@/components/admin/SitePagesAdmin';
+import InsightsAdmin from '@/components/admin/InsightsAdmin';
+import AuditAdmin from '@/components/admin/AuditAdmin';
 import DigitalProductThumbnail, { ProductBrandBadge, resolveBrandMeta } from '@/components/DigitalProductThumbnail';
 
 interface OrderItem {
@@ -274,7 +276,7 @@ const PACKAGE_PRESETS: PackagePreset[] = [
 ];
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'grant' | 'orders' | 'v2ray' | 'packages' | 'inventory' | 'tickets' | 'coupons' | 'wallet' | 'pages'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'grant' | 'orders' | 'v2ray' | 'packages' | 'inventory' | 'tickets' | 'coupons' | 'wallet' | 'pages' | 'insights' | 'audit'>('overview');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -1541,6 +1543,7 @@ export default function AdminPage() {
       items: [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard, badge: null as number | null },
         { id: 'orders', label: 'Orders', icon: Receipt, badge: orderMetrics.pendingReviewCount || null },
+        { id: 'insights', label: 'Insights', icon: TrendingUp, badge: null as number | null },
         {
           id: 'wallet',
           label: 'Wallet',
@@ -1564,6 +1567,7 @@ export default function AdminPage() {
         { id: 'v2ray', label: 'V2Ray nodes', icon: Server, badge: null as number | null },
         { id: 'pages', label: 'Site pages', icon: Globe2, badge: null as number | null },
         { id: 'grant', label: 'Grant VIP', icon: Gift, badge: null as number | null, ownerOnly: true },
+        { id: 'audit', label: 'Audit log', icon: ShieldCheck, badge: null as number | null, ownerOnly: true },
       ],
     },
   ] as { label: string; items: { id: string; label: string; icon: any; badge: number | null; ownerOnly?: boolean }[] }[];
@@ -5078,6 +5082,10 @@ export default function AdminPage() {
         {activeTab === 'wallet' && <WalletAdmin />}
 
         {activeTab === 'pages' && <SitePagesAdmin />}
+
+        {activeTab === 'insights' && <InsightsAdmin />}
+
+        {activeTab === 'audit' && myRole === 'owner' && <AuditAdmin />}
 
         {activeTab === 'coupons' && (
           <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-200">

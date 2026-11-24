@@ -1,3 +1,4 @@
+import { auditLog } from '@/lib/audit';
 import { requireRole } from '@/lib/dal';
 import { NextRequest, NextResponse } from 'next/server';
 import { adminStore } from '@/lib/admin-store';
@@ -154,6 +155,7 @@ export async function POST(req: NextRequest) {
       batchReference
     );
 
+    await auditLog(guard.user, 'STOCK_ADDED', 'INVENTORY', productId, { count, productTitle, batchReference }, req);
     return NextResponse.json({
       success: true,
       message: `Successfully uploaded ${count} new digital stock item(s) for "${productTitle}"!`,
@@ -181,6 +183,7 @@ export async function DELETE(req: NextRequest) {
     // Reset whole inventory to empty state
     if (action === 'clear_all') {
       await adminStore.clearAllInventory();
+      await auditLog(guard.user, 'STOCK_CLEARED_ALL', 'INVENTORY', null, {}, req);
       return NextResponse.json({
         success: true,
         message: 'All inventory stock in the vault has been completely wiped.',
@@ -190,6 +193,7 @@ export async function DELETE(req: NextRequest) {
     // Reset back to default catalog seeds
     if (action === 'reset_seed') {
       await adminStore.resetInventoryToSeed();
+      await auditLog(guard.user, 'STOCK_RESET_SEED', 'INVENTORY', null, {}, req);
       return NextResponse.json({
         success: true,
         message: 'Inventory has been reset to default catalog seeds (Canva, CapCut, Steam).',
@@ -199,6 +203,7 @@ export async function DELETE(req: NextRequest) {
     // Clear only dispensed / redeemed items
     if (action === 'clear_dispensed') {
       const removed = await adminStore.clearDispensedInventory();
+      await auditLog(guard.user, 'STOCK_CLEARED_DISPENSED', 'INVENTORY', null, { removed }, req);
       return NextResponse.json({
         success: true,
         message: `Removed ${removed} dispensed item(s) from vault history.`,
@@ -210,6 +215,7 @@ export async function DELETE(req: NextRequest) {
     if (id) {
       const ok = await adminStore.deleteInventoryItem(id);
       if (ok) {
+        await auditLog(guard.user, 'STOCK_ITEM_DELETED', 'INVENTORY', String(id), {}, req);
         return NextResponse.json({
           success: true,
           message: 'Stock item deleted from vault successfully.',

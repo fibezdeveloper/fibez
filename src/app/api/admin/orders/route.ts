@@ -1,3 +1,4 @@
+import { auditLog } from '@/lib/audit';
 import { requireRole } from '@/lib/dal';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
@@ -129,6 +130,7 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: result.error }, { status: result.status });
       }
       const { dispensedPayload } = result;
+      await auditLog(guard.user, 'ORDER_APPROVED', 'ORDER', orderNumber, { notes: String(reviewNotes).slice(0, 300), totalLKR: order.totalAmountLKR }, req);
       const firstItem = order.items[0];
 
       // Build WhatsApp Automated Dispatch URL
@@ -161,6 +163,7 @@ export async function PATCH(req: NextRequest) {
       });
     } else if (action === 'REJECT') {
       const { order: updated, revokedClients } = await rejectOrder(order, guard.user.email, reviewNotes);
+      await auditLog(guard.user, 'ORDER_REJECTED', 'ORDER', orderNumber, { notes: String(reviewNotes).slice(0, 300), revokedClients }, req);
 
       return NextResponse.json({
         success: true,

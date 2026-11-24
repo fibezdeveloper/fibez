@@ -102,7 +102,7 @@ export default function Navbar(props: NavbarProps) {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         const role = d?.user?.role;
-        if (!cancelled) setIsStaff(role === 'admin' || role === 'owner');
+        if (!cancelled) setIsStaff(role === 'admin' || role === 'owner' || d?.user?.pending2fa === true);
       })
       .catch(() => {});
     return () => {

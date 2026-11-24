@@ -1,3 +1,4 @@
+import { auditLog } from '@/lib/audit';
 import { requireRole } from '@/lib/dal';
 import { connection, NextRequest, NextResponse } from 'next/server';
 import { adminStore } from '@/lib/admin-store';
@@ -35,6 +36,7 @@ export async function POST(req: NextRequest) {
     // Action: Reset packages to factory default catalog
     if (body.action === 'reset_defaults') {
       await adminStore.resetPackages();
+      await auditLog(guard.user, 'PACKAGES_RESET', 'PACKAGE', null, {}, req);
       return NextResponse.json({
         success: true,
         message: 'Packages reset to official factory catalog!',
@@ -79,6 +81,7 @@ export async function POST(req: NextRequest) {
     };
 
     const saved = await adminStore.addCustomPackage(newPkg);
+    await auditLog(guard.user, 'PACKAGE_CREATED', 'PACKAGE', saved.id, { title: saved.title }, req);
 
     return NextResponse.json({
       success: true,
@@ -105,6 +108,7 @@ export async function PATCH(req: NextRequest) {
 
     if (body.action === 'toggle_active') {
       const activeState = await adminStore.togglePackageActive(id);
+      await auditLog(guard.user, 'PACKAGE_TOGGLED', 'PACKAGE', id, { active: activeState }, req);
       return NextResponse.json({
         success: true,
         message: `Package visibility toggled to ${activeState ? 'ACTIVE' : 'HIDDEN'}`,
@@ -132,6 +136,7 @@ export async function PATCH(req: NextRequest) {
     if (body.serverType !== undefined) updates.serverType = body.serverType;
 
     const updated = await adminStore.updatePackageOverride(id, updates);
+    await auditLog(guard.user, 'PACKAGE_UPDATED', 'PACKAGE', id, { fields: Object.keys(updates) }, req);
 
     return NextResponse.json({
       success: true,
@@ -157,6 +162,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     await adminStore.deletePackage(id);
+    await auditLog(guard.user, 'PACKAGE_DELETED', 'PACKAGE', id, {}, req);
 
     return NextResponse.json({
       success: true,

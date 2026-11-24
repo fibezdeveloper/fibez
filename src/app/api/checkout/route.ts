@@ -1,3 +1,4 @@
+import { bundleDiscount } from '@/lib/bundle-discount';
 import { rateLimit } from '@/lib/rate-limit';
 import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
@@ -212,6 +213,10 @@ export async function POST(request: NextRequest) {
 
     // Handle Discounts: Promo Code, Referral Code, and Credits
     let discountLKR = 0;
+
+    // 0. Multi-line bundle: 3+ V2Ray lines in one order are cheaper per line (same rule the cart previews).
+    const bundle = bundleDiscount(resolvedCartLines.map((l) => ({ isV2Ray: l.isV2Ray, quantity: l.quantity, subtotalLKR: l.subtotalLKR })));
+    discountLKR += bundle.discountLKR;
     let appliedPromoCode = promoCode;
 
     // 1. Referral discount (friend gets Rs. 50 off). The referrer is rewarded in their WALLET later,

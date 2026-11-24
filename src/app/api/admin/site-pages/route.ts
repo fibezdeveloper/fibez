@@ -1,3 +1,4 @@
+import { auditLog } from '@/lib/audit';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/dal';
 import { PAGE_DEFS, getPageFlags, setPageFlags } from '@/lib/site-config';
@@ -15,5 +16,6 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const incoming = body?.pages && typeof body.pages === 'object' ? body.pages : {};
   const flags = await setPageFlags(incoming, guard.user.email);
+  await auditLog(guard.user, 'SITE_PAGES_UPDATED', 'SETTINGS', 'site_pages', { pages: flags }, req);
   return NextResponse.json({ success: true, pages: flags });
 }

@@ -279,6 +279,51 @@ class XuiClient {
     }
   }
 
+  /** Authenticated GET that returns the raw bytes (the panel's SQLite file is binary, so no string decoding). */
+  private async binaryGet(path: string, isRetry = false): Promise<Buffer> {
+    const session = await this.authenticate(isRetry);
+    const res = await new Promise<{ status: number; body: Buffer }>((resolve, reject) => {
+      const req = https.request(
+        `${this.baseUrl}${path}`,
+        {
+          method: 'GET',
+          agent: this.agent,
+          headers: { Cookie: session.cookie, 'X-Requested-With': 'XMLHttpRequest', 'User-Agent': 'Fibez-Panel-Client/2.0' },
+        },
+        (r) => {
+          const chunks: Buffer[] = [];
+          r.on('data', (c: Buffer) => chunks.push(c));
+          r.on('end', () => resolve({ status: r.statusCode || 500, body: Buffer.concat(chunks) }));
+        }
+      );
+      req.setTimeout(30000, () => req.destroy(new Error('Panel request timed out')));
+      req.on('error', reject);
+      req.end();
+    });
+    if ((res.status === 401 || res.status === 403) && !isRetry) return this.binaryGet(path, true);
+    if (res.status >= 400) throw new Error(`3x-ui download failed [${path}]: Status ${res.status}`);
+    return res.body;
+  }
+
+  /**
+   * Downloads the panel database (x-ui.db): every inbound, client, quota and panel setting. Used by the daily
+   * backup. Tries the current endpoint first and the older one second, and checks the SQLite header so an
+   * HTML error page can never be saved as a "backup".
+   */
+  public async downloadDb(): Promise<Buffer> {
+    let lastError = 'Panel did not return a database file';
+    for (const path of ['/panel/api/server/getDb', '/server/getDb']) {
+      try {
+        const buf = await this.binaryGet(path);
+        if (buf.length > 512 && buf.subarray(0, 15).toString('latin1') === 'SQLite format 3') return buf;
+        lastError = `Unexpected response from ${path}`;
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : String(err);
+      }
+    }
+    throw new Error(lastError);
+  }
+
   /**
    * Lists all inbounds currently registered in 3x-ui
    */

@@ -4,6 +4,7 @@ import { unstable_rethrow } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { sql as adminSql } from '@/lib/db';
 import type { RlsContext } from '@/lib/db/rls';
+import { hasValidTwoFactorCookie, twoFactorEnforced } from '@/lib/admin-2fa';
 
 export type ValidRole = 'user' | 'admin' | 'owner';
 
@@ -12,6 +13,8 @@ export interface VerifiedSessionUser {
   email: string;
   name: string;
   role: ValidRole;
+  /** Staff account that has not passed the 2FA code check in this browser yet. Its role is 'user' until it does. */
+  pending2fa?: boolean;
 }
 
 export const RECENT_ORDER_COOKIE_NAME = 'fibez_recent_order';
@@ -28,8 +31,12 @@ function getHmacSecret(): string {
 /**
  * Verifies the Neon Auth session AND resolves the user's live authoritative role
  * and ban status from PostgreSQL (`neon_auth."user"`).
+ *
+ * Staff (admin / owner) must also have passed the 2FA code check (cookie bound to their user id). Without
+ * it the account is treated as a plain customer, so every staff-only route and page stays closed until the
+ * code is entered. Only the 2FA endpoints themselves pass `{ raw: true }` to see the real role.
  */
-export async function getVerifiedSessionUser(): Promise<VerifiedSessionUser | null> {
+export async function getVerifiedSessionUser(opts?: { raw?: boolean }): Promise<VerifiedSessionUser | null> {
   await connection();
   try {
     const { data: sessionData } = await auth.getSession();
@@ -83,11 +90,21 @@ export async function getVerifiedSessionUser(): Promise<VerifiedSessionUser | nu
       ? 'admin'
       : 'user';
 
+    let role: ValidRole = normalizedRole;
+    let pending2fa = false;
+    if (!opts?.raw && (role === 'admin' || role === 'owner') && twoFactorEnforced()) {
+      if (!(await hasValidTwoFactorCookie(String(row.id)))) {
+        role = 'user';
+        pending2fa = true;
+      }
+    }
+
     return {
       id: String(row.id),
       email,
       name: String(row.name || sessionUser.name || email.split('@')[0]),
-      role: normalizedRole,
+      role,
+      ...(pending2fa ? { pending2fa: true } : {}),
     };
   } catch (err) {
     unstable_rethrow(err);
