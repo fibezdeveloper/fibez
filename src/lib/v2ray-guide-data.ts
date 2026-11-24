@@ -17,7 +17,6 @@ export interface VisualPackageCard {
   quotaBadge: string;
   quotaType: 'limited' | 'unlimited';
   activationHint: string;
-  sniHost: string;
   image: string;
   productId: string;
 }
@@ -28,7 +27,6 @@ export interface IspDirectoryEntry {
   networkTag: string;
   productId: string;
   activationCode: string;
-  sniHost: string;
   packages: string[];
   note?: string;
 }
@@ -56,7 +54,6 @@ export const VISUAL_PACKAGES: VisualPackageCard[] = [
     quotaBadge: '30 GB Limit',
     quotaType: 'limited',
     activationHint: 'Activate via MySLT App or SLT Portal',
-    sniHost: 'zoom.us',
     image: '/images/v2ray-packages/meet_lite.webp',
     productId: 'v2ray-slt-netflix',
   },
@@ -68,7 +65,6 @@ export const VISUAL_PACKAGES: VisualPackageCard[] = [
     quotaBadge: '100 GB Limit',
     quotaType: 'limited',
     activationHint: 'Activate via MySLT App or SLT Portal',
-    sniHost: 'zoom.us',
     image: '/images/v2ray-packages/meet_max.webp',
     productId: 'v2ray-slt-netflix',
   },
@@ -80,7 +76,6 @@ export const VISUAL_PACKAGES: VisualPackageCard[] = [
     quotaBadge: 'Unlimited',
     quotaType: 'unlimited',
     activationHint: 'Unlimited Netflix / YouTube Entertainment Combo',
-    sniHost: 'netflix.com',
     image: '/images/v2ray-packages/slt_1990_ent.webp',
     productId: 'v2ray-slt-netflix',
   },
@@ -92,7 +87,6 @@ export const VISUAL_PACKAGES: VisualPackageCard[] = [
     quotaBadge: 'Daily 5/10 GB',
     quotaType: 'unlimited',
     activationHint: 'LTE Flash 5 (Rs.2,350) or Flash 10 (Rs.4,090)',
-    sniHost: 'zoom.us',
     image: '/images/v2ray-packages/flash510.webp',
     productId: 'v2ray-slt-netflix',
   },
@@ -104,7 +98,6 @@ export const VISUAL_PACKAGES: VisualPackageCard[] = [
     quotaBadge: 'Unlimited',
     quotaType: 'unlimited',
     activationHint: 'Reload Rs. 297 (7 Days) or Rs. 997 (30 Days)',
-    sniHost: 'tiktokv.com',
     image: '/images/v2ray-packages/airtel_tiktok.webp',
     productId: 'v2ray-airtel-tiktok',
   },
@@ -116,7 +109,6 @@ export const VISUAL_PACKAGES: VisualPackageCard[] = [
     quotaBadge: 'Unlimited',
     quotaType: 'unlimited',
     activationHint: 'Activate via MyDialog App (One-time / Recurring)',
-    sniHost: 'tiktokv.com',
     image: '/images/v2ray-packages/dialog_tiktok.webp',
     productId: 'v2ray-dialog-zoom',
   },
@@ -128,7 +120,6 @@ export const VISUAL_PACKAGES: VisualPackageCard[] = [
     quotaBadge: '20 GB Limit',
     quotaType: 'limited',
     activationHint: 'MyDialog App → Fun Blaster Rs. 348 (30 Days)',
-    sniHost: 'm.facebook.com',
     image: '/images/v2ray-packages/dialog_348.webp',
     productId: 'v2ray-dialog-zoom',
   },
@@ -140,7 +131,6 @@ export const VISUAL_PACKAGES: VisualPackageCard[] = [
     quotaBadge: '20 GB + 2 GB',
     quotaType: 'limited',
     activationHint: 'MyDialog App → Fun Blaster Rs. 488 (30 Days)',
-    sniHost: 'm.facebook.com',
     image: '/images/v2ray-packages/dialog_488.webp',
     productId: 'v2ray-dialog-zoom',
   },
@@ -153,7 +143,6 @@ export const SUPPORTED_ISPS: IspDirectoryEntry[] = [
     networkTag: '4G / 5G Mobile',
     productId: 'v2ray-airtel-tiktok',
     activationCode: 'Reload Rs. 297 / Rs. 997',
-    sniHost: 'tiktokv.com',
     packages: [
       'AIRTEL 135 / 260 YOUTUBE',
       'AIRTEL ZOOM 215',
@@ -166,7 +155,6 @@ export const SUPPORTED_ISPS: IspDirectoryEntry[] = [
     networkTag: 'Mobile SIM & HBB Router',
     productId: 'v2ray-dialog-zoom',
     activationCode: 'Dial *678# or MyDialog App',
-    sniHost: 'zoom.us',
     packages: [
       'DIALOG SIM VIDEO CONFERENCING 224 / 724',
       'DIALOG SOCIAL MEDIA 348 / 488',
@@ -180,7 +168,6 @@ export const SUPPORTED_ISPS: IspDirectoryEntry[] = [
     networkTag: 'Prepaid / 4G',
     productId: 'v2ray-hutch-zoom',
     activationCode: 'Hutch Self Care App',
-    sniHost: 'zoom.us',
     packages: [
       'HUTCH ZOOM 224 (30 GB) / 494 / 794',
       'HUTCH WORK & LEARN PACKS',
@@ -192,7 +179,6 @@ export const SUPPORTED_ISPS: IspDirectoryEntry[] = [
     networkTag: 'Prepaid / 4G',
     productId: 'v2ray-mobitel-zoom',
     activationCode: 'Dial #170# → Content Plans → Zoom',
-    sniHost: 'zoom.us',
     packages: ['MOBITEL ZOOM 1 / WORK & LEARN'],
     note: 'Android / Tun Setup · Toggle airplane mode (IP Hunt) if a local gateway IP stalls.',
   },
@@ -202,7 +188,6 @@ export const SUPPORTED_ISPS: IspDirectoryEntry[] = [
     networkTag: 'Fiber / 4G LTE / ADSL',
     productId: 'v2ray-slt-netflix',
     activationCode: 'MySLT App or Broadband Portal',
-    sniHost: 'netflix.com / zoom.us',
     packages: [
       'SLT ZOOM / MEET LITE (195) & MEET MAX (490)',
       'SLT NETFLIX / 1990 UNLIMITED ENTERTAINMENT',
@@ -219,7 +204,6 @@ export interface WizardUseCase {
   recommendedPack: string;
   quotaNote: string;
   productId: string;
-  sniHost: string;
 }
 
 export const WIZARD_ISP_STEPS: Record<
@@ -237,7 +221,6 @@ export const WIZARD_ISP_STEPS: Record<
         recommendedPack: 'Dialog Work & Learn / Zoom (*678#)',
         quotaNote: 'Tracks your active Dialog Zoom / Work & Learn bundle quota.',
         productId: 'v2ray-dialog-zoom',
-        sniHost: 'zoom.us',
       },
       {
         id: 'dialog-tiktok',
@@ -246,7 +229,6 @@ export const WIZARD_ISP_STEPS: Record<
         recommendedPack: 'Dialog TikTok 297 (7d) or 997 (30d)',
         quotaNote: 'Unlimited TikTok pack lets your VLESS config run smoothly without mid-month data stops.',
         productId: 'v2ray-dialog-zoom',
-        sniHost: 'tiktokv.com',
       },
       {
         id: 'dialog-social',
@@ -255,7 +237,6 @@ export const WIZARD_ISP_STEPS: Record<
         recommendedPack: 'Dialog Fun Blaster 348 or 488',
         quotaNote: '20 GB usable per reload; reactivate Rs. 348 / 488 when the 20 GB fills.',
         productId: 'v2ray-dialog-zoom',
-        sniHost: 'm.facebook.com',
       },
     ],
   },
@@ -270,7 +251,6 @@ export const WIZARD_ISP_STEPS: Record<
         recommendedPack: 'SLT Meet Lite Rs. 195 or Meet Max Rs. 490',
         quotaNote: '30 GB or 100 GB per activation; reactivate add-on cleanly from MySLT.',
         productId: 'v2ray-slt-netflix',
-        sniHost: 'zoom.us',
       },
       {
         id: 'slt-ent',
@@ -279,7 +259,6 @@ export const WIZARD_ISP_STEPS: Record<
         recommendedPack: 'SLT 1990 Unlimited Entertainment / Netflix Pack',
         quotaNote: 'Runs straight through on your SLT Fiber / ADSL line with SNI bypass.',
         productId: 'v2ray-slt-netflix',
-        sniHost: 'netflix.com',
       },
     ],
   },
@@ -294,7 +273,6 @@ export const WIZARD_ISP_STEPS: Record<
         recommendedPack: 'Airtel Rs. 297 (7d) or Rs. 997 (30d) TikTok Reload',
         quotaNote: 'Unlimited base package — zero mid-month reloads required.',
         productId: 'v2ray-airtel-tiktok',
-        sniHost: 'tiktokv.com',
       },
       {
         id: 'airtel-yt-zoom',
@@ -303,7 +281,6 @@ export const WIZARD_ISP_STEPS: Record<
         recommendedPack: 'Airtel Zoom Rs. 215 or YouTube 135/260',
         quotaNote: 'Usage follows the active Zoom/YouTube pack limit.',
         productId: 'v2ray-airtel-tiktok',
-        sniHost: 'zoom.us',
       },
     ],
   },
@@ -318,7 +295,6 @@ export const WIZARD_ISP_STEPS: Record<
         recommendedPack: 'Hutch Rs. 224 (30 GB Zoom) or Rs. 494 / 794',
         quotaNote: '30 GB per activation on Rs. 224; reactivate the add-on when it ends.',
         productId: 'v2ray-hutch-zoom',
-        sniHost: 'zoom.us',
       },
     ],
   },
@@ -333,7 +309,6 @@ export const WIZARD_ISP_STEPS: Record<
         recommendedPack: 'Mobitel Zoom1 (#170# → Content Based Plans)',
         quotaNote: 'Recommended with NetMod Syna on Android; toggle flight mode once if handshake stalls.',
         productId: 'v2ray-mobitel-zoom',
-        sniHost: 'zoom.us',
       },
     ],
   },
@@ -348,7 +323,6 @@ export const WIZARD_ISP_STEPS: Record<
         recommendedPack: 'Works on standard broadband or multi-SIM setups',
         quotaNote: 'Includes NetMod Syna, Hysteria-compatible routing guidance, and v2rayNG support.',
         productId: 'v2ray-singapore-direct',
-        sniHost: 'gateway.fibez.store',
       },
     ],
   },

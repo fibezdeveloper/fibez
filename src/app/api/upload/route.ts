@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadObject, getObjectDownloadUrl, BUCKET_NAME } from '@/lib/storage';
 import { requireRole } from '@/lib/dal';
+import { rateLimit } from '@/lib/rate-limit';
 
 const ALLOWED_FOLDERS = new Set(['slips']);
 
@@ -14,25 +15,8 @@ const ALLOWED_MIME_EXT: Record<string, string[]> = {
 };
 
 // Guests must be able to upload a payment slip at checkout, so this endpoint stays open,
-// but it is rate-limited per IP and verifies the real file signature (not just the
-// client-declared MIME type / extension).
-const UPLOAD_MAX_PER_WINDOW = 8;
-const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
-const uploadHits = new Map<string, { count: number; resetAt: number }>();
-
-function uploadRateLimited(ip: string): boolean {
-  const now = Date.now();
-  if (uploadHits.size > 5000) {
-    for (const [k, v] of uploadHits) if (v.resetAt <= now) uploadHits.delete(k);
-  }
-  const entry = uploadHits.get(ip);
-  if (!entry || entry.resetAt <= now) {
-    uploadHits.set(ip, { count: 1, resetAt: now + UPLOAD_WINDOW_MS });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > UPLOAD_MAX_PER_WINDOW;
-}
+// but it is rate-limited per IP (shared DB limiter: works across serverless instances) and
+// verifies the real file signature (not just the client-declared MIME type / extension).
 
 function matchesSignature(mime: string, b: Buffer): boolean {
   const startsWith = (...bytes: number[]) => bytes.every((v, i) => b[i] === v);
@@ -59,7 +43,7 @@ export async function POST(request: NextRequest) {
       request.headers.get('x-real-ip')?.trim() ||
       request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
       'unknown';
-    if (uploadRateLimited(ip)) {
+    if ((await rateLimit('upload', ip, 8, 600)).limited) {
       return NextResponse.json(
         { error: 'Too many uploads. Please wait a few minutes and try again.' },
         { status: 429 }

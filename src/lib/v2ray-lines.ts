@@ -1,5 +1,5 @@
 import { LIVE_V2RAY_PACKAGES, V2RayPackageDef, normalizeIsp } from '@/lib/v2ray-catalog';
-import { buildVlessUri, parseVlessUri } from '@/lib/v2ray-inbounds';
+import { parseVlessUri } from '@/lib/v2ray-uri';
 
 export interface PurchasedV2RayLine {
   id: string;
@@ -8,7 +8,6 @@ export interface PurchasedV2RayLine {
   title: string;
   isp: string;
   ispTag: string;
-  sni: string;
   port: number;
   inboundId?: number;
   serverType: 'STANDARD' | 'LK_IP';
@@ -98,9 +97,7 @@ export function createPurchasedLineFromCartItem(params: {
   );
 
   const port = catalogPkg?.inboundPort || (safeIsp === 'SLT' ? 445 : 443);
-  const sni = catalogPkg?.sni || (safeIsp === 'SLT' ? 'm.zoom.us' : 'zoom.us');
   const location = isLkIp ? 'Sri Lanka Residential Gateway' : 'Singapore Equinix SG3';
-  const host = isLkIp ? 'lk-rv2ray.fibez.store' : 'rv2ray.fibez.store';
 
   // Extract quota numbers from label (e.g. "150 GB (30 Days)" -> 150)
   let quotaGB = 100;
@@ -113,15 +110,8 @@ export function createPurchasedLineFromCartItem(params: {
     }
   }
 
-  const vless = dispensedKey && dispensedKey.startsWith('vless://')
-    ? dispensedKey
-    : buildVlessUri({
-        uuid,
-        host,
-        port,
-        sni,
-        remark: `Fibez - ${title.split('[')[0].trim()}`,
-      });
+  // The delivered config comes from the server. Never fabricate one in the browser.
+  const vless = dispensedKey && dispensedKey.startsWith('vless://') ? dispensedKey : '';
 
   const uniqueId = `line_${orderNumber.replace(/[^a-zA-Z0-9]/g, '')}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
 
@@ -132,7 +122,6 @@ export function createPurchasedLineFromCartItem(params: {
     title: catalogPkg?.title || title,
     isp: safeIsp === 'SLT' ? 'SLT Mobitel Fiber' : `${safeIsp} 4G/5G`,
     ispTag: safeIsp,
-    sni,
     port,
     inboundId: catalogPkg?.inboundId || (port === 445 ? 1 : port === 444 ? 2 : 3),
     serverType: isLkIp ? 'LK_IP' : 'STANDARD',

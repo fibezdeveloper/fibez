@@ -1,4 +1,5 @@
 import { adminStore } from '@/lib/admin-store';
+import { catalogSni } from '@/lib/v2ray-sni';
 import { LIVE_V2RAY_PACKAGES, normalizeIsp, V2RayPackageDef } from '@/lib/v2ray-catalog';
 
 /** Every package (custom ones first) with the owner's edits applied. Includes routing details: staff only. */
@@ -30,7 +31,7 @@ export async function getResolvedPackages() {
       categoryLabel: ovr?.categoryLabel || pkg.categoryLabel || 'Carrier Bypass',
       reloadCode: ovr?.reloadCode !== undefined ? ovr.reloadCode : pkg.reloadCode,
       carrierSpeedNote: ovr?.carrierSpeedNote !== undefined ? ovr.carrierSpeedNote : pkg.carrierSpeedNote,
-      sni: ovr?.sni || pkg.sni || 'zoom.us',
+      sni: ovr?.sni || (pkg as { sni?: string }).sni || catalogSni(pkg.id) || 'zoom.us',
       inboundPort: port,
       port: port, // alias for backwards compatibility
       inboundId: inboundId,

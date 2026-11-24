@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
+import { safeCallbackPath } from '@/lib/safe-redirect';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authClient, extractAuthErrorMessage } from '@/lib/auth-client';
@@ -31,12 +32,9 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
 };
 
 function resolveCallbackUrl(rawCallback: string): string {
-  if (typeof window === 'undefined') return rawCallback;
-  if (rawCallback.startsWith('http://') || rawCallback.startsWith('https://')) {
-    return rawCallback;
-  }
-  const normalized = rawCallback.startsWith('/') ? rawCallback : `/${rawCallback}`;
-  return `${window.location.origin}${normalized}`;
+  const path = safeCallbackPath(rawCallback);
+  if (typeof window === 'undefined') return path;
+  return `${window.location.origin}${path}`;
 }
 
 function LoginContent() {
@@ -45,7 +43,7 @@ function LoginContent() {
   const rawMode = searchParams.get('mode');
   const initialMode: AuthMode =
     rawMode === 'register' ? 'register' : rawMode === 'forgot' ? 'forgot' : 'login';
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const callbackUrl = safeCallbackPath(searchParams.get('callbackUrl'));
 
   const { data: session } = authClient.useSession();
 

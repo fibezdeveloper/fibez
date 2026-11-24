@@ -2,7 +2,7 @@ import { requireRole } from '@/lib/dal';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { xui } from '@/lib/xui';
-import { buildVlessUri } from '@/lib/v2ray-inbounds';
+import { buildVlessUri, INBOUND_DEFINITIONS } from '@/lib/v2ray-inbounds';
 import { adminStore } from '@/lib/admin-store';
 
 function formatInboundsList(inbounds: any[]) {
@@ -276,12 +276,35 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (action === 'client_uri') {
+      const uuid = typeof body.uuid === 'string' ? body.uuid.trim() : '';
+      const port = Number(body.port) || 443;
+      const remark = typeof body.remark === 'string' ? body.remark.slice(0, 120) : '';
+      const email = typeof body.email === 'string' ? body.email.slice(0, 120) : '';
+      if (!/^[0-9a-f-]{32,36}$/i.test(uuid)) {
+        return NextResponse.json({ error: 'Invalid client id' }, { status: 400 });
+      }
+      const hint = `${remark} ${email}`.toLowerCase();
+      let sni = 'zoom.us';
+      if (hint.includes('netflix')) sni = 'api.netflix.com';
+      else if (hint.includes('tiktok')) sni = 'm.tiktok.com';
+      else if (hint.includes('facebook') || hint.includes('social')) sni = 'm.facebook.com';
+      else if (hint.includes('youtube')) sni = 'm.youtube.com';
+      else if (hint.includes('meet')) sni = 'meet.google.com';
+      else if (port === 444) sni = 'api.netflix.com';
+      const vlessUri = `vless://${uuid}@${xui.getPublicHost()}:${port}?type=ws&security=tls&path=%2F&sni=${sni}#${encodeURIComponent(remark || email)}`;
+      return NextResponse.json({ success: true, vlessUri });
+    }
+
     if (action === 'create_client') {
       const email = typeof body.email === 'string' ? body.email.trim() : '';
       const inboundId = Number(body.inboundId) || 3;
       const totalGB = Number(body.totalGB) || 100;
       const expiryDays = Number(body.expiryDays) || 30;
-      const customSni = body.customSni || 'zoom.us';
+      const customSni =
+        (typeof body.customSni === 'string' && body.customSni.trim().slice(0, 100)) ||
+        INBOUND_DEFINITIONS[inboundId]?.defaultSni ||
+        'zoom.us';
       const remark = body.remark || 'Fibez-Manual-Node';
 
       if (!email) {

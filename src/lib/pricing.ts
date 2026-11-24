@@ -1,6 +1,7 @@
 import { PRODUCTS, type ProductItem } from '@/lib/products';
 import { V2RAY_PLAN_TIERS, DURATION_DISCOUNTS, LIVE_V2RAY_PACKAGES } from '@/lib/v2ray-catalog';
 import { resolvePackageProfile } from '@/lib/v2ray-inbounds';
+import { catalogSni } from '@/lib/v2ray-sni';
 
 /**
  * Server-side price resolution. The browser's cart prices are NEVER trusted:
@@ -147,7 +148,7 @@ export function resolveV2RayProvisioning(
   return {
     inboundId: ovr?.inboundId ?? catalogPkg?.inboundId ?? profile.inboundId,
     port: ovr?.inboundPort ?? catalogPkg?.inboundPort ?? profile.port,
-    sni: ovr?.sni ?? catalogPkg?.sni ?? profile.sni,
+    sni: ovr?.sni ?? catalogSni(catalogPkg?.id) ?? profile.sni,
     remarkName: catalogPkg ? `Fibez - ${ovr?.title || catalogPkg.title}` : profile.remarkName,
     host: lkIp ? 'lk-rv2ray.fibez.store' : null,
     totalBytes: plan ? plan.quotaGB * GB : 100 * GB,

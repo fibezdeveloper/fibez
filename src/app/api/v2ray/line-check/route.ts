@@ -3,6 +3,8 @@ import net from 'net';
 import tls from 'tls';
 import { NextRequest, NextResponse } from 'next/server';
 import { xui } from '@/lib/xui';
+import { getVerifiedSessionUser } from '@/lib/dal';
+import { INBOUND_DEFINITIONS } from '@/lib/v2ray-inbounds';
 
 /**
  * Real, server-side line probe.
@@ -112,6 +114,14 @@ export async function POST(req: NextRequest) {
       req.headers.get('x-real-ip')?.trim() ||
       req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
       'unknown';
+    // Signed-in customers only: an open probe lets strangers test which SNI hosts the node accepts.
+    const actor = await getVerifiedSessionUser();
+    if (!actor) {
+      return NextResponse.json({ success: false, error: 'Please sign in to run a line check.' }, { status: 401 });
+    }
+    if ((await rateLimit('linecheck-user', actor.id, 10, 600)).limited) {
+      return NextResponse.json({ success: false, error: 'Too many checks. Please wait a few minutes and try again.' }, { status: 429 });
+    }
     if ((await rateLimit('linecheck', ip, 15, 600)).limited) {
       return NextResponse.json(
         { success: false, error: 'Too many checks. Please wait a few minutes and try again.' },
@@ -145,6 +155,12 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'Line check only supports Fibez nodes.' },
         { status: 400 }
       );
+    }
+
+    // Only the node's real inbound ports: never turn this into a port scanner for the host.
+    const allowedPorts = new Set(Object.values(INBOUND_DEFINITIONS).map((d) => d.port));
+    if (!allowedPorts.has(parsed.port)) {
+      return NextResponse.json({ success: false, error: 'Line check only supports Fibez node ports.' }, { status: 400 });
     }
 
     const tcp = await tcpProbe(parsed.host, parsed.port);

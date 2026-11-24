@@ -169,7 +169,6 @@ interface PackagePreset {
   id: string;
   name: string;
   inboundId: number;
-  sni: string;
   remark: string;
   defaultGB: number;
   tag: string;
@@ -180,7 +179,6 @@ const PACKAGE_PRESETS: PackagePreset[] = [
     id: 'dialog_zoom',
     name: 'Dialog Zoom & Teams (298 / 724 Router)',
     inboundId: 3,
-    sni: 'zoom.us',
     remark: 'Fibez - Dialog Zoom Router',
     defaultGB: 100,
     tag: 'Dialog',
@@ -189,7 +187,6 @@ const PACKAGE_PRESETS: PackagePreset[] = [
     id: 'dialog_tiktok',
     name: 'Dialog TikTok (297 / 997 Mobile SIM)',
     inboundId: 3,
-    sni: 'm.tiktok.com',
     remark: 'Fibez - Dialog TikTok Mobile',
     defaultGB: 100,
     tag: 'Dialog',
@@ -198,7 +195,6 @@ const PACKAGE_PRESETS: PackagePreset[] = [
     id: 'dialog_social',
     name: 'Dialog Social Media Blaster (#678#)',
     inboundId: 3,
-    sni: 'm.facebook.com',
     remark: 'Fibez - Dialog Social Blaster',
     defaultGB: 100,
     tag: 'Dialog',
@@ -207,7 +203,6 @@ const PACKAGE_PRESETS: PackagePreset[] = [
     id: 'dialog_video',
     name: 'Dialog Video Conferencing (224 / 724)',
     inboundId: 3,
-    sni: 'zoom.us',
     remark: 'Fibez - Dialog Video Conferencing',
     defaultGB: 100,
     tag: 'Dialog',
@@ -216,7 +211,6 @@ const PACKAGE_PRESETS: PackagePreset[] = [
     id: 'slt_meet',
     name: 'SLT Fiber Zoom & Meet (Meet Lite / Max / Flash)',
     inboundId: 1,
-    sni: 'zoom.us',
     remark: 'Fibez - SLT Fiber Zoom & Meet',
     defaultGB: 100,
     tag: 'SLT Fiber',
@@ -225,7 +219,6 @@ const PACKAGE_PRESETS: PackagePreset[] = [
     id: 'slt_netflix',
     name: 'SLT Fiber Netflix & Streaming (1990 Pack)',
     inboundId: 2,
-    sni: 'api.netflix.com',
     remark: 'Fibez - SLT Fiber Netflix 4K',
     defaultGB: 100,
     tag: 'SLT Fiber',
@@ -234,7 +227,6 @@ const PACKAGE_PRESETS: PackagePreset[] = [
     id: 'slt_prepaid_zoom',
     name: 'SLT 4G Prepaid Zoom 235',
     inboundId: 1,
-    sni: 'zoom.us',
     remark: 'Fibez - SLT 4G Prepaid Zoom',
     defaultGB: 100,
     tag: 'SLT 4G',
@@ -243,7 +235,6 @@ const PACKAGE_PRESETS: PackagePreset[] = [
     id: 'airtel_tiktok',
     name: 'Airtel TikTok (297 / 997 Reload)',
     inboundId: 3,
-    sni: 'm.tiktok.com',
     remark: 'Fibez - Airtel TikTok Unlimited',
     defaultGB: 100,
     tag: 'Airtel',
@@ -252,7 +243,6 @@ const PACKAGE_PRESETS: PackagePreset[] = [
     id: 'airtel_youtube',
     name: 'Airtel YouTube (135 / 260 Pack)',
     inboundId: 3,
-    sni: 'm.youtube.com',
     remark: 'Fibez - Airtel YouTube Pack',
     defaultGB: 100,
     tag: 'Airtel',
@@ -261,7 +251,6 @@ const PACKAGE_PRESETS: PackagePreset[] = [
     id: 'hutch_social',
     name: 'Hutch Social Media Blaster',
     inboundId: 3,
-    sni: 'm.tiktok.com',
     remark: 'Fibez - Hutch Social Blaster',
     defaultGB: 100,
     tag: 'Hutch',
@@ -270,7 +259,6 @@ const PACKAGE_PRESETS: PackagePreset[] = [
     id: 'hutch_zoom',
     name: 'Hutch Zoom (224 / 494 / 794)',
     inboundId: 3,
-    sni: 'zoom.us',
     remark: 'Fibez - Hutch Zoom Unlimited',
     defaultGB: 100,
     tag: 'Hutch',
@@ -279,7 +267,6 @@ const PACKAGE_PRESETS: PackagePreset[] = [
     id: 'mobitel_zoom',
     name: 'Mobitel Zoom SIM (Port 4445 / Android IP Hunt)',
     inboundId: 4,
-    sni: 'zoom.us',
     remark: 'Fibez - Mobitel Zoom SIM',
     defaultGB: 100,
     tag: 'Mobitel',
@@ -329,7 +316,7 @@ export default function AdminPage() {
     reloadCode: '',
     targetMedium: 'Home Broadband Router',
     carrierSpeedNote: 'Unmetered · No Carrier Speed Limit on Routers',
-    sni: 'zoom.us',
+    sni: '',
     inboundPort: 443,
     inboundId: 3,
     badge: '',
@@ -390,7 +377,7 @@ export default function AdminPage() {
   const [newV2rayInbound, setNewV2rayInbound] = useState(3);
   const [newV2rayQuotaGB, setNewV2rayQuotaGB] = useState(100);
   const [newV2rayDays, setNewV2rayDays] = useState(30);
-  const [newV2raySni, setNewV2raySni] = useState('zoom.us');
+  const [newV2raySni, setNewV2raySni] = useState('');
 
   // 3x-ui Panel Connection & Auto-Sync State
   const [isConnectXuiOpen, setIsConnectXuiOpen] = useState(false);
@@ -453,7 +440,7 @@ export default function AdminPage() {
   const [grantNotes, setGrantNotes] = useState('VIP Friend Access - Enjoy!');
   const [grantCustomKey, setGrantCustomKey] = useState('');
   const [grantV2rayInbound, setGrantV2rayInbound] = useState(3);
-  const [grantV2raySni, setGrantV2raySni] = useState('zoom.us');
+  const [grantV2raySni, setGrantV2raySni] = useState('');
   const [grantV2rayRemark, setGrantV2rayRemark] = useState('Fibez VIP Speedline');
   const [grantV2rayQuota, setGrantV2rayQuota] = useState(100);
   const [grantV2rayDays, setGrantV2rayDays] = useState(30);
@@ -515,7 +502,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!selectedGrantPackage) return;
     setGrantV2rayInbound(selectedGrantPackage.inboundId);
-    setGrantV2raySni(selectedGrantPackage.sni);
+    setGrantV2raySni(selectedGrantPackage.sni || '');
     setGrantV2rayRemark(`Fibez - ${selectedGrantPackage.title}`);
   }, [selectedGrantPackage]);
 
@@ -541,27 +528,21 @@ export default function AdminPage() {
     if (isSelectedProductV2Ray) {
       if (grantProductId.includes('slt-meet') || grantProductId.includes('slt-zoom')) {
         setGrantV2rayInbound(1);
-        setGrantV2raySni('teams.microsoft.com');
         setGrantV2rayRemark('Fibez SLT Meet SG Node');
       } else if (grantProductId.includes('netflix') || grantProductId.includes('entertainment')) {
         setGrantV2rayInbound(2);
-        setGrantV2raySni('api.netflix.com');
         setGrantV2rayRemark('Fibez SLT Netflix 4K');
       } else if (grantProductId.includes('tiktok')) {
         setGrantV2rayInbound(3);
-        setGrantV2raySni('m.tiktok.com');
         setGrantV2rayRemark('Fibez Dialog TikTok Speed');
       } else if (grantProductId.includes('dialog')) {
         setGrantV2rayInbound(3);
-        setGrantV2raySni('zoom.us');
         setGrantV2rayRemark('Fibez Dialog Zoom VIP');
       } else if (grantProductId.includes('hutch')) {
         setGrantV2rayInbound(3);
-        setGrantV2raySni('zoom.us');
         setGrantV2rayRemark('Fibez Hutch Social VIP');
       } else {
         setGrantV2rayInbound(3);
-        setGrantV2raySni('speed.cloudflare.com');
         setGrantV2rayRemark('Fibez Universal SG VIP');
       }
     }
@@ -899,49 +880,28 @@ export default function AdminPage() {
     const preset = PACKAGE_PRESETS.find((p) => p.id === presetId);
     if (preset) {
       setNewV2rayInbound(preset.inboundId);
-      setNewV2raySni(preset.sni);
+      setNewV2raySni('');
       if (preset.defaultGB) setNewV2rayQuotaGB(preset.defaultGB);
     }
   };
 
+  // SNI is never chosen in the browser: leave it blank and the server applies the inbound/package default.
   const handleQuickInboundChange = (inboundId: number) => {
     setNewV2rayInbound(inboundId);
-    // Auto-update SNI based on selected inbound
-    if (inboundId === 1) {
-      setNewV2raySni('zoom.us'); // SLT Meet / Zoom
-      setNewV2rayPreset('slt_meet');
-    } else if (inboundId === 2) {
-      setNewV2raySni('api.netflix.com'); // SLT Netflix
-      setNewV2rayPreset('slt_netflix');
-    } else if (inboundId === 3) {
-      // If current SNI was for SLT, switch to Dialog default
-      if (newV2raySni === 'api.netflix.com' || newV2raySni === 'meet.google.com') {
-        setNewV2raySni('zoom.us');
-        setNewV2rayPreset('dialog_zoom');
-      }
-    } else if (inboundId === 4) {
-      setNewV2raySni('zoom.us'); // Mobitel Zoom SIM
-      setNewV2rayPreset('mobitel_zoom');
-    }
+    setNewV2raySni('');
+    if (inboundId === 1) setNewV2rayPreset('slt_meet');
+    else if (inboundId === 2) setNewV2rayPreset('slt_netflix');
+    else if (inboundId === 3) setNewV2rayPreset('dialog_zoom');
+    else if (inboundId === 4) setNewV2rayPreset('mobitel_zoom');
   };
 
   const handleGrantInboundChange = (inboundId: number) => {
     setGrantV2rayInbound(inboundId);
-    if (inboundId === 1) {
-      setGrantV2raySni('zoom.us');
-      setGrantV2rayRemark('Fibez SLT Meet / Zoom SG Node');
-    } else if (inboundId === 2) {
-      setGrantV2raySni('api.netflix.com');
-      setGrantV2rayRemark('Fibez SLT Netflix 4K');
-    } else if (inboundId === 3) {
-      if (grantV2raySni === 'api.netflix.com' || grantV2raySni === 'meet.google.com') {
-        setGrantV2raySni('zoom.us');
-      }
-      setGrantV2rayRemark('Fibez Dialog Zoom VIP');
-    } else if (inboundId === 4) {
-      setGrantV2raySni('zoom.us');
-      setGrantV2rayRemark('Fibez Mobitel Zoom VIP');
-    }
+    setGrantV2raySni('');
+    if (inboundId === 1) setGrantV2rayRemark('Fibez SLT Meet / Zoom SG Node');
+    else if (inboundId === 2) setGrantV2rayRemark('Fibez SLT Netflix 4K');
+    else if (inboundId === 3) setGrantV2rayRemark('Fibez Dialog Zoom VIP');
+    else if (inboundId === 4) setGrantV2rayRemark('Fibez Mobitel Zoom VIP');
   };
 
   // Add Quick V2Ray Client
@@ -1235,7 +1195,7 @@ export default function AdminPage() {
           reloadCode: '',
           targetMedium: 'Home Broadband Router',
           carrierSpeedNote: 'Unmetered · No Carrier Speed Limit on Routers',
-          sni: 'zoom.us',
+          sni: '',
           inboundPort: 443,
           inboundId: 3,
           badge: '',
@@ -1608,19 +1568,20 @@ export default function AdminPage() {
     },
   ] as { label: string; items: { id: string; label: string; icon: any; badge: number | null; ownerOnly?: boolean }[] }[];
 
-  // 1-Click Copy VLESS URI
-  const handleCopyClientVless = (cl: InboundClient & { port: number; remark: string }) => {
-    let sni = 'zoom.us';
-    const text = (cl.remark + ' ' + cl.email).toLowerCase();
-    if (text.includes('netflix')) sni = 'api.netflix.com';
-    else if (text.includes('tiktok')) sni = 'm.tiktok.com';
-    else if (text.includes('facebook') || text.includes('social')) sni = 'm.facebook.com';
-    else if (text.includes('youtube')) sni = 'm.youtube.com';
-    else if (text.includes('meet')) sni = 'meet.google.com';
-    else if (cl.port === 444) sni = 'api.netflix.com';
-
-    const vlessUri = `vless://${cl.id}@${v2rayPublicHost}:${cl.port}?type=ws&security=tls&path=%2F&sni=${sni}#${encodeURIComponent(cl.remark || cl.email)}`;
-    copyToClipboard(vlessUri, `VLESS URI copied for ${cl.email}!`);
+  // 1-Click Copy VLESS URI (built on the server, which owns the SNI routing table)
+  const handleCopyClientVless = async (cl: InboundClient & { port: number; remark: string }) => {
+    try {
+      const res = await fetch('/api/admin/v2ray', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'client_uri', uuid: cl.id, port: cl.port, remark: cl.remark, email: cl.email }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.vlessUri) throw new Error(data.error || 'Could not build the link');
+      copyToClipboard(data.vlessUri, `VLESS URI copied for ${cl.email}!`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Could not build the link', 'error');
+    }
   };
 
   return (
@@ -2151,26 +2112,9 @@ export default function AdminPage() {
                             type="text"
                             value={grantV2raySni}
                             onChange={(e) => setGrantV2raySni(e.target.value)}
-                            placeholder="e.g. zoom.us, m.tiktok.com"
+                            placeholder="Blank = server default for this package"
                             className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-xs font-mono text-white focus:outline-none focus:border-[#3ad389]"
                           />
-                          {/* Quick 1-click SNI chips */}
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {['zoom.us', 'm.tiktok.com', 'api.netflix.com', 'm.facebook.com', 'meet.google.com', 'm.youtube.com'].map((chip) => (
-                              <button
-                                key={chip}
-                                type="button"
-                                onClick={() => setGrantV2raySni(chip)}
-                                className={`px-2 py-0.5 rounded text-[10px] font-mono border transition-all ${
-                                  grantV2raySni === chip
-                                    ? 'bg-[#3ad389]/20 text-[#3ad389] border-[#3ad389]/50 font-bold'
-                                    : 'bg-black/40 text-zinc-400 border-white/10 hover:border-white/30 hover:text-white'
-                                }`}
-                              >
-                                {chip}
-                              </button>
-                            ))}
-                          </div>
                         </div>
                       </div>
 
@@ -3539,33 +3483,9 @@ export default function AdminPage() {
                       type="text"
                       value={newV2raySni}
                       onChange={(e) => setNewV2raySni(e.target.value)}
-                      placeholder="e.g. zoom.us or m.tiktok.com"
+                      placeholder="Blank = server default for this inbound"
                       className="w-full px-3 py-2 rounded-xl bg-[#141418] border border-zinc-700 text-xs font-mono text-white focus:outline-none focus:border-[#3ad389]"
                     />
-                    {/* 1-Click Quick SNI Chips */}
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {[
-                        { label: 'zoom.us', hint: 'Dialog / SLT' },
-                        { label: 'm.tiktok.com', hint: 'TikTok' },
-                        { label: 'api.netflix.com', hint: 'Netflix' },
-                        { label: 'm.facebook.com', hint: 'Social' },
-                        { label: 'meet.google.com', hint: 'Meet' },
-                        { label: 'm.youtube.com', hint: 'YouTube' },
-                      ].map((item) => (
-                        <button
-                          key={item.label}
-                          type="button"
-                          onClick={() => setNewV2raySni(item.label)}
-                          className={`px-2 py-0.5 rounded text-[10px] font-mono border transition-all ${
-                            newV2raySni === item.label
-                              ? 'bg-[#3ad389]/20 text-[#3ad389] border-[#3ad389]/50 font-bold'
-                              : 'bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:border-zinc-600 hover:text-white'
-                          }`}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
                   </div>
 
                   <div className="pt-2 flex items-center justify-end gap-2">
@@ -3777,7 +3697,7 @@ export default function AdminPage() {
                           title={pkg.title}
                           badge={pkg.badge}
                           inboundPort={pkg.inboundPort || pkg.port || 443}
-                          sni={pkg.sni || 'zoom.us'}
+                          sni={pkg.sni || ''}
                           categoryLabel={pkg.categoryLabel || (pkg.serverType === 'LK_IP' ? 'Sri Lankan IP' : 'Equinix SG3')}
                           packageId={pkg.id}
                         />
@@ -3808,7 +3728,7 @@ export default function AdminPage() {
                         </div>
                         <div className="flex items-center justify-between text-zinc-400">
                           <span>SNI Spoofing:</span>
-                          <span className="font-mono text-emerald-400 font-semibold">{pkg.sni || 'zoom.us'}</span>
+                          <span className="font-mono text-emerald-400 font-semibold">{pkg.sni || 'server default'}</span>
                         </div>
                         <div className="flex items-start justify-between gap-2 text-zinc-400 pt-1 border-t border-[#1a1a1c]">
                           <span>Speed Spec:</span>
@@ -3912,7 +3832,7 @@ export default function AdminPage() {
                         title={newPackage.title || 'Package Title Preview'}
                         badge={newPackage.badge || undefined}
                         inboundPort={Number(newPackage.inboundPort) || 443}
-                        sni={newPackage.sni || 'zoom.us'}
+                        sni={newPackage.sni || ''}
                         categoryLabel={newPackage.serverType === 'LK_IP' ? 'Sri Lankan IP' : (newPackage.categoryLabel || 'Home Broadband')}
                       />
                     </div>
@@ -4025,17 +3945,16 @@ export default function AdminPage() {
                         </select>
                       </div>
 
-                      {/* Masquerade SNI */}
+                      {/* Masquerade SNI/}
                       <div>
                         <label className="text-xs font-medium text-zinc-400 mb-1 block">
-                          Masquerade SNI *
+                          Masquerade SNI
                         </label>
                         <input
                           type="text"
                           value={newPackage.sni}
                           onChange={(e) => setNewPackage({ ...newPackage, sni: e.target.value })}
-                          placeholder="e.g. zoom.us, m.tiktok.com, netflix.com"
-                          required
+                          placeholder="Blank = server default"
                           className="w-full px-3 py-2 rounded-xl bg-[#070708] border border-[#27272a] text-sm text-white focus:border-[#3ad389] focus:outline-none font-mono"
                         />
                       </div>
@@ -4195,7 +4114,7 @@ export default function AdminPage() {
                         title={editingPackage.title || 'Package Title'}
                         badge={editingPackage.badge || undefined}
                         inboundPort={Number(editingPackage.inboundPort || editingPackage.port) || 443}
-                        sni={editingPackage.sni || 'zoom.us'}
+                        sni={editingPackage.sni || ''}
                         categoryLabel={editingPackage.serverType === 'LK_IP' ? 'Sri Lankan IP' : (editingPackage.categoryLabel || 'Home Broadband')}
                         packageId={editingPackage.id}
                       />
@@ -4300,7 +4219,7 @@ export default function AdminPage() {
                           type="text"
                           value={editingPackage.sni || ''}
                           onChange={(e) => setEditingPackage({ ...editingPackage, sni: e.target.value })}
-                          placeholder="e.g. zoom.us"
+                          placeholder="Blank = server default"
                           className="w-full px-3 py-2 rounded-xl bg-[#070708] border border-[#27272a] text-sm text-white focus:border-[#3ad389] focus:outline-none font-mono"
                         />
                       </div>
@@ -4358,7 +4277,7 @@ export default function AdminPage() {
                     <div className="p-3 rounded-xl bg-[#070708] border border-[#1f1f23] text-xs text-zinc-400 space-y-1 font-mono">
                       <div className="text-zinc-300 font-semibold">Active Routing Parameters:</div>
                       <div>• Inbound Target: Inbound {editingPackage.inboundId || 3} (Port {editingPackage.inboundPort || editingPackage.port || 443})</div>
-                      <div>• SNI Handshake: {editingPackage.sni || 'zoom.us'}</div>
+                      <div>• SNI Handshake: {editingPackage.sni || 'server default'}</div>
                       <div>• Target Medium: {editingPackage.targetMedium || 'Home Broadband Router'}</div>
                     </div>
 

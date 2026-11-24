@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     const port = Number(body.inboundPort || body.port) || 443;
     const inboundId = Number(body.inboundId) || (port === 445 ? 1 : 3);
 
-    const newPkg: V2RayPackageDef = {
+    const newPkg: V2RayPackageDef & { sni: string } = {
       id,
       title: rawTitle,
       isp,

@@ -35,7 +35,6 @@ export interface TrialPackageOption {
   isp: 'Dialog' | 'SLT' | 'Airtel' | 'Hutch' | 'Mobitel';
   badge: string;
   reloadDesc: string;
-  sni: string;
   port: number;
   inboundId: number;
   inboundName: string;
@@ -49,7 +48,6 @@ export const TRIAL_PACKAGES: TrialPackageOption[] = [
     isp: 'Dialog',
     badge: '#678# Video Conf',
     reloadDesc: 'Dialog 298 / 724 Zoom & Router pack',
-    sni: 'zoom.us',
     port: 443,
     inboundId: 3,
     inboundName: 'Port 443 · Inbound #3 (Dialog Gateway)',
@@ -61,7 +59,6 @@ export const TRIAL_PACKAGES: TrialPackageOption[] = [
     isp: 'Dialog',
     badge: '297 / 997 TikTok',
     reloadDesc: 'Dialog Rs. 297 / 997 TikTok Unlimited',
-    sni: 'm.tiktok.com',
     port: 443,
     inboundId: 3,
     inboundName: 'Port 443 · Inbound #3 (Dialog Gateway)',
@@ -73,7 +70,6 @@ export const TRIAL_PACKAGES: TrialPackageOption[] = [
     isp: 'Dialog',
     badge: '348 / 488 Social',
     reloadDesc: 'Facebook, Insta & WhatsApp bundle',
-    sni: 'm.facebook.com',
     port: 443,
     inboundId: 3,
     inboundName: 'Port 443 · Inbound #3 (Dialog Gateway)',
@@ -85,7 +81,6 @@ export const TRIAL_PACKAGES: TrialPackageOption[] = [
     isp: 'SLT',
     badge: 'Meet / Flash / Pre 235',
     reloadDesc: 'SLT Fiber, 4G & ADSL Meet / Zoom',
-    sni: 'teams.microsoft.com',
     port: 445,
     inboundId: 1,
     inboundName: 'Port 445 · Inbound #1 (SLT Meet Gateway)',
@@ -97,7 +92,6 @@ export const TRIAL_PACKAGES: TrialPackageOption[] = [
     isp: 'SLT',
     badge: '1,990 Ent. Pack',
     reloadDesc: 'SLT Fiber & 4G Netflix unthrottled',
-    sni: 'api.netflix.com',
     port: 444,
     inboundId: 2,
     inboundName: 'Port 444 · Inbound #2 (SLT Netflix Gateway)',
@@ -109,7 +103,6 @@ export const TRIAL_PACKAGES: TrialPackageOption[] = [
     isp: 'Airtel',
     badge: '297 / 997 Unlimited',
     reloadDesc: 'Airtel 4G/5G TikTok unlimited pack',
-    sni: 'm.tiktok.com',
     port: 443,
     inboundId: 3,
     inboundName: 'Port 443 · Inbound #3 (Singapore SG3)',
@@ -121,7 +114,6 @@ export const TRIAL_PACKAGES: TrialPackageOption[] = [
     isp: 'Airtel',
     badge: '135 / 260 Pack',
     reloadDesc: 'Airtel 135 / 260 YouTube data reload',
-    sni: 'm.youtube.com',
     port: 443,
     inboundId: 3,
     inboundName: 'Port 443 · Inbound #3 (Singapore SG3)',
@@ -133,7 +125,6 @@ export const TRIAL_PACKAGES: TrialPackageOption[] = [
     isp: 'Hutch',
     badge: '224 / 494 / 794',
     reloadDesc: 'Hutch 4G Non-Stop Work & Zoom reload',
-    sni: 'zoom.us',
     port: 443,
     inboundId: 3,
     inboundName: 'Port 443 · Inbound #3 (Singapore SG3)',
@@ -145,7 +136,6 @@ export const TRIAL_PACKAGES: TrialPackageOption[] = [
     isp: 'Mobitel',
     badge: '#170# Education',
     reloadDesc: 'Mobitel Port 4445 (Android IP Hunt)',
-    sni: 'gateway.icloud.com',
     port: 4445,
     inboundId: 4,
     inboundName: 'Port 4445 · Inbound #4 (Mobitel Port)',
@@ -209,7 +199,6 @@ export default function FreeTrialModal({ isOpen, onClose }: FreeTrialModalProps)
           packageId: selectedPkg.id,
           title: selectedPkg.title,
           isp: selectedPkg.isp,
-          sni: selectedPkg.sni,
           port: selectedPkg.port,
           inboundId: selectedPkg.inboundId,
           protocol: 'vless',

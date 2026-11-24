@@ -6,7 +6,7 @@ import Link from 'next/link';
 import QRCode from 'qrcode';
 import { authClient } from '@/lib/auth-client';
 import LineActions from '@/components/v2ray/LineActions';
-import { buildVlessUri, parseVlessUri } from '@/lib/v2ray-inbounds';
+import { buildVlessUri, parseVlessUri } from '@/lib/v2ray-uri';
 import { AnimatedButton } from '@/components/ui/AnimatedButton';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import TechText from '@/components/TechText';
@@ -51,7 +51,6 @@ import {
 } from 'lucide-react';
 import DailyUsageBars from '@/components/v2ray/DailyUsageBars';
 import WindsterAreaChart, { ChartDataPoint } from '@/components/admin/WindsterAreaChart';
-import { LIVE_V2RAY_PACKAGES, normalizeIsp } from '@/lib/v2ray-catalog';
 import {
   PurchasedV2RayLine,
   DEFAULT_PURCHASED_LINES,
@@ -69,7 +68,6 @@ interface V2RayPackage {
   isp: string;
   ispTag: string;
   description: string;
-  sni: string;
   port: number;
   badge?: string;
   configUri: string;
@@ -101,35 +99,8 @@ export interface SpeedtestReview {
 // No seeded/fake community reviews: only real submissions are ever shown.
 const INITIAL_REVIEWS: SpeedtestReview[] = [];
 
-// All infrastructure is based on 3x-ui Singapore Equinix Tier-1 & Sri Lanka IP Gateways.
-// Dynamically built from all 24 carrier-optimized ISP packages in the Fibez Catalog:
-const ALL_PACKAGES: V2RayPackage[] = LIVE_V2RAY_PACKAGES.map((pkg) => {
-  const safeIsp = normalizeIsp(pkg.isp);
-  const host = pkg.serverType === 'LK_IP' ? 'lk-rv2ray.fibez.store' : 'rv2ray.fibez.store';
-  return {
-    id: pkg.id,
-    title: pkg.title,
-    isp: safeIsp === 'SLT' ? 'SLT Mobitel Fiber' : `${safeIsp} 4G/5G`,
-    ispTag: safeIsp,
-    description: pkg.description || `Inbound ${pkg.inboundId || 3} (Port ${pkg.inboundPort || 443}): High-speed carrier bypass tunnel.`,
-    sni: pkg.sni,
-    port: pkg.inboundPort || 443,
-    badge: pkg.badge,
-    configUri: buildVlessUri({
-      uuid: '00000000-0000-0000-0000-000000000000', // placeholder: catalog cards never carry a working credential
-      host,
-      port: pkg.inboundPort || 443,
-      sni: pkg.sni,
-      remark: `Fibez - ${pkg.title}`,
-    }),
-  };
-});
-
-const PACKAGES: V2RayPackage[] = ALL_PACKAGES;
-
-
 const EMPTY_LINE: PurchasedV2RayLine = {
-  id: 'none', orderNumber: '', packageId: '', title: 'No active line', isp: '', ispTag: '', sni: '', port: 443,
+  id: 'none', orderNumber: '', packageId: '', title: 'No active line', isp: '', ispTag: '', port: 443,
   serverType: 'STANDARD', location: '', quotaLabel: '', quotaGB: 0, validityDays: 0, vlessUri: '', uuid: '',
   purchasedAt: new Date(0).toISOString(), status: 'EXPIRED',
 };
@@ -147,7 +118,6 @@ export default function V2RayDashboardPage() {
   const [walletLkr, setWalletLkr] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
   const [activeLineId, setActiveLineId] = useState<string>('');
-  const [selectedPackageId, setSelectedPackageId] = useState<string>('');
   const [selectedClient, setSelectedClient] = useState<'netmod' | 'v2box'>('netmod');
   const [activeTab, setActiveTab] = useState<'config' | 'usage' | 'reviews'>('config');
 
@@ -236,25 +206,6 @@ export default function V2RayDashboardPage() {
       localStorage.setItem('fibez_active_vless', vlessString.trim());
     }
 
-    // Match package by port, sni, or remark
-    const matched = PACKAGES.find((p) => {
-      if (parsed.port && p.port === parsed.port && parsed.sni && p.sni.toLowerCase() === parsed.sni.toLowerCase()) {
-        return true;
-      }
-      if (
-        parsed.remark &&
-        (p.title.toLowerCase().includes(parsed.remark.toLowerCase()) ||
-          parsed.remark.toLowerCase().includes(p.ispTag.toLowerCase()))
-      ) {
-        return true;
-      }
-      return false;
-    });
-
-    if (matched) {
-      setSelectedPackageId(matched.id);
-    }
-
     const isTrial =
       (parsed.remark || '').toLowerCase().includes('trial') ||
       (parsed.remark || '').toLowerCase().includes('free') ||
@@ -306,7 +257,6 @@ export default function V2RayDashboardPage() {
         }
         if (target) {
           setActiveLineId(target.id);
-          setSelectedPackageId(target.packageId);
           setCustomClientUuid(target.uuid);
           fetchTelemetryForClient(target.uuid);
         }
@@ -340,7 +290,6 @@ export default function V2RayDashboardPage() {
     }
     const line = purchasedLines.find((l) => l.id === lineId);
     if (line) {
-      setSelectedPackageId(line.packageId);
       setCustomClientUuid(line.uuid);
       setCustomVlessUri(line.vlessUri);
       // Clear the previous line's live numbers before loading this one.
@@ -382,18 +331,12 @@ export default function V2RayDashboardPage() {
         description: `Inbound ${activePurchasedLine.inboundId || 3} (Port ${parsed?.port || activePurchasedLine.port}): High-speed carrier bypass tunnel.`,
         configUri: customVlessUri,
         port: parsed?.port || activePurchasedLine.port,
-        sni: parsed?.sni || activePurchasedLine.sni,
         badge: activePurchasedLine.quotaLabel,
       };
     }
 
-    const uri = activePurchasedLine.vlessUri || buildVlessUri({
-      uuid: activeUuid,
-      host: effectiveHost,
-      port: activePurchasedLine.port,
-      sni: activePurchasedLine.sni,
-      remark: `Fibez - ${activePurchasedLine.title.split('[')[0].trim()}`,
-    });
+    // The config only ever comes from the server (it carries the line's own credentials).
+    const uri = activePurchasedLine.vlessUri || '';
 
     return {
       id: activePurchasedLine.packageId,
@@ -403,7 +346,6 @@ export default function V2RayDashboardPage() {
       description: `Inbound ${activePurchasedLine.inboundId || 3} (Port ${activePurchasedLine.port}): High-speed carrier bypass tunnel.`,
       configUri: uri,
       port: activePurchasedLine.port,
-      sni: activePurchasedLine.sni,
       badge: activePurchasedLine.quotaLabel,
     };
   }, [activePurchasedLine, customClientUuid, customVlessUri, customClientRemark, liveServerHost]);
@@ -859,18 +801,11 @@ export default function V2RayDashboardPage() {
               <LineActions line={activePurchasedLine} onChanged={() => setReloadKey((k) => k + 1)} />
 
               {/* Package Metadata Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-5">
                 <div className="p-3.5 rounded-[12px] bg-[#070709] border border-[#1b1b20]">
                   <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Target ISP</div>
                   <div className="text-xs font-mono font-medium text-white mt-1">
                     {activePurchasedLine.isp}
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-[12px] bg-[#070709] border border-[#1b1b20]">
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">SNI Masquerade</div>
-                  <div className="text-xs font-mono font-medium text-[#3ad389] mt-1 truncate">
-                    {activePurchasedLine.sni}
                   </div>
                 </div>
 
@@ -1737,7 +1672,7 @@ export default function V2RayDashboardPage() {
             </div>
 
             <div className="text-[11px] font-mono text-zinc-400 text-center mb-4">
-              SNI: <span className="text-white">{activeQrPackage.sni}</span> • Port {activeQrPackage.port}
+              Port {activeQrPackage.port}
             </div>
 
             <button

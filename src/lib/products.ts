@@ -19,7 +19,6 @@ export interface ProductItem {
   // V2Ray & VPN specific metadata
   protocol?: 'VLESS' | 'VMess' | 'Trojan' | 'VMess WS' | 'Trojan gRPC';
   isps?: ('Dialog' | 'SLT' | 'Mobitel' | 'Airtel' | 'Hutch' | 'All')[];
-  sniMasquerade?: string;
   location?: string;
   pingMs?: number;
 }
@@ -904,7 +903,6 @@ export const PRODUCTS: ProductItem[] = [
     isInstant: true,
     protocol: 'VLESS',
     isps: ['Dialog'],
-    sniMasquerade: 'zoom.us',
     location: 'Singapore (Port 443)',
     durations: [
       { label: '1 Month', days: 30, multiplier: 1 },
@@ -919,7 +917,7 @@ export const PRODUCTS: ProductItem[] = [
     category: 'vpn',
     brand: 'Fibez Net',
     title: 'Dialog TikTok Mobile SIM VLESS VPN',
-    description: 'High-speed VLESS VPN optimised for Dialog Mobile SIM TikTok unlimited reload. Unlocks unmetered full-speed browsing with dedicated m.tiktok.com SNI masquerade. Instant delivery.',
+    description: 'High-speed VLESS VPN optimised for Dialog Mobile SIM TikTok unlimited reload. Unlocks unmetered full-speed browsing. Instant delivery.',
     priceUSD: 3.50,
     priceLKR: 1150,
     stockCount: 120,
@@ -927,7 +925,6 @@ export const PRODUCTS: ProductItem[] = [
     isInstant: true,
     protocol: 'VLESS',
     isps: ['Dialog'],
-    sniMasquerade: 'm.tiktok.com',
     location: 'Singapore (Port 443)',
     durations: [
       { label: '1 Month', days: 30, multiplier: 1 },
@@ -950,7 +947,6 @@ export const PRODUCTS: ProductItem[] = [
     isInstant: true,
     protocol: 'VLESS',
     isps: ['SLT'],
-    sniMasquerade: 'm.zoom.us',
     location: 'Singapore (Port 445)',
     durations: [
       { label: '1 Month', days: 30, multiplier: 1 },
@@ -973,7 +969,6 @@ export const PRODUCTS: ProductItem[] = [
     isInstant: true,
     protocol: 'VLESS',
     isps: ['SLT'],
-    sniMasquerade: 'netflix.com',
     location: 'Singapore (Port 444)',
     durations: [
       { label: '1 Month', days: 30, multiplier: 1 },
@@ -996,7 +991,6 @@ export const PRODUCTS: ProductItem[] = [
     isInstant: true,
     protocol: 'VLESS',
     isps: ['Hutch'],
-    sniMasquerade: 'm.tiktok.com',
     location: 'Singapore (Port 443)',
     durations: [
       { label: '1 Month', days: 30, multiplier: 1 },
@@ -1019,7 +1013,6 @@ export const PRODUCTS: ProductItem[] = [
     isInstant: true,
     protocol: 'VLESS',
     isps: ['Airtel'],
-    sniMasquerade: 'tiktokv.com',
     location: 'Singapore',
     durations: [
       { label: '1 Month', days: 30, multiplier: 1 },
@@ -1042,7 +1035,6 @@ export const PRODUCTS: ProductItem[] = [
     isInstant: true,
     protocol: 'VLESS',
     isps: ['Mobitel'],
-    sniMasquerade: 'zoom.us',
     location: 'Singapore',
     durations: [
       { label: '1 Month', days: 30, multiplier: 1 },
@@ -1065,7 +1057,6 @@ export const PRODUCTS: ProductItem[] = [
     isInstant: true,
     protocol: 'VLESS',
     isps: ['Hutch'],
-    sniMasquerade: 'zoom.us',
     location: 'Singapore',
     durations: [
       { label: '1 Month', days: 30, multiplier: 1 },
@@ -1088,7 +1079,6 @@ export const PRODUCTS: ProductItem[] = [
     isInstant: true,
     protocol: 'VLESS',
     isps: ['All'],
-    sniMasquerade: 'gateway.fibez.store',
     location: 'Singapore',
     durations: [
       { label: '1 Month', days: 30, multiplier: 1 },
