@@ -7,8 +7,27 @@ const isNeonRemote =
   !process.env.NEON_AUTH_BASE_URL.includes('localhost') &&
   !process.env.NEON_AUTH_BASE_URL.includes('127.0.0.1');
 
+// Addresses refused before anything else runs. 82.29.129.168 ran an automated attack scan on 2026-11-26
+// (fake accounts and orders). Add more with the BLOCKED_IPS env var (comma separated) and redeploy.
+const BLOCKED_IPS = new Set(
+  ['82.29.129.168', ...(process.env.BLOCKED_IPS || '').split(',')].map((s) => s.trim()).filter(Boolean)
+);
+
+function clientIp(req: NextRequest): string {
+  return (
+    req.headers.get('x-vercel-forwarded-for')?.split(',')[0].trim() ||
+    req.headers.get('x-real-ip')?.trim() ||
+    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    ''
+  );
+}
+
 export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (BLOCKED_IPS.has(clientIp(req))) {
+    return new NextResponse('Forbidden', { status: 403, headers: { 'Cache-Control': 'no-store' } });
+  }
 
   // Already unlocked? The countdown page has nothing to show: go to the storefront.
   if (pathname === '/lock' && isSiteLocked() && verifyUnlockToken(req.cookies.get(UNLOCK_COOKIE)?.value)) {

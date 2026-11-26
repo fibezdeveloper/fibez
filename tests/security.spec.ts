@@ -105,3 +105,10 @@ test.describe('checkout and form hardening', () => {
     expect([400, 429]).toContain(res.status());
   });
 });
+
+test('blocked scanner address is refused everywhere', async ({ request }) => {
+  for (const p of ['/', '/api/me', '/api/checkout']) {
+    const res = await request.get(p, { headers: { 'x-real-ip': '82.29.129.168' } });
+    expect(res.status(), p).toBe(403);
+  }
+});
