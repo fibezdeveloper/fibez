@@ -1,5 +1,6 @@
 'use client';
 
+import { shouldReduceMotion } from '@/lib/motion';
 import React, { useEffect, useRef, useState } from 'react';
 import './GradientASCII.css';
 
@@ -563,7 +564,7 @@ export default function GradientASCII({
       return rgb;
     };
 
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const reduce = shouldReduceMotion(); // Admin -> Optimization level for this device (also covers OS reduce-motion)
     const view = { width: 1, height: 1, ratio: 1 };
     const ramp = new Float32Array(MAX_COLORS * 3);
     const clickData = new Float32Array(MAX_CLICKS * 4);

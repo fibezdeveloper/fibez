@@ -4,6 +4,8 @@ import { Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { StoreProvider } from "@/lib/store-context";
 import ClientLayout from "@/components/ClientLayout";
+import MotionManager from "@/components/MotionManager";
+import { MOTION_BOOT_SCRIPT } from "@/lib/motion-boot";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -71,6 +73,8 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-title" content="Fibez" />
         <link rel="manifest" href="/site.webmanifest" />
+        {/* Applies the remembered animation level (Admin -> Optimization) before first paint. */}
+        <script dangerouslySetInnerHTML={{ __html: MOTION_BOOT_SCRIPT }} />
       </head>
       <body
         suppressHydrationWarning
@@ -78,9 +82,11 @@ export default function RootLayout({
       >
         <StoreProvider>
           <Suspense fallback={null}>
-            <ClientLayout>
-              {children}
-            </ClientLayout>
+            <MotionManager>
+              <ClientLayout>
+                {children}
+              </ClientLayout>
+            </MotionManager>
           </Suspense>
         </StoreProvider>
       </body>

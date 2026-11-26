@@ -50,7 +50,7 @@ function ProductDetailContent({
   }
 
   const [selectedDurationIndex, setSelectedDurationIndex] = useState(0);
-  const [selectedQuotaId, setSelectedQuotaId] = useState<string>('unlimited');
+  const [selectedQuotaId, setSelectedQuotaId] = useState<string>(V2RAY_QUOTA_TIERS[0]?.id ?? '');
   const siteFlags = useSiteFlags();
   const lkIpOpen = siteFlags?.lk_ip === true;
   const [serverType, setServerType] = useState<'STANDARD' | 'LK_IP'>('STANDARD');
@@ -101,7 +101,7 @@ function ProductDetailContent({
       ) || null
     : null;
 
-  const activeQuotaTier = V2RAY_QUOTA_TIERS.find((t) => t.id === selectedQuotaId) || V2RAY_QUOTA_TIERS[7];
+  const activeQuotaTier = V2RAY_QUOTA_TIERS.find((t) => t.id === selectedQuotaId) || V2RAY_QUOTA_TIERS[0];
 
   const v2rayPriceLKR = serverType === 'LK_IP' ? activeQuotaTier.lkIpPriceLKR : activeQuotaTier.standardPriceLKR;
   const v2rayPriceUSD = parseFloat((v2rayPriceLKR / 300).toFixed(2));

@@ -104,7 +104,8 @@ export default function PredictiveArcBackground({ className = '' }: { className?
     const renderer = createArcRenderer(canvas, () => options, perf.isLowTier ? 1 : 1.5);
     if (!renderer) return undefined;
 
-    const minFrameMs = perf.isLowTier ? 50 : 33;
+    // Full level: up to 60fps (smooth on 90/120Hz screens). Lite level (weak phones): 20fps to save battery.
+    const minFrameMs = perf.isLowTier ? 50 : 16;
     let frame = 0;
     let last = 0;
 

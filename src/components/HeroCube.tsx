@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { currentMotion } from '@/lib/motion';
 
 export default function HeroCube() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -220,7 +221,8 @@ export default function HeroCube() {
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      animationFrameId = requestAnimationFrame(render);
+      // Animation level "off" (Admin -> Optimization or the visitor's reduce-motion): draw one still frame.
+      if (currentMotion() !== 'off') animationFrameId = requestAnimationFrame(render);
     };
 
     animationFrameId = requestAnimationFrame(render);

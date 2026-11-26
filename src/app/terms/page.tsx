@@ -65,7 +65,7 @@ export default function TermsPage() {
             <span>Multi-Currency Billing & Payments</span>
           </h2>
           <p>
-            Prices are published in Sri Lankan Rupees (LKR) and United States Dollars (USD). You may toggle currency preferences inside your account settings. All transactions are securely routed through certified payment processors, cryptocurrency smart contract gateways (USDT TRC20, TON, BTC), or local manual bank deposit slips reviewed by our compliance team.
+            Prices are published in Sri Lankan Rupees (LKR) and United States Dollars (USD). You may toggle currency preferences inside your account settings. Payments are made by local bank transfer (with the deposit slip reviewed by our team) or from your pre-funded Fibez Wallet.
           </p>
         </section>
 

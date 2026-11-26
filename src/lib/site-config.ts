@@ -89,3 +89,56 @@ export async function getHiddenProductIds(): Promise<Set<string>> {
   hiddenCache = { at: Date.now(), ids };
   return ids;
 }
+
+// ------------------------------------------------------------------ animations per device (Admin -> Optimization)
+
+/**
+ * How much animation each kind of device gets. Stored in store_settings ('site_motion').
+ *   auto = decide from the device itself (old / low-memory phones get the light version)
+ *   full = every animation, WebGL backgrounds and blur, even on weak devices
+ *   lite = light animations only: no WebGL backgrounds, no glass blur, fewer meteors
+ *   off  = no animations at all
+ * A visitor's own "reduce motion" system setting is always respected.
+ */
+export const MOTION_MODES = ['auto', 'full', 'lite', 'off'] as const;
+export type MotionMode = (typeof MOTION_MODES)[number];
+export type MotionSettings = { phone: MotionMode; tablet: MotionMode; desktop: MotionMode };
+export const DEFAULT_MOTION: MotionSettings = { phone: 'auto', tablet: 'auto', desktop: 'auto' };
+
+let motionCache: { at: number; settings: MotionSettings } | null = null;
+
+const isMode = (v: unknown): v is MotionMode => typeof v === 'string' && (MOTION_MODES as readonly string[]).includes(v);
+
+export async function getMotionSettings(): Promise<MotionSettings> {
+  if (motionCache && Date.now() - motionCache.at < TTL_MS) return motionCache.settings;
+  const settings = { ...DEFAULT_MOTION };
+  if (sql) {
+    try {
+      const rows = (await sql.query(`SELECT value FROM public.store_settings WHERE key = 'site_motion' LIMIT 1`)) as unknown as {
+        value: Partial<MotionSettings>;
+      }[];
+      const v = rows[0]?.value;
+      if (v && typeof v === 'object') {
+        for (const k of ['phone', 'tablet', 'desktop'] as const) if (isMode(v[k])) settings[k] = v[k] as MotionMode;
+      }
+    } catch (e) {
+      console.warn('motion settings unavailable, using auto:', e);
+    }
+  }
+  motionCache = { at: Date.now(), settings };
+  return settings;
+}
+
+export async function setMotionSettings(input: Partial<MotionSettings>, actorEmail: string): Promise<MotionSettings> {
+  if (!sql) throw new Error('Database not configured');
+  const next = { ...(await getMotionSettings()) };
+  for (const k of ['phone', 'tablet', 'desktop'] as const) if (isMode(input[k])) next[k] = input[k] as MotionMode;
+  await sql.query(
+    `INSERT INTO public.store_settings (key, value, updated_at, updated_by)
+     VALUES ('site_motion', $1::jsonb, NOW(), $2)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW(), updated_by = EXCLUDED.updated_by`,
+    [JSON.stringify(next), actorEmail]
+  );
+  motionCache = null;
+  return next;
+}

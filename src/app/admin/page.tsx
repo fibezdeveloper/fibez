@@ -58,6 +58,7 @@ import { PRODUCTS, ProductItem } from '@/lib/products';
 import WalletAdmin from '@/components/admin/WalletAdmin';
 import SitePagesAdmin from '@/components/admin/SitePagesAdmin';
 import InsightsAdmin from '@/components/admin/InsightsAdmin';
+import OptimizationAdmin from '@/components/admin/OptimizationAdmin';
 import AuditAdmin from '@/components/admin/AuditAdmin';
 import DigitalProductThumbnail, { ProductBrandBadge, resolveBrandMeta } from '@/components/DigitalProductThumbnail';
 
@@ -276,7 +277,7 @@ const PACKAGE_PRESETS: PackagePreset[] = [
 ];
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'grant' | 'orders' | 'v2ray' | 'packages' | 'inventory' | 'tickets' | 'coupons' | 'wallet' | 'pages' | 'insights' | 'audit'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'grant' | 'orders' | 'v2ray' | 'packages' | 'inventory' | 'tickets' | 'coupons' | 'wallet' | 'pages' | 'insights' | 'audit' | 'optimization'>('overview');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -1566,6 +1567,7 @@ export default function AdminPage() {
       items: [
         { id: 'v2ray', label: 'V2Ray nodes', icon: Server, badge: null as number | null },
         { id: 'pages', label: 'Site pages', icon: Globe2, badge: null as number | null },
+        { id: 'optimization', label: 'Optimization', icon: Zap, badge: null as number | null },
         { id: 'grant', label: 'Grant VIP', icon: Gift, badge: null as number | null, ownerOnly: true },
         { id: 'audit', label: 'Audit log', icon: ShieldCheck, badge: null as number | null, ownerOnly: true },
       ],
@@ -5084,6 +5086,8 @@ export default function AdminPage() {
         {activeTab === 'pages' && <SitePagesAdmin />}
 
         {activeTab === 'insights' && <InsightsAdmin />}
+
+        {activeTab === 'optimization' && <OptimizationAdmin />}
 
         {activeTab === 'audit' && myRole === 'owner' && <AuditAdmin />}
 

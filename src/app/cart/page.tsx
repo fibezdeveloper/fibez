@@ -665,7 +665,7 @@ export default function CartPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {session?.user && (
                 <button
                   type="button"
@@ -702,20 +702,6 @@ export default function CartPage() {
                 </div>
                 <div className="text-xs font-mono font-medium text-white">Bank Transfer / CDM</div>
                 <div className="text-[10px] font-mono text-[#a1a4a5] mt-0.5">Commercial Bank</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('crypto')}
-                className={`p-4 rounded-[14px] border text-left transition-all cursor-pointer ${
-                  paymentMethod === 'crypto'
-                    ? 'bg-[#18181c] border-white'
-                    : 'bg-[#121215] border-white/5 hover:border-white/20'
-                }`}
-              >
-                <Zap className="w-5 h-5 text-white mb-2" />
-                <div className="text-xs font-mono font-medium text-white">Cryptocurrency</div>
-                <div className="text-[10px] font-mono text-[#a1a4a5] mt-0.5">USDT TRC20 / TON / BTC</div>
               </button>
 
               <button
@@ -860,32 +846,6 @@ export default function CartPage() {
                   {uploadError && (
                     <div className="text-[10px] text-red-400 mt-1.5">{uploadError}</div>
                   )}
-                </div>
-              </div>
-            )}
-
-            {/* Crypto Details View */}
-            {paymentMethod === 'crypto' && (
-              <div className="p-4 rounded-[14px] bg-[#141417] border border-[#1f1f23] text-xs font-mono space-y-3">
-                <div className="text-white font-semibold flex items-center justify-between">
-                  <span>Send Exact Amount: {currency === 'USD' ? `$${finalTotalUSD.toFixed(2)} USDT` : `USDT equivalent of Rs. ${finalTotalLKR.toLocaleString()}`}</span>
-                  <span className="text-[10px] text-zinc-400">TRC20 Network</span>
-                </div>
-                <div className="flex items-center justify-between p-2.5 rounded bg-[#0c0c0e] border border-white/10">
-                  <span className="text-zinc-300 font-mono truncate max-w-xs">
-                    TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText('TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t');
-                      setCopiedCrypto(true);
-                      setTimeout(() => setCopiedCrypto(false), 1500);
-                    }}
-                    className="ml-2 text-[#a1a4a5] hover:text-white"
-                  >
-                    {copiedCrypto ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
                 </div>
               </div>
             )}

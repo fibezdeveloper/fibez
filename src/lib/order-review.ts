@@ -1,5 +1,5 @@
 import { adminStore, type AdminOrder } from '@/lib/admin-store';
-import { awardReferral } from '@/lib/wallet';
+import { applyLedgerOnce, awardReferral } from '@/lib/wallet';
 import { dbReady } from '@/lib/db/tx';
 import { fulfillOrder, recordFulfilledClients, revokeOrderLines } from '@/lib/fulfillment';
 import { notifyLater } from '@/lib/telegram';
@@ -72,16 +72,44 @@ export async function rejectOrder(
   order: AdminOrder,
   reviewer: string,
   reviewNotes: string
-): Promise<{ order: AdminOrder | null; revokedClients: number }> {
+): Promise<{ order: AdminOrder | null; revokedClients: number; refundedLkr: number }> {
   // Rejecting (or revoking) an order that already got V2Ray lines removes them from the panel.
   const revokedClients = await revokeOrderLines(order);
+
+  // A wallet order was already paid from the customer's balance: give the money back (once, ever).
+  let refundedLkr = 0;
+  if (
+    order.paymentMethod === 'wallet' &&
+    order.paymentStatus === 'VERIFIED' &&
+    order.userId &&
+    order.totalAmountLKR > 0 &&
+    dbReady()
+  ) {
+    const led = await applyLedgerOnce({
+      userId: order.userId,
+      type: 'REFUND',
+      amount: order.totalAmountLKR,
+      refType: 'order',
+      refId: order.orderNumber,
+      reason: `Order ${order.orderNumber} cancelled: refunded to wallet`,
+      actorEmail: reviewer,
+      idem: `reject-refund:${order.orderNumber}`,
+    });
+    if (!led.replayed) refundedLkr = order.totalAmountLKR;
+  }
+
   const updated = await adminStore.updateOrderStatus(order.orderNumber, {
-    paymentStatus: 'FAILED',
+    paymentStatus: refundedLkr > 0 || order.paymentMethod === 'wallet' ? 'REFUNDED' : 'FAILED',
     fulfillmentStatus: 'REVOKED',
     reviewedBy: reviewer,
-    reviewNotes: reviewNotes || 'Payment rejected. Receipt could not be validated.',
+    reviewNotes:
+      (reviewNotes || 'Payment rejected. Receipt could not be validated.') +
+      (refundedLkr > 0 ? ` (Rs. ${refundedLkr} refunded to wallet)` : ''),
   });
-  const m = tgMessages.orderRejected(order.orderNumber, reviewNotes || undefined);
+  const m =
+    refundedLkr > 0
+      ? tgMessages.money('Order cancelled and refunded', `Rs. ${refundedLkr.toLocaleString()} for order ${order.orderNumber} is back in your wallet.`)
+      : tgMessages.orderRejected(order.orderNumber, reviewNotes || undefined);
   notifyLater(order.customerEmail, m.html, m.buttons);
-  return { order: updated, revokedClients };
+  return { order: updated, revokedClients, refundedLkr };
 }

@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const form = await req.formData();
+    const form = await req.formData().catch(() => null);
+    if (!form) return NextResponse.json({ error: 'Send the top-up as a form upload.' }, { status: 400 });
     const amount = Math.round(Number(form.get('amount')));
     const bankReference = String(form.get('bankReference') || '').trim();
     const file = form.get('slip') as File | null;

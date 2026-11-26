@@ -293,3 +293,35 @@ body {
 }
 
 
+
+
+/* ------------------------------------------------------------------ animation levels (Admin -> Optimization)
+   <html data-motion> is set by MotionManager from the owner's per-device choice.
+   lite: keep simple animations, drop the costly parts (glass blur, glow layers).
+   off:  no animations or transitions at all. */
+html[data-motion="lite"] *,
+html[data-motion="off"] * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html[data-motion="off"] *,
+html[data-motion="off"] *::before,
+html[data-motion="off"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0s !important;
+  transition-duration: 0.001ms !important;
+  transition-delay: 0s !important;
+  scroll-behavior: auto !important;
+}
+
+
+/* ------------------------------------------------------------------ phones: readable small print
+   Cards use 9-10px mono labels that are hard to read on a phone. Lift them a little on small screens. */
+@media (max-width: 640px) {
+  .text-\[9px\] { font-size: 10.5px !important; }
+  .text-\[10px\] { font-size: 11px !important; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  /* No sideways wobble from wide decorations. */
+  body { overflow-x: clip; }
+}

@@ -1,5 +1,6 @@
 'use client';
 
+import { shouldReduceMotion } from '@/lib/motion';
 import React, { useEffect, useRef } from 'react';
 import './TechText.css';
 
@@ -139,7 +140,7 @@ const TechText: React.FC<TechTextProps> = ({
     const scratchCtx = scratch.getContext('2d');
     if (!container || !canvas || !ctx || !scratchCtx) return undefined;
 
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    const reducedMotion = shouldReduceMotion(); // Admin -> Optimization level for this device (also covers OS reduce-motion)
     let width = 1;
     let height = 1;
     let dpr = 1;

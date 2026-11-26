@@ -446,6 +446,15 @@
   gap: 2px;
   visibility: hidden;
   pointer-events: none;
+  /* Measures the full-width labels off-screen. A zero-size clipped box keeps that hidden strip from
+     widening the page on phones (it used to make the guide page scroll sideways). */
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.pill-nav__measure > * {
+  flex-shrink: 0;
+  width: max-content;
 }
 
 @media (prefers-reduced-motion: reduce) {

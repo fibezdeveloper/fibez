@@ -1,6 +1,7 @@
 import { bundleDiscount } from '@/lib/bundle-discount';
 import { rateLimit } from '@/lib/rate-limit';
 import * as crypto from 'crypto';
+import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedSessionUser, RECENT_ORDER_COOKIE_NAME, signRecentOrderToken } from '@/lib/dal';
 import { dbReady, withTransaction } from '@/lib/db/tx';
@@ -16,7 +17,10 @@ import { tgMessages } from '@/lib/telegram-bot';
 import { getHiddenProductIds, getPageFlags } from '@/lib/site-config';
 
 // 'staff_grant' is internal only: customers can never choose it.
-const VALID_PAYMENT_METHODS = new Set(['bank_transfer', 'crypto', 'wallet']);
+// Crypto is off: there is no Fibez-owned wallet address yet. Card gateway is not live either.
+const VALID_PAYMENT_METHODS = new Set(['bank_transfer', 'wallet']);
+// Unpaid orders one email or connection may have open at once (stops order spam).
+const MAX_OPEN_ORDERS = 3;
 
 interface CheckoutItemInput {
   id?: string;
@@ -38,6 +42,14 @@ function isAllowedReceiptUrl(value: string): boolean {
   try {
     const url = new URL(value);
     if (url.protocol !== 'https:') return false;
+    // Only objects our upload route wrote under slips/, never a crafted path (../, %2e%2e, etc.).
+    let path = url.pathname;
+    try {
+      path = decodeURIComponent(path);
+    } catch {
+      return false;
+    }
+    if (path.includes('..') || path.includes('\\') || !/\/slips\/[A-Za-z0-9._-]+$/.test(path)) return false;
     const host = url.hostname.toLowerCase();
     const endpoint = process.env.AWS_ENDPOINT_URL_S3;
     const endpointHost = endpoint ? new URL(endpoint).hostname.toLowerCase() : '';
@@ -57,7 +69,7 @@ export async function POST(request: NextRequest) {
       request.headers.get('x-real-ip')?.trim() ||
       request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
       'unknown';
-    if ((await rateLimit('checkout', ip, 10, 600)).limited) {
+    if ((await rateLimit('checkout', ip, 10, 600)).limited || (await rateLimit('checkout-day', ip, 30, 86400)).limited) {
       return NextResponse.json(
         { error: 'Too many orders from this connection. Please wait a few minutes.' },
         { status: 429 }
@@ -68,6 +80,9 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
     const cart: CheckoutItemInput[] = Array.isArray(body.cart) ? body.cart : [];
+    if (body.paymentMethod === 'crypto' || body.paymentMethod === 'gateway') {
+      return NextResponse.json({ error: 'That payment method is not available yet. Please use bank transfer or your wallet.' }, { status: 400 });
+    }
     const paymentMethod =
       typeof body.paymentMethod === 'string' && VALID_PAYMENT_METHODS.has(body.paymentMethod)
         ? body.paymentMethod
@@ -112,6 +127,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cart items are required' }, { status: 400 });
     }
 
+    // Cap unpaid orders per email so nobody can flood the order list (and the admin bot) with junk.
+    if (paymentMethod !== 'wallet' && dbReady() && sql) {
+      const open = (await sql.query(
+        `SELECT count(*)::int AS n FROM public.orders
+         WHERE lower(customer_email) = $1 AND payment_status IN ('PENDING_PAYMENT', 'PENDING_REVIEW')
+           AND created_at > now() - interval '3 days'`,
+        [customerEmail]
+      )) as { n: number }[];
+      if ((open[0]?.n ?? 0) >= MAX_OPEN_ORDERS) {
+        return NextResponse.json(
+          { error: 'You already have unpaid orders waiting. Pay or upload the slip for those first, or contact support.' },
+          { status: 429 }
+        );
+      }
+    }
+
     const randomSuffix = String(crypto.randomInt(100000, 999999));
     const orderNumber = `FBZ-${randomSuffix}`;
     const orderId = `ord_${orderNumber.toLowerCase()}_${crypto.randomUUID().slice(0, 8)}`;
@@ -121,7 +152,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please sign in to pay with your wallet.' }, { status: 401 });
     }
     // A wallet order is paid the moment the money leaves the wallet; bank orders wait for staff review.
-    const paymentStatus = isWallet ? 'VERIFIED' : paymentMethod === 'crypto' || receiptUrl ? 'PENDING_REVIEW' : 'PENDING_PAYMENT';
+    const paymentStatus = isWallet ? 'VERIFIED' : receiptUrl ? 'PENDING_REVIEW' : 'PENDING_PAYMENT';
     const fulfillmentStatus = 'PENDING';
 
     // Calculate totals and resolve line items
@@ -387,8 +418,10 @@ export async function POST(request: NextRequest) {
       }
       deliveredNow = true;
     } else {
-      // Bank transfer / crypto: the order waits for staff to verify the payment.
+      // Bank transfer: the order waits for staff to verify the payment. Only ping the admin bot when
+      // there is a slip to check; an unpaid order with no slip is not actionable (and is the easiest spam).
       await adminStore.addOrder(newAdminOrder);
+      if (receiptUrl) {
       const alert = adminAlerts.newOrder({
         orderNumber,
         customerEmail,
@@ -399,6 +432,7 @@ export async function POST(request: NextRequest) {
         items: newAdminOrder.items,
       });
       notifyAdmins(alert.html, alert.rows);
+      }
     }
     const response = NextResponse.json({
       success: true,

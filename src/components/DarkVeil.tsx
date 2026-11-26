@@ -1,5 +1,6 @@
 'use client';
 
+import { shouldReduceMotion } from '@/lib/motion';
 import { useEffect, useRef, type HTMLAttributes } from 'react';
 
 import './DarkVeil.css';
@@ -364,7 +365,7 @@ export const DarkVeil = ({
     };
 
     const probe = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const reduce = shouldReduceMotion(); // Admin -> Optimization level for this device (also covers OS reduce-motion)
     const colorCache = new Map<string, number[]>();
     const toLinear = (value: string): number[] => {
       const cached = colorCache.get(value);

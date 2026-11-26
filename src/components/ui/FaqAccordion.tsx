@@ -25,7 +25,7 @@ const DEFAULT_FIBEZ_FAQS: FaqItem[] = [
   },
   {
     question: "What payment methods are accepted?",
-    answer: "We accept Sri Lankan Commercial Bank direct bank transfers (with instant slip upload and automated optical verification), Cryptocurrencies (USDT TRC20, TON, Bitcoin), and Pre-Funded Wallet balances.",
+    answer: "We accept Sri Lankan Commercial Bank direct bank transfers (upload your slip at checkout) and your pre-funded Fibez Wallet balance.",
   },
   {
     question: "Which Sri Lankan ISPs and packages are supported?",

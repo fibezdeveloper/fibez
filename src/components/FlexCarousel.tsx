@@ -1,5 +1,6 @@
 'use client';
 
+import { shouldReduceMotion } from '@/lib/motion';
 import React, { useEffect, useRef, useState } from 'react';
 import { Renderer, Program, Mesh, Triangle, Plane, Texture, RenderTarget } from 'ogl';
 
@@ -440,7 +441,7 @@ const FlexCarousel: React.FC<FlexCarouselProps> = ({
       })
     });
 
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const reducedMotion = shouldReduceMotion(); // Admin -> Optimization level for this device (also covers OS reduce-motion)
     const anisotropy = renderer.getExtension('EXT_texture_filter_anisotropic') ? 8 : 0;
 
     let slots: any[] = [];

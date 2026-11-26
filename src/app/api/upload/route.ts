@@ -50,7 +50,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const formData = await request.formData();
+    const formData = await request.formData().catch(() => null);
+    if (!formData) return NextResponse.json({ error: 'Send the file as a form upload.' }, { status: 400 });
     const file = formData.get('file') as File | null;
     const rawFolder = (formData.get('folder') as string) || 'slips';
     const folder = ALLOWED_FOLDERS.has(rawFolder) ? rawFolder : 'slips';

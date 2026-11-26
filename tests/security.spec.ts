@@ -72,3 +72,36 @@ test('SNI hosts are absent from client bundles', () => {
   walk(root);
   expect(leaks).toEqual([]);
 });
+
+// Probes seen against production on 2026-11-26: each must be a clean 4xx, never accepted or a 500.
+test.describe('checkout and form hardening', () => {
+  // A fresh address per run so the checkout rate limit (10 per 10 min per connection) doesn't trip between runs.
+  const ip = { 'x-real-ip': `198.51.100.${Math.floor(Math.random() * 250) + 1}` };
+  test('crypto payment is refused (no Fibez wallet address exists)', async ({ request }) => {
+    const res = await request.post('/api/checkout', { headers: ip, data: { paymentMethod: 'crypto', customerEmail: 'a@b.co', cart: [{ productId: 'x' }] } });
+    expect(res.status()).toBe(400);
+  });
+
+  test('crafted slip paths are refused', async ({ request }) => {
+    for (const receiptUrl of [
+      'https://x.storage.c-2.ap-southeast-1.aws.neon.tech/uploads/slips/../../etc/passwd',
+      'https://x.storage.c-2.ap-southeast-1.aws.neon.tech/uploads/slips/%2e%2e/%2e%2e/etc/passwd',
+      'https://evil.example/uploads/slips/a.png',
+      'javascript:alert(1)',
+    ]) {
+      const res = await request.post('/api/checkout', { headers: ip, data: { paymentMethod: 'bank_transfer', customerEmail: 'a@b.co', receiptUrl, cart: [{ productId: 'x' }] } });
+      expect(res.status(), receiptUrl).toBe(400);
+      expect((await res.json()).error).toContain('slip');
+    }
+  });
+
+  test('junk promo codes are a 400, not a database error', async ({ request }) => {
+    expect((await request.get('/api/coupons?code=%00abc')).status()).toBe(400);
+    expect((await request.post('/api/coupons', { data: { code: "x' OR '1'='1" } })).status()).toBe(400);
+  });
+
+  test('upload without a form body is a 400', async ({ request }) => {
+    const res = await request.post('/api/upload', { data: { file: 'x' } });
+    expect([400, 429]).toContain(res.status());
+  });
+});

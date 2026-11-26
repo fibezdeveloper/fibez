@@ -50,6 +50,9 @@ export async function GET(request: NextRequest) {
     }
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code')?.trim().toUpperCase();
+    if (code && !/^[A-Z0-9_-]{1,40}$/.test(code)) {
+      return NextResponse.json({ error: 'Invalid promo code' }, { status: 400 });
+    }
 
     if (!code) {
       return NextResponse.json({ error: 'Promo code required' }, { status: 400 });
@@ -74,6 +77,9 @@ export async function POST(request: NextRequest) {
     }
     const body = await request.json().catch(() => ({}));
     const code = typeof body.code === 'string' ? body.code.trim().toUpperCase() : '';
+    if (code && !/^[A-Z0-9_-]{1,40}$/.test(code)) {
+      return NextResponse.json({ error: 'Invalid promo code' }, { status: 400 });
+    }
     if (!code) {
       return NextResponse.json({ error: 'Valid code required' }, { status: 400 });
     }
