@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Monitor, Smartphone, Tablet } from 'lucide-react';
+import { Smartphone, Tablet } from 'lucide-react';
 import { detectDeviceClass, resolveMotion, type DeviceClass } from '@/lib/motion';
 import type { MotionMode, MotionSettings } from '@/lib/use-site-flags';
 
 const MODES: { id: MotionMode; label: string; hint: string }[] = [
-  { id: 'auto', label: 'Auto', hint: 'Full on strong devices, light on old or budget ones' },
+  { id: 'auto', label: 'Auto', hint: 'Full animations on strong devices, none on old or budget ones' },
   { id: 'full', label: 'Full', hint: 'Every animation, WebGL backgrounds and glass blur' },
   { id: 'lite', label: 'Lite', hint: 'Simple animations only. No WebGL backgrounds or blur' },
   { id: 'off', label: 'Off', hint: 'No animations at all. Fastest' },
@@ -15,7 +15,6 @@ const MODES: { id: MotionMode; label: string; hint: string }[] = [
 const DEVICES: { id: DeviceClass; label: string; icon: React.ComponentType<{ className?: string }>; note: string }[] = [
   { id: 'phone', label: 'Phones', icon: Smartphone, note: 'Most of your customers. Lite or Auto keeps older phones smooth.' },
   { id: 'tablet', label: 'Tablets', icon: Tablet, note: 'iPads and Android tablets.' },
-  { id: 'desktop', label: 'Computers', icon: Monitor, note: 'Laptops and desktops.' },
 ];
 
 /** Owner switch: how much animation phones, tablets and computers get. Visitors' reduce-motion setting always wins. */
@@ -42,7 +41,7 @@ export default function OptimizationAdmin() {
     setThisDevice(detectDeviceClass());
   }, [load]);
 
-  const dirty = saved && draft && (['phone', 'tablet', 'desktop'] as const).some((k) => saved[k] !== draft[k]);
+  const dirty = saved && draft && (['phone', 'tablet'] as const).some((k) => saved[k] !== draft[k]);
 
   async function save() {
     if (!draft) return;
@@ -71,8 +70,8 @@ export default function OptimizationAdmin() {
       <div>
         <h2 className="text-lg font-semibold text-white">Optimization</h2>
         <p className="text-xs text-zinc-500 mt-1">
-          Choose how much animation each kind of device gets. Lighter settings make the site faster and smoother on phones. A visitor who
-          turned on &ldquo;reduce motion&rdquo; on their own phone always gets no animation.
+          Choose how much animation phones and tablets get. Computers always get the full animations. Lighter settings make the site
+          faster and smoother on phones. A visitor who turned on &ldquo;reduce motion&rdquo; on their own phone always gets no animation.
         </p>
       </div>
 

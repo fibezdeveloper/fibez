@@ -252,9 +252,14 @@ export async function POST(request: NextRequest) {
 
     // 1. Referral discount (friend gets Rs. 50 off). The referrer is rewarded in their WALLET later,
     //    when the order is approved/delivered. A code cannot be used by its own owner.
-    if (referralCode && dbReady()) {
+    if (referralCode && dbReady() && sql) {
       const referrer = await findReferrerByCode(referralCode);
-      if (referrer && referrer.email.toLowerCase() !== customerEmail.toLowerCase()) {
+      // A referral code is a welcome discount: only for a customer who has never had a paid order.
+      const paidBefore = (await sql.query(
+        `SELECT 1 FROM public.orders WHERE lower(customer_email) = $1 AND payment_status = 'VERIFIED' LIMIT 1`,
+        [customerEmail]
+      )) as unknown[];
+      if (referrer && referrer.email.toLowerCase() !== customerEmail.toLowerCase() && paidBefore.length === 0) {
         discountLKR += 50;
       }
     }

@@ -93,8 +93,9 @@ export async function getHiddenProductIds(): Promise<Set<string>> {
 // ------------------------------------------------------------------ animations per device (Admin -> Optimization)
 
 /**
- * How much animation each kind of device gets. Stored in store_settings ('site_motion').
- *   auto = decide from the device itself (old / low-memory phones get the light version)
+ * How much animation phones and tablets get. Stored in store_settings ('site_motion').
+ * Computers always get the full animations ('desktop' is kept only for older saved values).
+ *   auto = decide from the device itself (strong = full, old / low-memory = no animations)
  *   full = every animation, WebGL backgrounds and blur, even on weak devices
  *   lite = light animations only: no WebGL backgrounds, no glass blur, fewer meteors
  *   off  = no animations at all

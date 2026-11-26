@@ -47,8 +47,11 @@ export function prefersReducedMotion(): boolean {
 export function resolveMotion(settings: MotionSettings | null, device = detectDeviceClass()): EffectiveMotion {
   // The visitor's own accessibility setting always wins.
   if (prefersReducedMotion()) return 'off';
+  // Computers always handle the full animations; the owner's setting is for phones and tablets.
+  if (device === 'desktop') return 'full';
   const mode: MotionMode = settings?.[device] ?? 'auto';
-  if (mode === 'auto') return isLowTierDevice() ? 'lite' : 'full';
+  // Auto: strong phones/tablets get everything, old or budget ones get a still, fast page.
+  if (mode === 'auto') return isLowTierDevice() ? 'off' : 'full';
   return mode;
 }
 

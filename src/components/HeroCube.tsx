@@ -16,12 +16,21 @@ export default function HeroCube() {
     let width = (canvas.width = canvas.parentElement?.clientWidth || 440);
     let height = (canvas.height = canvas.parentElement?.clientHeight || 440);
 
+    // With animations off (Admin -> Optimization or the visitor's reduce-motion) the cube is drawn as one
+    // still picture. It is redrawn whenever its box changes size, so it never shows as an empty square
+    // (the box can be 0x0 at first paint on phones).
+    const still = currentMotion() === 'off';
+    let drawStill: (() => void) | null = null;
+
     const handleResize = () => {
       if (!canvas || !canvas.parentElement) return;
       width = canvas.width = canvas.parentElement.clientWidth;
       height = canvas.height = canvas.parentElement.clientHeight;
+      if (still && drawStill) drawStill();
     };
     window.addEventListener('resize', handleResize);
+    const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
+    if (canvas.parentElement) resizeObserver?.observe(canvas.parentElement);
 
     // 3D Cube vertices (centered at 0,0,0)
     const size = 110;
@@ -222,13 +231,20 @@ export default function HeroCube() {
       ctx.shadowBlur = 0;
 
       // Animation level "off" (Admin -> Optimization or the visitor's reduce-motion): draw one still frame.
-      if (currentMotion() !== 'off') animationFrameId = requestAnimationFrame(render);
+      if (!still) animationFrameId = requestAnimationFrame(render);
+    };
+    // Still mode: settle on the resting angle in one go instead of easing towards it.
+    drawStill = () => {
+      rotX = targetRotX;
+      rotY = targetRotY;
+      render(performance.now());
     };
 
     animationFrameId = requestAnimationFrame(render);
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      resizeObserver?.disconnect();
       window.removeEventListener('resize', handleResize);
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
