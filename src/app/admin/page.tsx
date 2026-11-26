@@ -384,9 +384,6 @@ export default function AdminPage() {
 
   // 3x-ui Panel Connection & Auto-Sync State
   const [isConnectXuiOpen, setIsConnectXuiOpen] = useState(false);
-  const [xuiBaseUrlInput, setXuiBaseUrlInput] = useState('');
-  const [xuiUsernameInput, setXuiUsernameInput] = useState('');
-  const [xuiPasswordInput, setXuiPasswordInput] = useState('');
   const [xuiPublicHostInput, setXuiPublicHostInput] = useState('rv2ray.fibez.store');
   const [xuiAutoSyncEnabled, setXuiAutoSyncEnabled] = useState(true);
   const [xuiSyncIntervalSec, setXuiSyncIntervalSec] = useState(30);
@@ -396,7 +393,6 @@ export default function AdminPage() {
   const [isTestingXui, setIsTestingXui] = useState(false);
   const [isSavingXui, setIsSavingXui] = useState(false);
   const [xuiModalError, setXuiModalError] = useState<string | null>(null);
-  const [showXuiPassword, setShowXuiPassword] = useState(false);
 
   // Inventory State
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
@@ -584,8 +580,6 @@ export default function AdminPage() {
         if (v2rayRes.summary) setV2raySummary(v2rayRes.summary);
         if (v2rayRes.publicHost) setV2rayPublicHost(v2rayRes.publicHost);
         if (v2rayRes.xuiConfig) {
-          setXuiBaseUrlInput(v2rayRes.xuiConfig.baseUrl || '');
-          setXuiUsernameInput(v2rayRes.xuiConfig.username || 'akain');
           setXuiPublicHostInput(v2rayRes.xuiConfig.publicHost || 'rv2ray.fibez.store');
           setXuiAutoSyncEnabled(v2rayRes.xuiConfig.autoSync ?? true);
           setXuiSyncIntervalSec(v2rayRes.xuiConfig.syncIntervalSec || 30);
@@ -788,9 +782,6 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'connect_xui',
-          baseUrl: xuiBaseUrlInput.trim(),
-          username: xuiUsernameInput.trim(),
-          password: xuiPasswordInput.trim() || undefined,
           publicHost: xuiPublicHostInput.trim(),
           autoSync: xuiAutoSyncEnabled,
           syncIntervalSec: xuiSyncIntervalSec,
@@ -828,9 +819,6 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'connect_xui',
-          baseUrl: xuiBaseUrlInput.trim(),
-          username: xuiUsernameInput.trim(),
-          password: xuiPasswordInput.trim() || undefined,
           publicHost: xuiPublicHostInput.trim(),
           autoSync: xuiAutoSyncEnabled,
           syncIntervalSec: xuiSyncIntervalSec,
@@ -2803,7 +2791,7 @@ export default function AdminPage() {
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400 mt-1">
-                  Panel: <span className="font-mono text-zinc-300">{xuiBaseUrlInput}</span> • Host: <span className="font-mono text-zinc-300">{v2rayPublicHost}</span> • {inbounds.length} Live Inbounds • {v2raySummary.totalClients} Clients
+                  Panel: <span className="font-mono text-zinc-300">connected</span> • Host: <span className="font-mono text-zinc-300">{v2rayPublicHost}</span> • {inbounds.length} Live Inbounds • {v2raySummary.totalClients} Clients
                 </p>
               </div>
 
@@ -3216,56 +3204,10 @@ export default function AdminPage() {
                   )}
 
                   <form onSubmit={handleConnectXui} className="space-y-4">
-                    <div>
-                      <label className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1.5">
-                        3x-ui Panel Base URL (Protocol + Host + Port)
-                      </label>
-                      <input
-                        type="text"
-                        value={xuiBaseUrlInput}
-                        onChange={(e) => setXuiBaseUrlInput(e.target.value)}
-                        placeholder="https://your-panel-host:port"
-                        required
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#141418] border border-[#24242c] text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-[#3ad389] transition-colors"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1.5">
-                          Panel Admin Username
-                        </label>
-                        <input
-                          type="text"
-                          value={xuiUsernameInput}
-                          onChange={(e) => setXuiUsernameInput(e.target.value)}
-                          placeholder="akain"
-                          required
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-[#141418] border border-[#24242c] text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-[#3ad389] transition-colors"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1.5">
-                          Panel Admin Password
-                        </label>
-                        <div className="relative">
-                          <input
-                            type={showXuiPassword ? 'text' : 'password'}
-                            value={xuiPasswordInput}
-                            onChange={(e) => setXuiPasswordInput(e.target.value)}
-                            placeholder="Enter new password or leave blank"
-                            className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-[#141418] border border-[#24242c] text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-[#3ad389] transition-colors"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowXuiPassword(!showXuiPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
-                          >
-                            {showXuiPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </div>
+                    <div className="p-3 rounded-xl bg-[#141418] border border-[#24242c] text-[11px] font-mono text-zinc-400 leading-relaxed">
+                      The panel address, username and password live only in the server settings
+                      (XUI_BASE_URL, XUI_USERNAME, XUI_PASSWORD in Vercel). They are never sent to a browser,
+                      so they cannot be read from this page. Change them in Vercel, then redeploy.
                     </div>
 
                     <div>
@@ -5255,7 +5197,7 @@ export default function AdminPage() {
             </div>
 
             <div className="rounded-2xl border border-[#1f1f23] bg-[#0c0c0e] p-6 shadow-xl">
-              <TicketCenter userRole="owner" userEmail="akain@fibez.store" />
+              <TicketCenter userRole="owner" />
             </div>
           </div>
         )}

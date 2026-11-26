@@ -790,7 +790,7 @@ class AdminStore {
   public async getXuiConfig(): Promise<XuiPanelConfig> {
     const { state } = await this.read();
     const stored: XuiPanelConfig = state.xuiConfig || {
-      baseUrl: process.env.XUI_BASE_URL || 'https://rv2ray.fibez.store:6767',
+      baseUrl: process.env.XUI_BASE_URL || '',
       username: '',
       publicHost: process.env.XUI_PUBLIC_HOST || 'rv2ray.fibez.store',
       autoSync: true,
@@ -811,7 +811,7 @@ class AdminStore {
     await this.mutate((s) => {
       const merged: XuiPanelConfig = {
         ...(s.xuiConfig || {
-          baseUrl: process.env.XUI_BASE_URL || 'https://rv2ray.fibez.store:6767',
+          baseUrl: process.env.XUI_BASE_URL || '',
           username: '',
           publicHost: process.env.XUI_PUBLIC_HOST || 'rv2ray.fibez.store',
           autoSync: true,

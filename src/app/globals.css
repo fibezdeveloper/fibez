@@ -325,3 +325,10 @@ html[data-motion="off"] *::after {
   /* No sideways wobble from wide decorations. */
   body { overflow-x: clip; }
 }
+
+
+/* Hero live-line card (phones and tablets): network logo and name change */
+@keyframes fz-pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }
+@keyframes fz-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.fz-pop { animation: fz-pop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.fz-rise { animation: fz-rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }

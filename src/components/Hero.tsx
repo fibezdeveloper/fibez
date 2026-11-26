@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import HeroCube from '@/components/HeroCube';
+import HeroLineCard from '@/components/HeroLineCard';
 import GradientASCII from '@/components/GradientASCII';
 import useDevicePerf from '@/lib/use-device-perf';
 import { ShieldCheck } from 'lucide-react';
@@ -20,6 +21,15 @@ export default function Hero({
 }) {
   // The animated ASCII canvas is skipped on budget phones, old iPhones and reduced-motion.
   const { detected, isLowTier } = useDevicePerf();
+  // The cube only mounts on wide screens (lg, 1024px+), so phones and tablets never run its canvas loop.
+  const [isDesktop, setIsDesktop] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px) and (pointer: fine)');
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, []);
   return (
     <section className="relative w-full pt-16 pb-20 md:pt-24 md:pb-32 overflow-hidden">
       
@@ -136,11 +146,15 @@ export default function Hero({
 
           </div>
 
-          {/* Right Column: WebGL Sculptural 3D Cube */}
+          {/* Right Column: 3D cube on computers; a live-line status card on phones and tablets */}
           <div className="lg:col-span-5 flex items-center justify-center pointer-events-auto">
-            <div className="relative w-full max-w-[440px]">
-              <HeroCube />
-            </div>
+            {isDesktop ? (
+              <div className="relative w-full max-w-[440px]">
+                <HeroCube />
+              </div>
+            ) : (
+              <HeroLineCard />
+            )}
           </div>
 
         </div>

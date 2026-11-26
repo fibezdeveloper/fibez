@@ -20,23 +20,32 @@ export function detectDeviceClass(): DeviceClass {
   const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
   const ua = navigator.userAgent || '';
   // iPadOS reports a desktop Mac user agent; touch points give it away.
-  const iPadOs = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+  const iPadOs = /Macintosh/.test(ua) && (navigator.maxTouchPoints > 1 || coarse);
   const shortSide = Math.min(window.screen.width, window.screen.height);
   if (/iPad|Tablet/i.test(ua) || iPadOs || (coarse && shortSide >= 600)) return 'tablet';
   if (coarse || /iPhone|iPod|Android.+Mobile|Mobile/i.test(ua)) return 'phone';
   return 'desktop';
 }
 
-/** True on weak hardware: few cores, little memory, or an old iPhone. */
+/**
+ * True on weak hardware. iPhones and iPads hide their real CPU and memory from websites (Safari reports a
+ * low core count even on fast phones), so for Apple devices this judges by iOS version and screen size:
+ * iOS < 15, or iPhone 8 / 8 Plus / SE-class screens (tall side <= 736pt) are treated as weak. iPhone X, XR,
+ * 11 and newer get the full animations. Android and others: less than 4 GB memory or 4 cores or fewer.
+ */
 export function isLowTierDevice(): boolean {
   if (typeof window === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const iPadOs = /Macintosh/.test(ua) && (navigator.maxTouchPoints > 1 || (window.matchMedia?.('(pointer: coarse)').matches ?? false));
+  if (/iPhone|iPad|iPod/i.test(ua) || iPadOs) {
+    const m = ua.match(/OS (\d+)_/);
+    const major = m ? Number(m[1]) : 99;
+    const tallSide = Math.max(window.screen.width, window.screen.height);
+    return major < 15 || (/iPhone|iPod/i.test(ua) && tallSide <= 736);
+  }
   const cores = navigator.hardwareConcurrency || 8;
   const memory = (navigator as unknown as { deviceMemory?: number }).deviceMemory || 8;
-  const ua = navigator.userAgent || '';
-  const oldIos =
-    /iPhone|iPad|iPod/i.test(ua) &&
-    (/OS (1[0-5]|9|8)_/i.test(ua) || (window.screen.height === 736 && window.screen.width === 414 && window.devicePixelRatio === 3));
-  return cores <= 4 || memory < 4 || oldIos;
+  return cores <= 4 || memory < 4;
 }
 
 export function prefersReducedMotion(): boolean {

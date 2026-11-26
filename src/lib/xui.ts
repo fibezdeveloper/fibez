@@ -44,13 +44,22 @@ class XuiClient {
   private publicHost: string;
   private session: XuiAuthSession | null = null;
   private agent: https.Agent;
+  /**
+   * Optional Cloudflare Access service token. When the panel sits behind Cloudflare Tunnel + Access
+   * (no public port on the VPS), only requests carrying this token get through. Set
+   * XUI_CF_ACCESS_CLIENT_ID and XUI_CF_ACCESS_CLIENT_SECRET, and point XUI_BASE_URL at the tunnel host.
+   */
+  private accessHeaders: Record<string, string>;
 
   constructor() {
-    this.baseUrl = (process.env.XUI_BASE_URL || 'https://rv2ray.fibez.store:6767').replace(/\/$/, '');
+    this.baseUrl = (process.env.XUI_BASE_URL || '').replace(/\/$/, '');
     this.username = process.env.XUI_USERNAME || '';
     // No hardcoded fallback: the panel password must be supplied via XUI_PASSWORD.
     this.password = process.env.XUI_PASSWORD || '';
     this.publicHost = process.env.XUI_PUBLIC_HOST || 'rv2ray.fibez.store';
+    const cfId = process.env.XUI_CF_ACCESS_CLIENT_ID || '';
+    const cfSecret = process.env.XUI_CF_ACCESS_CLIENT_SECRET || '';
+    this.accessHeaders = cfId && cfSecret ? { 'CF-Access-Client-Id': cfId, 'CF-Access-Client-Secret': cfSecret } : {};
     // Verify the panel's TLS certificate. Only disable for local development against a
     // self-signed panel by explicitly setting XUI_INSECURE_TLS=true (ignored in production).
     const allowInsecure =
@@ -112,6 +121,7 @@ class XuiClient {
         url,
         {
           ...options,
+          headers: { ...(options.headers as Record<string, string> | undefined), ...this.accessHeaders },
           agent: this.agent,
         },
         (res) => {
@@ -288,7 +298,7 @@ class XuiClient {
         {
           method: 'GET',
           agent: this.agent,
-          headers: { Cookie: session.cookie, 'X-Requested-With': 'XMLHttpRequest', 'User-Agent': 'Fibez-Panel-Client/2.0' },
+          headers: { Cookie: session.cookie, 'X-Requested-With': 'XMLHttpRequest', 'User-Agent': 'Fibez-Panel-Client/2.0', ...this.accessHeaders },
         },
         (r) => {
           const chunks: Buffer[] = [];

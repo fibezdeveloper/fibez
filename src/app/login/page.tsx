@@ -212,7 +212,7 @@ function LoginContent() {
             </div>
 
             <div className="space-y-3 pt-2">
-              {((session.user as any).role === 'owner' || (session.user as any).role === 'admin' || session.user.email?.includes('akain') || session.user.email?.includes('admin')) ? (
+              {((session.user as any).role === 'owner' || (session.user as any).role === 'admin') ? (
                 <Link
                   href="/admin"
                   className="w-full py-3.5 px-4 rounded-xl bg-[#3ad389] hover:bg-[#32be7a] text-black text-xs font-mono font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#3ad389]/20 cursor-pointer"

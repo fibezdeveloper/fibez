@@ -83,8 +83,6 @@ export async function GET() {
       success: true,
       publicHost: xui.getPublicHost(),
       xuiConfig: {
-        baseUrl: config.baseUrl,
-        username: config.username,
         publicHost: config.publicHost,
         autoSync: config.autoSync ?? true,
         syncIntervalSec: config.syncIntervalSec || 30,
@@ -107,8 +105,6 @@ export async function GET() {
         success: false,
         error: error.message || 'Failed to communicate with 3x-ui server',
         xuiConfig: {
-          baseUrl: config.baseUrl,
-          username: config.username,
           publicHost: config.publicHost,
           autoSync: config.autoSync ?? true,
           syncIntervalSec: config.syncIntervalSec || 30,
@@ -168,7 +164,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: `Failed to authenticate with 3x-ui panel at ${baseUrl}: ${test.error}`,
+            error: 'Could not sign in to the 3x-ui panel. Check XUI_BASE_URL, XUI_USERNAME and XUI_PASSWORD in Vercel.',
             latencyMs: test.latencyMs,
           },
           { status: 400 }
@@ -190,14 +186,12 @@ export async function POST(req: NextRequest) {
         lastLatencyMs: test.latencyMs,
       });
 
-      await auditLog(guard.user, 'PANEL_CONNECTION_UPDATED', 'PANEL', saved.baseUrl, { username: saved.username, publicHost: saved.publicHost }, req);
+      await auditLog(guard.user, 'PANEL_CONNECTION_UPDATED', 'PANEL', 'panel', { publicHost: saved.publicHost }, req);
       return NextResponse.json({
         success: true,
         message: `Successfully connected & auto-synced with 3x-ui panel (${test.inboundsCount} inbounds active)!`,
         latencyMs: test.latencyMs,
         xuiConfig: {
-          baseUrl: saved.baseUrl,
-          username: saved.username,
           publicHost: saved.publicHost,
           autoSync: saved.autoSync,
           syncIntervalSec: saved.syncIntervalSec,
@@ -237,8 +231,6 @@ export async function POST(req: NextRequest) {
         message: '3x-ui telemetry, inbounds, and clients synchronized successfully.',
         latencyMs,
         xuiConfig: {
-          baseUrl: saved.baseUrl,
-          username: saved.username,
           publicHost: saved.publicHost,
           autoSync: saved.autoSync,
           syncIntervalSec: saved.syncIntervalSec,
