@@ -22,10 +22,25 @@ function clientIp(req: NextRequest): string {
   );
 }
 
+// Known attack scanners are refused on every request. Command-line / scripting HTTP clients (the
+// 2026-11-26 scanner used curl) are refused on anything that changes data. Real browsers are never
+// affected. Telegram webhooks and Vercel cron are exempt: they call in with their own clients.
+const ATTACK_TOOLS = /(sqlmap|nikto|nuclei|ffuf|gobuster|dirbuster|feroxbuster|wpscan|masscan|zgrab|nmap|acunetix|netsparker|burp|zap\/|wfuzz|hydra|commix|xsstrike|dalfox|arachni|w3af|skipfish|openvas)/i;
+const SCRIPT_CLIENTS = /^(curl|wget|python|aiohttp|httpx|go-http-client|okhttp|java\/|apache-httpclient|libwww-perl|lwp|postmanruntime|insomnia|axios|node-fetch|undici|got|scrapy|ruby|php|powershell|winhttp|http_request|restsharp|dart)/i;
+
+function isAutomatedClient(req: NextRequest, pathname: string): boolean {
+  const ua = (req.headers.get('user-agent') || '').trim();
+  if (ATTACK_TOOLS.test(ua)) return true;
+  const writes = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+  if (!writes || !pathname.startsWith('/api/')) return false;
+  if (pathname.startsWith('/api/telegram/') || pathname.startsWith('/api/cron/')) return false;
+  return ua === '' || SCRIPT_CLIENTS.test(ua);
+}
+
 export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (BLOCKED_IPS.has(clientIp(req))) {
+  if (BLOCKED_IPS.has(clientIp(req)) || isAutomatedClient(req, pathname)) {
     return new NextResponse('Forbidden', { status: 403, headers: { 'Cache-Control': 'no-store' } });
   }
 

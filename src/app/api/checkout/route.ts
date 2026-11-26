@@ -20,7 +20,7 @@ import { getHiddenProductIds, getPageFlags } from '@/lib/site-config';
 // Crypto is off: there is no Fibez-owned wallet address yet. Card gateway is not live either.
 const VALID_PAYMENT_METHODS = new Set(['bank_transfer', 'wallet']);
 // Unpaid orders one email or connection may have open at once (stops order spam).
-const MAX_OPEN_ORDERS = 3;
+const MAX_OPEN_ORDERS = 5;
 
 interface CheckoutItemInput {
   id?: string;
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       request.headers.get('x-real-ip')?.trim() ||
       request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
       'unknown';
-    if ((await rateLimit('checkout', ip, 10, 600)).limited || (await rateLimit('checkout-day', ip, 30, 86400)).limited) {
+    if ((await rateLimit('checkout', ip, 10, 600)).limited || (await rateLimit('checkout-day', ip, 50, 86400)).limited) {
       return NextResponse.json(
         { error: 'Too many orders from this connection. Please wait a few minutes.' },
         { status: 429 }

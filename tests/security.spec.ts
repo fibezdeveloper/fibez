@@ -112,3 +112,13 @@ test('blocked scanner address is refused everywhere', async ({ request }) => {
     expect(res.status(), p).toBe(403);
   }
 });
+
+test('scripted clients cannot change data, attack tools are refused everywhere', async ({ request }) => {
+  for (const ua of ['curl/7.88.1', 'python-requests/2.31', 'Go-http-client/1.1', '']) {
+    const res = await request.post('/api/checkout', { headers: { 'user-agent': ua }, data: {} });
+    expect(res.status(), `ua=${ua}`).toBe(403);
+  }
+  expect((await request.get('/', { headers: { 'user-agent': 'sqlmap/1.7' } })).status()).toBe(403);
+  // reading public pages with curl is still fine
+  expect((await request.get('/api/me', { headers: { 'user-agent': 'curl/7.88.1' } })).status()).toBe(401);
+});
