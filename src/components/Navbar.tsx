@@ -247,6 +247,53 @@ export default function Navbar(props: NavbarProps) {
         },
       ];
 
+  // Phones: the account options as tap buttons inside the open menu (a floating dropdown would be cut off).
+  const narrowAccount = (
+    <div className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-3">
+      <div className="flex items-center justify-between mb-2.5 px-1">
+        <span className="text-[13px] font-semibold text-white">
+          {session?.user ? `Hi, ${session.user.name ? session.user.name.split(' ')[0] : 'there'}` : 'Account'}
+        </span>
+        <button
+          type="button"
+          onClick={() => setIsSearchOpen(true)}
+          className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-300 hover:text-white hover:bg-white/10"
+          aria-label="Search"
+        >
+          <Search className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {dropdownActions.map((a, i, all) => {
+          const wide = a.id === 'wallet' || a.id === 'signout' || a.id === 'signin';
+          // Odd number of half-width tiles: let the last one fill the row.
+          const halves = all.filter((x) => !(x.id === 'wallet' || x.id === 'signout' || x.id === 'signin'));
+          const lastHalf = halves.length % 2 === 1 && halves[halves.length - 1].id === a.id;
+          const short: Record<string, string> = { dashboard: 'Account', admin: 'Admin', currency: currentCurrency, register: 'Sign up' };
+          return (
+          <button
+            key={a.id}
+            type="button"
+            data-close-menu={a.id === 'currency' ? undefined : ''}
+            onClick={() => a.onSelect?.()}
+            className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left bg-black/30 border border-white/[0.06] active:scale-[0.98] transition-transform ${
+              wide || lastHalf ? 'col-span-2' : ''
+            } ${a.destructive ? 'text-[#ff453a]' : 'text-white'}`}
+          >
+            <span className="shrink-0">{a.icon}</span>
+            <span className="min-w-0">
+              <span className="block text-[13px] font-medium truncate">{short[a.id] ?? a.label}</span>
+              {a.detail && (a.id === 'wallet' || a.id === 'signout' || a.id === 'signin') && (
+                <span className={`block text-[11px] truncate ${a.destructive ? 'text-[#ff453a]/70' : 'text-zinc-500'}`}>{a.detail}</span>
+              )}
+            </span>
+          </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   const dropdownLabel = session?.user
     ? (session.user.name ? session.user.name.split(' ')[0] : session.user.email?.split('@')[0] || 'Account')
     : (cartCount > 0 ? `Cart (${cartCount})` : 'Account');
@@ -524,6 +571,7 @@ export default function Navbar(props: NavbarProps) {
           }
           logoHref="/"
           items={navItems}
+          narrowActions={narrowAccount}
           searchOpen={isSearchOpen}
           onSearchOpenChange={setIsSearchOpen}
           searchBar={searchBarElement}

@@ -36,6 +36,8 @@ export interface CardNavProps {
   items?: CardNavItem[];
   cta?: CardNavCta;
   actions?: React.ReactNode;
+  /** Shown inside the open panel on narrow screens instead of `actions` (dropdowns don't fit there). */
+  narrowActions?: React.ReactNode;
   theme?: 'dark' | 'light';
   surface?: 'glass' | 'solid';
   openOn?: 'click' | 'hover';
@@ -196,6 +198,7 @@ export default function CardNav({
   items = DEFAULT_ITEMS,
   cta,
   actions,
+  narrowActions,
   theme = 'dark',
   surface = 'glass',
   openOn = 'click',
@@ -612,7 +615,18 @@ export default function CardNav({
             ))}
           </div>
 
-          {narrow && actions && (
+          {narrow && narrowActions && (
+            <div
+              className="pt-1"
+              onClick={(event) => {
+                // Buttons marked data-close-menu close the menu after acting, like the menu links do.
+                if ((event.target as HTMLElement).closest('[data-close-menu]')) setOpen(false);
+              }}
+            >
+              {narrowActions}
+            </div>
+          )}
+          {narrow && !narrowActions && actions && (
             <div className="py-2 flex items-center justify-center gap-3 border-t border-white/5">
               {actions}
             </div>

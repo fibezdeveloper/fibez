@@ -416,3 +416,17 @@
     transition: none;
   }
 }
+
+
+/* Phones: the open menu never grows past the screen. It scrolls inside itself instead, so the bottom
+   (account buttons) is always reachable. */
+.card-nav[data-narrow] .card-nav__content {
+  max-height: calc(100dvh - var(--cn-bar) - 28px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.card-nav[data-narrow] .card-nav__content::-webkit-scrollbar {
+  display: none;
+}
