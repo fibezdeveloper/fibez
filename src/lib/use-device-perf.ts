@@ -18,7 +18,7 @@ function stateFor(level: EffectiveMotion): DevicePerfState {
     return { isLowTier: false, prefersReducedMotion: false, allowHeavyEffects: true, meteorCount: 15, blurEnabled: true, detected: true };
   }
   if (level === 'lite') {
-    return { isLowTier: true, prefersReducedMotion: false, allowHeavyEffects: false, meteorCount: 4, blurEnabled: false, detected: true };
+    return { isLowTier: true, prefersReducedMotion: false, allowHeavyEffects: false, meteorCount: 0, blurEnabled: false, detected: true };
   }
   return { isLowTier: true, prefersReducedMotion: true, allowHeavyEffects: false, meteorCount: 0, blurEnabled: false, detected: true };
 }

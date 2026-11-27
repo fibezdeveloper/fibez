@@ -6,8 +6,8 @@ import { detectDeviceClass, resolveMotion, type DeviceClass } from '@/lib/motion
 import type { MotionMode, MotionSettings } from '@/lib/use-site-flags';
 
 const MODES: { id: MotionMode; label: string; hint: string }[] = [
-  { id: 'auto', label: 'Auto', hint: 'Full animations on strong devices, none on old or budget ones' },
-  { id: 'full', label: 'Full', hint: 'Every animation, WebGL backgrounds and glass blur' },
+  { id: 'auto', label: 'Auto', hint: 'Text animations on, heavy backgrounds off. Smooth on every phone' },
+  { id: 'full', label: 'Full', hint: 'Everything incl. WebGL backgrounds and blur. Can lag on older phones' },
   { id: 'lite', label: 'Lite', hint: 'Simple animations only. No WebGL backgrounds or blur' },
   { id: 'off', label: 'Off', hint: 'No animations at all. Fastest' },
 ];
@@ -70,7 +70,8 @@ export default function OptimizationAdmin() {
       <div>
         <h2 className="text-lg font-semibold text-white">Optimization</h2>
         <p className="text-xs text-zinc-500 mt-1">
-          Choose how much animation phones and tablets get. Computers always get the full animations. Lighter settings make the site
+          Choose how much animation phones and tablets get. Computers get full animations, and switch to lite
+          automatically if a machine is measured as laggy. Lighter settings make the site
           faster and smoother on phones. A visitor who turned on &ldquo;reduce motion&rdquo; on their own phone always gets no animation.
         </p>
       </div>

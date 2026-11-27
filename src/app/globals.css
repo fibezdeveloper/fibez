@@ -332,3 +332,18 @@ html[data-motion="off"] *::after {
 @keyframes fz-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .fz-pop { animation: fz-pop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .fz-rise { animation: fz-rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+
+/* Lite level (phones, tablets, slow laptops): keep text animations but stop every animated span from
+   claiming its own GPU layer. Too many layers makes iOS drop page tiles from memory while scrolling, which
+   shows up as content vanishing and re-loading when you scroll back. */
+html[data-motion="lite"] .will-change-transform,
+html[data-motion="off"] .will-change-transform {
+  will-change: auto !important;
+}
+html[data-motion="lite"] .flip-char,
+html[data-motion="lite"] .word,
+html[data-motion="off"] .flip-char,
+html[data-motion="off"] .word {
+  transform-style: flat !important;
+}

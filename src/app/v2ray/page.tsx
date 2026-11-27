@@ -453,6 +453,27 @@ export default function V2RayPage() {
         </div>
 
         <div className="relative w-full rounded-2xl border border-[#1f1f26] bg-[#09090c] overflow-hidden p-2 sm:p-4">
+          {perf.detected && !perf.allowHeavyEffects ? (
+            // Phones, tablets and slow machines: a plain swipeable strip (no WebGL, light on memory).
+            <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-none">
+              {SPEEDTEST_ITEMS.map((item) => (
+                <figure key={item.src} className="snap-start shrink-0 w-[62%] sm:w-[38%] lg:w-[24%]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.src}
+                    alt={item.alt || item.title || 'Speedtest'}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full aspect-[9/16] object-cover rounded-2xl border border-[#1f1f26]"
+                  />
+                  <figcaption className="mt-2 px-1">
+                    <div className="text-xs font-semibold text-white">{item.title}</div>
+                    <div className="text-[11px] font-mono text-zinc-500">{item.subtitle}</div>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          ) : (
           <div style={{ width: '100%', height: '560px', position: 'relative' }}>
             <FlexCarousel
               items={SPEEDTEST_ITEMS}
@@ -467,6 +488,7 @@ export default function V2RayPage() {
               interval={4}
             />
           </div>
+          )}
           <div className="mt-4 pt-3 border-t border-[#181820] flex flex-wrap items-center justify-between text-[11px] font-mono text-zinc-500 px-2 gap-2">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />

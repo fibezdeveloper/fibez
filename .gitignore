@@ -52,3 +52,7 @@ do not push/
 # playwright
 /test-results/
 /playwright-report/
+
+# local marketing assets
+/promo-assets/
+/brag-output/

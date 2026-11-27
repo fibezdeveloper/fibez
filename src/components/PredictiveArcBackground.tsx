@@ -105,7 +105,9 @@ export default function PredictiveArcBackground({ className = '' }: { className?
     if (!renderer) return undefined;
 
     // Full level: up to 60fps (smooth on 90/120Hz screens). Lite level (weak phones): 20fps to save battery.
-    const minFrameMs = perf.isLowTier ? 50 : 16;
+    // Background animation only at the full level, capped at 30fps; lite/off draw one still frame.
+    const animated = perf.allowHeavyEffects;
+    const minFrameMs = 33;
     let frame = 0;
     let last = 0;
 
@@ -122,7 +124,7 @@ export default function PredictiveArcBackground({ className = '' }: { className?
       renderer.render(Math.min(elapsed, 100) / 16.667);
     };
     const start = () => {
-      if (!frame && !perf.prefersReducedMotion) {
+      if (!frame && animated) {
         last = performance.now();
         frame = requestAnimationFrame(tick);
       }
@@ -142,7 +144,7 @@ export default function PredictiveArcBackground({ className = '' }: { className?
       window.removeEventListener('resize', resize);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [perf.isLowTier, perf.prefersReducedMotion]);
+  }, [perf.isLowTier, perf.prefersReducedMotion, perf.allowHeavyEffects]);
 
   return (
     <div aria-hidden="true" className={`pointer-events-none fixed inset-0 -z-10 bg-[#030303] ${className}`}>

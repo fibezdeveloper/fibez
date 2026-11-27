@@ -48,6 +48,17 @@ export function isLowTierDevice(): boolean {
   return cores <= 4 || memory < 4;
 }
 
+export const MOTION_SLOW_KEY = 'fibez_motion_slow';
+
+/** Set when this browser measured a low frame rate with full effects on; it then starts on lite. */
+export function measuredSlow(): boolean {
+  try {
+    return localStorage.getItem(MOTION_SLOW_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export function prefersReducedMotion(): boolean {
   if (typeof window === 'undefined') return false;
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -56,11 +67,12 @@ export function prefersReducedMotion(): boolean {
 export function resolveMotion(settings: MotionSettings | null, device = detectDeviceClass()): EffectiveMotion {
   // The visitor's own accessibility setting always wins.
   if (prefersReducedMotion()) return 'off';
-  // Computers always handle the full animations; the owner's setting is for phones and tablets.
-  if (device === 'desktop') return 'full';
+  // Computers: full animations, unless the machine is weak or was measured as laggy (see MotionManager).
+  if (device === 'desktop') return isLowTierDevice() || measuredSlow() ? 'lite' : 'full';
   const mode: MotionMode = settings?.[device] ?? 'auto';
-  // Auto: strong phones/tablets get everything, old or budget ones get a still, fast page.
-  if (mode === 'auto') return isLowTierDevice() ? 'off' : 'full';
+  // Phones / tablets on Auto: text animations stay, heavy background effects (WebGL, canvas, blur) go.
+  // That keeps scrolling smooth and stops iOS from dropping page content from memory.
+  if (mode === 'auto') return 'lite';
   return mode;
 }
 

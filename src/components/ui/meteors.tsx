@@ -14,11 +14,8 @@ export const Meteors = ({ number = 15, className, color = "emerald" }: MeteorsPr
   const { prefersReducedMotion, isLowTier } = useDevicePerf();
 
   // If user prefers reduced motion, disable completely; if on iPhone 8 Plus/low-end, cap to 4
-  const effectiveCount = prefersReducedMotion
-    ? 0
-    : isLowTier
-    ? Math.min(number, 4)
-    : number;
+  // Background effect: only at the full animation level (none on phones/tablets or slow machines).
+  const effectiveCount = prefersReducedMotion || isLowTier ? 0 : number;
 
   const meteors = useMemo(() => {
     if (effectiveCount <= 0) return [];
